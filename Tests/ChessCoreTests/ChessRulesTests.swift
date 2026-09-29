@@ -62,6 +62,50 @@ final class ChessRulesTests: XCTestCase {
         XCTAssertEqual(position.outcome, .stalemate)
     }
 
+    func testThreefoldRepetitionByKnightShuffles() throws {
+        var game = ChessGame()
+        let cycle = ["g1f3", "g8f6", "f3g1", "f6g8"]
+        for uci in cycle { try game.makeMove(ChessMove(uci: uci)!) }
+        XCTAssertEqual(game.outcome, .ongoing)
+        for uci in cycle.dropLast() { try game.makeMove(ChessMove(uci: uci)!) }
+        XCTAssertEqual(game.outcome, .ongoing)
+        try game.makeMove(ChessMove(uci: "f6g8")!)
+        XCTAssertEqual(game.outcome, .drawThreefoldRepetition)
+        XCTAssertTrue(game.outcome.isDraw)
+        XCTAssertEqual(game.position.outcome, .ongoing)
+    }
+
+    func testRepetitionRequiresSameCastlingRights() throws {
+        var game = ChessGame(position: try ChessPosition(fen: "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"))
+        for uci in ["a1b1", "a8b8", "b1a1", "b8a8", "a1b1", "a8b8", "b1a1", "b8a8"] {
+            try game.makeMove(ChessMove(uci: uci)!)
+        }
+        XCTAssertEqual(game.outcome, .ongoing)
+    }
+
+    func testInsufficientMaterialDraws() throws {
+        for fen in [
+            "4k3/8/8/8/8/8/8/4K3 w - - 0 1",
+            "4k3/8/8/8/8/8/8/3BK3 w - - 0 1",
+            "4k3/8/8/8/8/8/8/3NK3 w - - 0 1",
+            "2b1k3/8/8/8/8/8/8/3BK3 w - - 0 1"
+        ] {
+            let outcome = try ChessPosition(fen: fen).outcome
+            XCTAssertEqual(outcome, .drawInsufficientMaterial, fen)
+            XCTAssertTrue(outcome.isDraw)
+        }
+    }
+
+    func testOppositeColorBishopsAreNotInsufficientMaterial() throws {
+        let position = try ChessPosition(fen: "4kb2/8/8/8/8/8/8/3BK3 w - - 0 1")
+        XCTAssertEqual(position.outcome, .ongoing)
+    }
+
+    func testSufficientMaterialIsNotDraw() throws {
+        XCTAssertEqual(try ChessPosition(fen: "4k3/8/8/8/8/8/P7/4K3 w - - 0 1").outcome, .ongoing)
+        XCTAssertEqual(try ChessPosition(fen: "4k3/8/8/8/8/8/8/2NNK3 w - - 0 1").outcome, .ongoing)
+    }
+
     func testDoubleCheckAllowsOnlyKingMoves() throws {
         let position = try ChessPosition(fen: "4k3/8/8/1B6/8/8/4R3/4K3 b - - 0 1")
         XCTAssertTrue(position.isInCheck(.black))

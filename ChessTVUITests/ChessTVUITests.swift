@@ -5,54 +5,39 @@ final class ChessTVUITests: XCTestCase {
     private var app: XCUIApplication!
     private var remote: XCUIRemote!
 
-    func testHomeNavigationOpensNewGame() {
+    func testHomeShowsPlayBots() {
         launch()
-        let titleExists = app.staticTexts["ChessTV"].waitForExistence(timeout: 5)
-        XCTAssertTrue(titleExists)
-        remote.press(.select)
-        let newGameExists = app.staticTexts["New Game"].waitForExistence(timeout: 3)
-        XCTAssertTrue(newGameExists)
+        XCTAssertTrue(playBots.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["home.playFriend"].exists)
+        XCTAssertTrue(app.buttons["home.puzzles"].exists)
     }
 
-    func testRemoteCanStartAndMoveOnBoard() {
+    func testPlayFriendStartsGameAndMenuReturnsHome() {
         launch()
-        openGame()
-        remote.press(.select) // e2
-        remote.press(.up)     // e3
-        remote.press(.select)
+        XCTAssertTrue(playBots.waitForExistence(timeout: 5))
+        focusAndSelect(app.buttons["home.playFriend"], moving: .down)
+
+        let startGame = app.buttons["Start Game"]
+        XCTAssertTrue(startGame.waitForExistence(timeout: 3))
+        focusAndSelect(startGame, moving: .down)
+
         let board = app.descendants(matching: .any)["chess-board"]
-        XCTAssertTrue(board.waitForExistence(timeout: 2))
-        XCTAssertTrue(board.label.localizedCaseInsensitiveContains("e3, white pawn"))
-    }
+        XCTAssertTrue(board.waitForExistence(timeout: 4))
 
-    func testOpenAndCloseGameMenu() {
-        launch()
-        openGame()
         remote.press(.menu)
-        XCTAssertTrue(app.staticTexts["Game Menu"].waitForExistence(timeout: 2))
-        remote.press(.select) // Resume has initial focus.
-        XCTAssertFalse(app.staticTexts["Game Menu"].exists)
+        XCTAssertTrue(playBots.waitForExistence(timeout: 3))
     }
 
-    func testBackReturnsFromSettings() {
+    func testMenuReturnsFromSettings() {
         launch()
-        XCTAssertTrue(app.staticTexts["ChessTV"].waitForExistence(timeout: 5))
-        remote.press(.down)
-        remote.press(.right)
-        remote.press(.select)
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 3))
+        XCTAssertTrue(playBots.waitForExistence(timeout: 5))
+        focusAndSelect(app.buttons["sidebar.settings"], moving: .left, then: .down)
+        XCTAssertTrue(app.buttons["Show Legal Moves"].waitForExistence(timeout: 3))
         remote.press(.menu)
-        XCTAssertTrue(app.staticTexts["ChessTV"].waitForExistence(timeout: 3))
+        XCTAssertTrue(playBots.waitForExistence(timeout: 3))
     }
 
-    private func openGame() {
-        XCTAssertTrue(app.staticTexts["ChessTV"].waitForExistence(timeout: 5))
-        remote.press(.select)
-        XCTAssertTrue(app.staticTexts["New Game"].waitForExistence(timeout: 3))
-        focusAndSelect(app.buttons["Start Game"], moving: .down)
-        let status = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'White to move'")).firstMatch
-        XCTAssertTrue(status.waitForExistence(timeout: 4))
-    }
+    private var playBots: XCUIElement { app.buttons["home.playBots"] }
 
     private func launch() {
         continueAfterFailure = false
@@ -62,8 +47,23 @@ final class ChessTVUITests: XCTestCase {
         remote = XCUIRemote.shared
     }
 
-    private func focusAndSelect(_ element: XCUIElement, moving direction: XCUIRemote.Button, attempts: Int = 10) {
-        for _ in 0..<attempts where !element.hasFocus { remote.press(direction) }
+    /// Presses `direction` until `element` has focus (then `then`, if given), and selects it.
+    private func focusAndSelect(
+        _ element: XCUIElement,
+        moving direction: XCUIRemote.Button,
+        then next: XCUIRemote.Button? = nil,
+        attempts: Int = 10
+    ) {
+        XCTAssertTrue(element.waitForExistence(timeout: 3), "Missing \(element)")
+        var pressedFirst = false
+        for _ in 0..<attempts where !element.hasFocus {
+            if let next, pressedFirst {
+                remote.press(next)
+            } else {
+                remote.press(direction)
+                pressedFirst = true
+            }
+        }
         XCTAssertTrue(element.hasFocus, "Could not focus \(element)")
         remote.press(.select)
     }

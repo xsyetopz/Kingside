@@ -85,7 +85,7 @@ public struct PGNExporter: Sendable {
 
     public func export(game: ChessGame, tags: [String: String] = [:], result: String? = nil) -> String {
         var allTags = tags
-        let finalResult = result ?? resultString(for: game.position.outcome)
+        let finalResult = result ?? resultString(for: game.outcome)
         allTags["Result"] = finalResult
         if game.initialPosition != .initial {
             allTags["SetUp"] = "1"
@@ -108,7 +108,7 @@ public struct PGNExporter: Sendable {
         switch outcome {
         case .checkmate(winner: .white): "1-0"
         case .checkmate(winner: .black): "0-1"
-        case .stalemate, .drawFiftyMove: "1/2-1/2"
+        case .stalemate, .drawFiftyMove, .drawThreefoldRepetition, .drawInsufficientMaterial: "1/2-1/2"
         case .ongoing: "*"
         }
     }

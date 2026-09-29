@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import ChessCore
 
@@ -17,13 +18,15 @@ struct ChessTVApp: App {
 
 @MainActor
 final class AppContainer: ObservableObject {
-    @Published var unfinishedGame: SavedLocalGame?
-    @Published private(set) var hasLoadedPersistence = false
+    /// The in-progress game offered by Resume on Home; nil when there is none.
+    @Published var unfinishedGame: SavedGame?
+
     let settings: SettingsStore
     let gameStore: GamePersistenceStore
-    let engine: any ChessEngine
+    let engine: ChessEngine
+    private var soundSubscription: AnyCancellable?
 
-    init(engine: any ChessEngine = NativeSearchEngine()) {
+    init(engine: ChessEngine = ChessEngine()) {
         self.engine = engine
         if ProcessInfo.processInfo.arguments.contains("--uitesting") {
             let identifier = "ChessTV.UITests.\(ProcessInfo.processInfo.processIdentifier)"
@@ -34,15 +37,17 @@ final class AppContainer: ObservableObject {
             settings = SettingsStore()
             gameStore = GamePersistenceStore()
         }
-        Task { [weak self, gameStore = self.gameStore] in
-            let game = await gameStore.unfinishedGame()
-            self?.unfinishedGame = game
-            self?.hasLoadedPersistence = true
+        SoundEffects.shared.isEnabled = settings.soundEnabled
+        soundSubscription = settings.$value.map(\.soundEffects).removeDuplicates().sink { enabled in
+            SoundEffects.shared.isEnabled = enabled
         }
+        refreshSavedGame()
     }
 
-    func makeGameViewModel() -> GameViewModel {
-        GameViewModel(engine: engine, settings: settings, store: gameStore)
+    func makeGameViewModel(launch: GameLaunch) -> GameViewModel {
+        GameViewModel(launch: launch, engine: engine, settings: settings, store: gameStore) { [weak self] in
+            self?.refreshSavedGame()
+        }
     }
 
     func refreshSavedGame() {

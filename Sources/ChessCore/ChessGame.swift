@@ -25,6 +25,16 @@ public struct ChessGame: Codable, Equatable, Sendable {
         self.initialPosition = moves.first?.positionBefore ?? position
     }
 
+    /// Position outcome plus draw by threefold repetition. Checkmate, stalemate and
+    /// insufficient material take precedence over repetition.
+    public var outcome: GameOutcome {
+        let base = position.outcome
+        if base != .ongoing { return base }
+        let key = RepetitionKey(position)
+        let occurrences = moves.filter { RepetitionKey($0.positionBefore) == key }.count + 1
+        return occurrences >= 3 ? .drawThreefoldRepetition : .ongoing
+    }
+
     @discardableResult
     public mutating func makeMove(_ move: ChessMove) throws -> PlayedMove {
         let san = try ChessNotation.san(for: move, in: position)
@@ -44,5 +54,26 @@ public struct ChessGame: Codable, Equatable, Sendable {
     public mutating func restart() {
         position = initialPosition
         moves.removeAll()
+    }
+}
+
+/// Positions are the same when placement, side to move, castling rights and en-passant
+/// availability match. The en-passant target only counts when an en-passant capture is legal.
+private struct RepetitionKey: Equatable {
+    let board: [Square: Piece]
+    let sideToMove: PieceColor
+    let castlingRights: CastlingRights
+    let enPassantTarget: Square?
+
+    init(_ position: ChessPosition) {
+        board = position.board
+        sideToMove = position.sideToMove
+        castlingRights = position.castlingRights
+        if let target = position.enPassantTarget,
+           position.legalMoves().contains(where: { $0.to == target && position[$0.from]?.type == .pawn }) {
+            enPassantTarget = target
+        } else {
+            enPassantTarget = nil
+        }
     }
 }

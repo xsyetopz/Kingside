@@ -1,6 +1,13 @@
 import SwiftUI
 import ChessCore
 
+// Board interaction state shared by a view model and `ChessBoardView`.
+// - Published: `focusedSquare` (remote cursor), `selectedSquare`, `legalMoves`, `lastMove`,
+//   `isFlipped` (black at the bottom).
+// - `moveFocus(_:)` moves the cursor in screen directions (flip-aware).
+// - `selectFocused(in:movableColor:)` picks up a piece or returns `.move` / `.promotion(moves)`.
+// - `complete(_:)` records a played move; `cancelSelection()` drops the selection.
+
 enum BoardSelectionAction {
     case none
     case move(ChessMove)
@@ -13,7 +20,7 @@ final class BoardInteractionController: ObservableObject {
     @Published var selectedSquare: Square?
     @Published var legalMoves: [ChessMove] = []
     @Published var lastMove: ChessMove?
-    var isFlipped = false
+    @Published var isFlipped = false
 
     var legalDestinations: Set<Square> { Set(legalMoves.map(\.to)) }
 

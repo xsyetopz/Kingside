@@ -1,119 +1,82 @@
 import Foundation
 import ChessCore
 
-struct ChessPuzzle: Identifiable, Codable, Sendable {
+// Puzzle data bundled in Resources/Puzzles.json (Lichess puzzle database, CC0).
+// Lichess semantics: `fen` is the position BEFORE the opponent's move; `moves[0]` is that
+// opponent move (auto-played), then the solver plays moves[1], moves[3], ... and the opponent
+// replies with moves[2], moves[4], ...
+// In the JSON, `moves` and `themes` are space-separated strings to keep the file small.
+
+struct Puzzle: Identifiable, Hashable, Sendable {
     let id: String
-    let title: String
     let fen: String
-    let line: [String]
+    let moves: [ChessMove]
+    let rating: Int
+    let themes: [String]
+
+    /// Position before the opponent's first move, or nil when the FEN does not parse.
+    var initialPosition: ChessPosition? { try? ChessPosition(fen: fen) }
 }
 
-protocol PuzzleProviding: Sendable {
-    func puzzles() async throws -> [ChessPuzzle]
+extension Puzzle: Decodable {
+    private enum CodingKeys: String, CodingKey { case id, fen, moves, rating, themes }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        fen = try container.decode(String.self, forKey: .fen)
+        rating = try container.decode(Int.self, forKey: .rating)
+        themes = try container.decode(String.self, forKey: .themes).split(separator: " ").map(String.init)
+        let uciMoves = try container.decode(String.self, forKey: .moves).split(separator: " ")
+        moves = try uciMoves.map { uci in
+            guard let move = ChessMove(uci: String(uci)) else {
+                throw DecodingError.dataCorruptedError(forKey: .moves, in: container, debugDescription: "Bad UCI move \(uci)")
+            }
+            return move
+        }
+    }
 }
 
-struct BundledPuzzleProvider: PuzzleProviding {
-    func puzzles() async throws -> [ChessPuzzle] {
-        [
-            ChessPuzzle(id: "mate-001", title: "A protected finish", fen: "7k/5Q2/6K1/8/8/8/8/8 w - - 0 1", line: ["f7g7"]),
-            ChessPuzzle(id: "mate-002", title: "Back-rank strike", fen: "6k1/5ppp/8/8/8/8/6PP/3R2K1 w - - 0 1", line: ["d1d8"])
-        ]
+/// The bundled puzzle set, decoded once on first use and sorted by rating.
+enum PuzzleLibrary {
+    static let all: [Puzzle] = load(from: Bundle.main)
+
+    static func load(from bundle: Bundle) -> [Puzzle] {
+        guard let url = bundle.url(forResource: "Puzzles", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let puzzles = try? JSONDecoder().decode([Puzzle].self, from: data)
+        else { return [] }
+        return puzzles.sorted { $0.rating < $1.rating }
     }
 }
 
-@MainActor
-final class PuzzleViewModel: ObservableObject {
-    @Published private(set) var puzzles: [ChessPuzzle] = []
-    @Published private(set) var index = 0
-    @Published private(set) var position = ChessPosition.initial
-    @Published private(set) var feedback = "Find the best move"
-    @Published private(set) var isSolved = false
-    let board = BoardInteractionController()
+enum PuzzleRushMode: String, CaseIterable, Codable, Identifiable, Sendable {
+    case threeMinutes, fiveMinutes, survival
 
-    private let provider: any PuzzleProviding
-    private var lineIndex = 0
-    private var startPosition = ChessPosition.initial
+    var id: String { rawValue }
 
-    init(provider: any PuzzleProviding = BundledPuzzleProvider()) { self.provider = provider }
-
-    var title: String { puzzles.indices.contains(index) ? puzzles[index].title : "Puzzle" }
-    var sideToMove: String { position.sideToMove.rawValue.capitalized }
-
-    func load() {
-        Task {
-            puzzles = (try? await provider.puzzles()) ?? []
-            openPuzzle(at: 0)
+    var title: String {
+        switch self {
+        case .threeMinutes: "3 Minutes"
+        case .fiveMinutes: "5 Minutes"
+        case .survival: "Survival"
         }
     }
 
-    func select() {
-        guard !isSolved, puzzles.indices.contains(index) else { return }
-        let playerColor = startPosition.sideToMove
-        switch board.selectFocused(in: position, movableColor: playerColor) {
-        case .move(let move): handle(move)
-        case .promotion(let moves):
-            if let queen = moves.first(where: { $0.promotion == .queen }) { handle(queen) }
-        case .none: break
+    var icon: String {
+        switch self {
+        case .threeMinutes: "bolt.fill"
+        case .fiveMinutes: "timer"
+        case .survival: "heart.fill"
         }
     }
 
-    func retry() { openPuzzle(at: index) }
-    func next() { openPuzzle(at: (index + 1) % max(1, puzzles.count)) }
-
-    private func handle(_ move: ChessMove) {
-        guard puzzles[index].line.indices.contains(lineIndex) else {
-            feedback = "Puzzle data is invalid."
-            return
+    /// Countdown length; nil for Survival (no clock).
+    var timeLimit: TimeInterval? {
+        switch self {
+        case .threeMinutes: 180
+        case .fiveMinutes: 300
+        case .survival: nil
         }
-        let expected = puzzles[index].line[lineIndex]
-        guard move.uci == expected else {
-            feedback = "Not quite. Try another move."
-            board.cancelSelection()
-            return
-        }
-        apply(move)
-        lineIndex += 1
-        playReplies()
-    }
-
-    private func playReplies() {
-        guard lineIndex < puzzles[index].line.count else {
-            isSolved = true
-            feedback = "Solved — excellent find."
-            return
-        }
-        guard let reply = ChessMove(uci: puzzles[index].line[lineIndex]), position.legalMoves().contains(reply) else {
-            feedback = "Puzzle data is invalid."
-            return
-        }
-        apply(reply)
-        lineIndex += 1
-        if lineIndex >= puzzles[index].line.count {
-            isSolved = true
-            feedback = "Solved — excellent find."
-        } else {
-            feedback = "Good. Keep going."
-        }
-    }
-
-    private func apply(_ move: ChessMove) {
-        if let next = try? position.applying(move) {
-            position = next
-            board.complete(move)
-        }
-    }
-
-    private func openPuzzle(at newIndex: Int) {
-        guard puzzles.indices.contains(newIndex), let loaded = try? ChessPosition(fen: puzzles[newIndex].fen) else { return }
-        index = newIndex
-        startPosition = loaded
-        position = loaded
-        lineIndex = 0
-        isSolved = false
-        feedback = "Find the best move"
-        board.cancelSelection()
-        board.lastMove = nil
-        board.isFlipped = loaded.sideToMove == .black
-        board.resetFocus(for: loaded.sideToMove)
     }
 }

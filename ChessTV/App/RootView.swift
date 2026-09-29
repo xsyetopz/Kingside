@@ -1,45 +1,33 @@
 import SwiftUI
 
 enum AppRoute: Hashable {
-    case newGame
-    case resumeGame
-    case recentGames
+    case playBots
+    case playFriend
+    case game(GameLaunch)
     case puzzles
-    case players
     case settings
+    case archive
+    case review(UUID)
 }
 
 struct RootView: View {
-    @EnvironmentObject private var container: AppContainer
     @State private var path: [AppRoute] = []
-    @State private var handledInitialRestore = false
 
     var body: some View {
         NavigationStack(path: $path) {
             HomeView(path: $path)
                 .navigationDestination(for: AppRoute.self) { route in
                     switch route {
-                    case .newGame: NewGameView(path: $path, resumesSavedGame: false)
-                    case .resumeGame: NewGameView(path: $path, resumesSavedGame: true)
-                    case .recentGames: RecentGamesView()
-                    case .puzzles: PuzzleLibraryView()
-                    case .players: PlayerConnectionView()
+                    case .playBots: PlayBotsView(path: $path)
+                    case .playFriend: PlayFriendView(path: $path)
+                    case .game(let launch): GameScreen(launch: launch)
+                    case .puzzles: PuzzlesHubView()
                     case .settings: SettingsView()
+                    case .archive: ArchiveView()
+                    case .review(let id): ReviewScreen(gameID: id)
                     }
                 }
         }
         .tint(ChessTheme.accent)
-        .onAppear(perform: restoreUnfinishedGameIfNeeded)
-        .onChange(of: container.hasLoadedPersistence) { _, _ in
-            restoreUnfinishedGameIfNeeded()
-        }
-    }
-
-    private func restoreUnfinishedGameIfNeeded() {
-        guard container.hasLoadedPersistence, !handledInitialRestore else { return }
-        handledInitialRestore = true
-        if container.unfinishedGame != nil, path.isEmpty {
-            path.append(.resumeGame)
-        }
     }
 }

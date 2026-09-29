@@ -7,11 +7,11 @@ SwiftUI Features ──> View models ──> ChessCore
        │                    │             ▲
        │                    ├──> ChessEngine
        │                    ├──> GamePersistenceStore
-       │                    └──> ChessAPI / GameService
+       │                    └──> PuzzleProgressStore / SettingsStore
        └──> BoardInteractionController
 ```
 
-`ChessCore` has no dependency on SwiftUI, UIKit, GameController, URLSession, or persistence. A position is a value; applying a move returns a new value. This makes search, PGN replay, persistence snapshots, and tests deterministic.
+`ChessCore` has no dependency on SwiftUI, UIKit, GameController, or persistence. The app has no networking layer. A position is a value; applying a move returns a new value. This makes search, PGN replay, persistence snapshots, and tests deterministic.
 
 ## Chess rules
 
@@ -20,7 +20,7 @@ SwiftUI Features ──> View models ──> ChessCore
 1. Piece-specific pseudo-legal generation, including castling and en passant.
 2. Apply each candidate to a copy and remove moves that leave the moving king attacked.
 
-Attack detection is independent of legal-move generation, avoiding recursion and correctly handling pinned pieces and castling transit squares. `ChessGame` layers SAN history and undo on top of positions.
+Attack detection is independent of legal-move generation, avoiding recursion and correctly handling pinned pieces and castling transit squares. `ChessGame` layers SAN history and undo on top of positions and reports checkmate, stalemate, fifty-move, threefold-repetition, and insufficient-material outcomes.
 
 ## Board input and focus
 
@@ -36,32 +36,34 @@ The board renderer derives square coordinates from orientation and uses stable r
 
 ## Local game lifecycle
 
-`GameViewModel` is main-actor isolated because it publishes UI state. It starts an independent clock task and calls `ChessEngine` asynchronously. Position equality rejects stale engine results after undo/restart, and cancellation stops obsolete searches. Game snapshots are written atomically by the `GamePersistenceStore` actor.
+`AppContainer` (in `ChessTVApp.swift`) owns the `SettingsStore`, the `GamePersistenceStore`, and one shared `ChessEngine`. Play Bots and Play a Friend each build a `GameSetup` (mode, players, `TimeControl`, auto-flip) and navigate to the game screen through `AppRoute.game`; Continue on Home reopens the saved unfinished game.
 
-`LocalGameService` demonstrates the backend-ready contract. A future `RemoteGameService` can emit the same `GameEvent` stream without changing the board or game screen.
+`GameViewModel` is main-actor isolated because it publishes UI state. It drives a `GameClock`, asks `ChessEngine` for bot moves and hints asynchronously, and handles resign, draw offers, and takeback. Position equality rejects stale engine results after undo/restart, and cancellation stops obsolete searches. Finished games are saved as `SavedGame` values, which the Archive lists and Game Review opens through `AppRoute.review`.
 
 ## Computer engine
 
-`NativeSearchEngine` is an actor-backed deterministic negamax/alpha-beta implementation with depth-based difficulty. It is the default offline engine.
+`ChessEngine` is an actor in `ChessCore` running an alpha-beta search over an internal 0x88 board with a transposition table. Search never runs on the main actor and stops when its task is cancelled.
 
-`StockfishEngine` is an adapter around `StockfishBridge`. A reviewed embedded implementation supplies FEN/UCI transport and evaluation while the UI continues to depend only on `ChessEngine`. Search never runs on the main actor.
+- `bestMove(game:strength:)` plays for bots. `EngineStrength` maps an Elo value (250 to 2200) to search depth, think time, evaluation noise, and a chance of choosing a weaker candidate move.
+- `analyze(position:history:limit:)` returns the best line and evaluation, used for hints and Game Review.
+
+## Puzzles
+
+`Puzzles.json` is bundled and loaded locally. `PuzzleSelector` picks puzzles for rated play, Puzzle Rush, and the Daily Puzzle. `PuzzleRating` computes rating changes, and `PuzzleRushRun` holds the score, strikes, and clock of a Puzzle Rush run (3 Minutes, 5 Minutes, or Survival).
+
+## Game Review
+
+`GameReviewModel` analyzes each position of a saved game with `ChessEngine.analyze` and caches the results for the app session. The pure logic in `ReviewClassification.swift` (win probability, move classification, accuracy) is separate from the UI and unit-tested in `ReviewTests`.
 
 ## Persistence
 
-- `SettingsStore`: small user preferences in `UserDefaults`.
-- `GamePersistenceStore`: versionable Codable snapshots in Application Support, written atomically; retains the latest 50 games.
-- Public Chess.com username: a non-secret preference in `UserDefaults`.
-- Future OAuth access/refresh tokens: Keychain only, after authorized integration.
-
-## Networking
-
-`HTTPClient` isolates URLSession and makes API decoding testable. `ChessComAPIClient` uses documented `/pub` endpoints only, supplies an identifiable user agent, maps HTTP failures to user-safe errors, supports task cancellation, and retries once only for transient conditions. SwiftUI never creates URL requests.
+- `SettingsStore`: `AppSettings` (board theme, piece set, orientation, gameplay toggles) as JSON in `UserDefaults`.
+- `PuzzleProgressStore`: puzzle rating, streaks, Puzzle Rush bests, seen puzzles, and solved daily puzzles in `UserDefaults`.
+- `GamePersistenceStore`: an actor that writes `saved-games-v2.json` in Application Support atomically. It keeps at most one unfinished game and the newest 200 finished games.
 
 ## Testing strategy
 
-- `ChessCoreTests`: legal movement, captures, check/mate/stalemate, castling, en passant, promotion, pins, discovered/double check, king safety, FEN, SAN/PGN.
-- `ChessTVTests`: API decoding/error mapping and persistence round trips.
-- `ChessTVUITests`: home focus navigation, starting a game, remote board movement/select, overlays, and returning from screens.
+- `ChessCoreTests`: legal movement, captures, check/mate/stalemate, castling, en passant, promotion, pins, discovered/double check, king safety, draw rules, FEN, SAN/PGN, and the engine (perft counts, mate-finding, strength scaling, cancellation).
+- `ChessTVTests`: game rules, puzzles, Game Review logic, and persistence round trips.
+- `ChessTVUITests`: Home shows Play Bots, starting a Play a Friend game and returning home with the Menu button, and returning from Settings.
 - `ChessCoreValidation`: a zero-XCTest smoke runner for restricted machines.
-
-Perft suites, repetition/insufficient-material draws, richer clock controls, Keychain-backed approved OAuth, and a GPL-reviewed embedded Stockfish bridge are logical next increments.

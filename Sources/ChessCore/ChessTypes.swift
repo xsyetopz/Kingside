@@ -123,8 +123,17 @@ public enum GameOutcome: Codable, Equatable, Sendable {
     case checkmate(winner: PieceColor)
     case stalemate
     case drawFiftyMove
+    case drawThreefoldRepetition
+    case drawInsufficientMaterial
 
     public var isFinished: Bool { self != .ongoing }
+
+    public var isDraw: Bool {
+        switch self {
+        case .stalemate, .drawFiftyMove, .drawThreefoldRepetition, .drawInsufficientMaterial: true
+        case .ongoing, .checkmate: false
+        }
+    }
 }
 
 public enum ChessRuleError: Error, Equatable, LocalizedError {

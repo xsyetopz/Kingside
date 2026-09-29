@@ -1,210 +1,272 @@
 import SwiftUI
+import ChessCore
 
+/// Home: a navigation sidebar on the left and the "Play Chess" hero on the right.
 struct HomeView: View {
     @EnvironmentObject private var container: AppContainer
+    @EnvironmentObject private var settings: SettingsStore
     @Binding var path: [AppRoute]
-    @FocusState private var focused: AppRoute?
+    @FocusState private var focused: HomeFocus?
+    @State private var puzzleProgress = PuzzleProgress()
 
-    private struct Card: Identifiable {
-        let route: AppRoute
-        let title: String
-        let subtitle: String
-        let icon: String
-        var id: AppRoute { route }
-    }
-
-    private var cards: [Card] {
-        var result: [Card] = []
-        if container.unfinishedGame != nil {
-            result.append(Card(route: .resumeGame, title: "Continue Game", subtitle: "Return to your board", icon: "play.circle.fill"))
-        }
-        result += [
-            Card(route: .newGame, title: "Play Computer", subtitle: "Your board. Your pace.", icon: "cpu"),
-            Card(route: .puzzles, title: "Puzzles", subtitle: "Find the winning idea", icon: "puzzlepiece.extension"),
-            Card(route: .recentGames, title: "Recent Games", subtitle: "Resume or replay", icon: "clock.arrow.circlepath"),
-            Card(route: .players, title: "Players", subtitle: "Connect a public Chess.com profile", icon: "person.2"),
-            Card(route: .settings, title: "Settings", subtitle: "Make the board yours", icon: "gearshape")
-        ]
-        return result
-    }
-
-    private var featuredCards: [Card] {
-        Array(cards.prefix(container.unfinishedGame == nil ? 1 : 2))
-    }
-
-    private var utilityCards: [Card] {
-        Array(cards.dropFirst(featuredCards.count))
+    private enum HomeFocus: Hashable {
+        case continueGame, playBots, playFriend, puzzles
     }
 
     var body: some View {
-        ZStack {
-            Image("HomeWallpaper")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-                .accessibilityHidden(true)
-
-            LinearGradient(
-                colors: [
-                    ChessTheme.background.opacity(0.96),
-                    ChessTheme.background.opacity(0.70),
-                    ChessTheme.background.opacity(0.26)
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .ignoresSafeArea()
-            .accessibilityHidden(true)
-
-            LinearGradient(
-                colors: [.black.opacity(0.18), .clear, .black.opacity(0.42)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-            .accessibilityHidden(true)
-
-            HStack(alignment: .top, spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("CHESS")
-                            .font(.system(size: 62, weight: .heavy, design: .rounded))
-                        Text("CHESS, BUILT FOR THE BIG SCREEN")
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
-                            .tracking(4)
-                            .foregroundStyle(ChessTheme.accent)
-                    }
-
-                    Spacer(minLength: 36)
-
-                    VStack(spacing: 22) {
-                        HStack(spacing: 22) {
-                            ForEach(featuredCards) { card in
-                                homeButton(card, isFeatured: true)
-                            }
-                        }
-
-                        LazyVGrid(
-                            columns: [GridItem(.flexible(), spacing: 22), GridItem(.flexible())],
-                            spacing: 22
-                        ) {
-                            ForEach(utilityCards) { card in
-                                homeButton(card, isFeatured: false)
-                            }
-                        }
-                    }
-                    .padding(26)
-                    .background(.black.opacity(0.16), in: RoundedRectangle(cornerRadius: 38, style: .continuous))
-                    .focusSection()
-                }
-                .frame(width: 920)
-
-                Spacer(minLength: 280)
-            }
-            .padding(.leading, 76)
-            .padding(.trailing, 70)
-            .padding(.top, 48)
-            .padding(.bottom, 62)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        HStack(spacing: 0) {
+            HomeSidebar(path: $path)
+            mainArea
         }
+        .background(ChessTheme.background.ignoresSafeArea())
+        .defaultFocus($focused, container.unfinishedGame == nil ? .playBots : .continueGame)
         .onAppear {
             container.refreshSavedGame()
-            focused = container.unfinishedGame == nil ? .newGame : .resumeGame
+            puzzleProgress = PuzzleProgressStore().progress
+            focused = container.unfinishedGame == nil ? .playBots : .continueGame
+        }
+        .onChange(of: container.unfinishedGame?.id) { _, id in
+            // The saved game loads asynchronously; move focus to it once it arrives.
+            if id != nil, focused == nil || focused == .playBots { focused = .continueGame }
         }
     }
 
-    private func homeButton(_ card: Card, isFeatured: Bool) -> some View {
-        Button { path.append(card.route) } label: {
-            HStack(spacing: 20) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [ChessTheme.accent.opacity(0.30), ChessTheme.accent.opacity(0.09)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(.white.opacity(0.18), lineWidth: 1)
-                        }
-                        .shadow(color: .black.opacity(0.46), radius: 7, y: 6)
-
-                    Image(systemName: card.icon)
-                        .font(.system(size: isFeatured ? 34 : 29, weight: .bold))
-                        .foregroundStyle(ChessTheme.accent)
-                }
-                .frame(width: isFeatured ? 70 : 62, height: isFeatured ? 70 : 62)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(card.title)
-                        .font(isFeatured ? .title2.bold() : .title3.bold())
-                        .lineLimit(1)
-                    Text(card.subtitle)
-                        .font(isFeatured ? .headline : .subheadline.bold())
-                        .foregroundStyle(.white.opacity(0.66))
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.headline.bold())
-                    .foregroundStyle(.white.opacity(0.46))
+    private var mainArea: some View {
+        VStack(alignment: .leading, spacing: 36) {
+            if let saved = container.unfinishedGame {
+                continueCard(saved)
             }
-            .frame(maxWidth: .infinity, minHeight: isFeatured ? 86 : 72, alignment: .leading)
+
+            Text("Play Chess")
+                .font(ChessFont.title)
+                .foregroundStyle(ChessTheme.textPrimary)
+
+            HStack(alignment: .top, spacing: 60) {
+                ChessBoardDisplay.thumbnail(
+                    .initial,
+                    theme: settings.value.boardTheme,
+                    size: container.unfinishedGame == nil ? 600 : 460
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .shadow(color: .black.opacity(0.45), radius: 24, y: 12)
+                .accessibilityHidden(true)
+
+                VStack(spacing: 28) {
+                    heroButton(
+                        .playBots, route: .playBots, title: "Play Bots",
+                        subtitle: "Challenge a bot personality", icon: "cpu", isPrimary: true,
+                        identifier: "home.playBots"
+                    )
+                    heroButton(
+                        .playFriend, route: .playFriend, title: "Play a Friend",
+                        subtitle: "Pass and play", icon: "person.2.fill", isPrimary: false,
+                        identifier: "home.playFriend"
+                    )
+                    heroButton(
+                        .puzzles, route: .puzzles, title: "Puzzles",
+                        subtitle: "Rating \(puzzleProgress.rating)", icon: "puzzlepiece.fill", isPrimary: false,
+                        identifier: "home.puzzles"
+                    )
+                }
+                .frame(width: 640)
+                .focusSection()
+            }
+
+            Spacer(minLength: 0)
+
+            statsStrip
         }
-        .buttonStyle(RaisedHomeButtonStyle(isFeatured: isFeatured))
-        .focused($focused, equals: card.route)
-        .accessibilityLabel("\(card.title). \(card.subtitle)")
+        .padding(.horizontal, 80)
+        .padding(.vertical, 60)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func continueCard(_ saved: SavedGame) -> some View {
+        Button { path.append(.game(.saved(saved))) } label: {
+            HStack(spacing: 28) {
+                ChessBoardDisplay.thumbnail(
+                    saved.game.position,
+                    lastMove: saved.game.moves.last?.move,
+                    isFlipped: saved.humanColor == .black,
+                    theme: settings.value.boardTheme,
+                    size: 120
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(continueTitle(saved))
+                        .font(ChessFont.heading)
+                        .lineLimit(1)
+                    Text("Move \(saved.game.moves.count / 2 + 1) · \(saved.game.position.sideToMove == .white ? "White" : "Black") to move")
+                        .font(ChessFont.caption)
+                        .foregroundStyle(ChessTheme.textSecondary)
+                }
+                Spacer(minLength: 20)
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 64, weight: .bold))
+                    .foregroundStyle(ChessTheme.primary)
+            }
+            .frame(width: 1300, alignment: .leading)
+        }
+        .buttonStyle(PanelCardStyle(padding: 22))
+        .focused($focused, equals: .continueGame)
+        .accessibilityIdentifier("home.continue")
+    }
+
+    private func continueTitle(_ saved: SavedGame) -> String {
+        if let human = saved.humanColor {
+            return "Continue game vs \(saved.player(human.opponent).name)"
+        }
+        return "Continue \(saved.white.name) vs \(saved.black.name)"
+    }
+
+    @ViewBuilder
+    private func heroButton(
+        _ focus: HomeFocus, route: AppRoute, title: String, subtitle: String,
+        icon: String, isPrimary: Bool, identifier: String
+    ) -> some View {
+        let button = Button { path.append(route) } label: {
+            HStack(spacing: 26) {
+                Image(systemName: icon)
+                    .font(.system(size: 48, weight: .bold))
+                    .frame(width: 70)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(ChessFont.rounded(40, weight: .heavy))
+                    Text(subtitle)
+                        .font(ChessFont.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 8)
+        }
+        Group {
+            if isPrimary {
+                button.buttonStyle(.chessPrimary(fullWidth: true))
+            } else {
+                button.buttonStyle(.chessSecondary(fullWidth: true))
+            }
+        }
+        .focused($focused, equals: focus)
+        .accessibilityIdentifier(identifier)
+    }
+
+    private var statsStrip: some View {
+        let rushBest = PuzzleRushMode.allCases.map { puzzleProgress.rushBest[$0.rawValue] ?? 0 }.max() ?? 0
+        return HStack(spacing: 60) {
+            StatItem(icon: "puzzlepiece.fill", title: "Puzzle Rating", value: "\(puzzleProgress.rating)")
+            StatItem(icon: "flame.fill", title: "Best Streak", value: "\(puzzleProgress.bestStreak)")
+            StatItem(icon: "bolt.fill", title: "Puzzle Rush Best", value: rushBest > 0 ? "\(rushBest)" : "–")
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
-private struct RaisedHomeButtonStyle: ButtonStyle {
-    @Environment(\.isFocused) private var isFocused
-    let isFeatured: Bool
+private struct StatItem: View {
+    let icon: String
+    let title: String
+    let value: String
 
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, isFeatured ? 24 : 20)
-            .padding(.vertical, isFeatured ? 18 : 15)
-            .background {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color(red: 0.018, green: 0.055, blue: 0.055))
-                        .offset(y: 11)
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(ChessTheme.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(ChessFont.rounded(34, weight: .heavy))
+                    .foregroundStyle(ChessTheme.textPrimary)
+                Text(title)
+                    .font(ChessFont.caption)
+                    .foregroundStyle(ChessTheme.textMuted)
+            }
+        }
+    }
+}
 
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: isFocused
-                                    ? [Color(red: 0.13, green: 0.29, blue: 0.28), Color(red: 0.055, green: 0.12, blue: 0.15)]
-                                    : [ChessTheme.surfaceRaised.opacity(0.96), ChessTheme.surface.opacity(0.94)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(alignment: .top) {
-                            Capsule()
-                                .fill(.white.opacity(isFocused ? 0.30 : 0.13))
-                                .frame(height: 2)
-                                .padding(.horizontal, 24)
-                                .padding(.top, 3)
-                        }
+/// The left navigation column: pawn logo, wordmark and focusable section rows.
+private struct HomeSidebar: View {
+    @Binding var path: [AppRoute]
+
+    private struct Item: Identifiable {
+        let title: String
+        let icon: String
+        let route: AppRoute
+        var id: String { title }
+    }
+
+    private let items = [
+        Item(title: "Play", icon: "play.fill", route: .playBots),
+        Item(title: "Puzzles", icon: "puzzlepiece.fill", route: .puzzles),
+        Item(title: "Archive", icon: "clock.arrow.circlepath", route: .archive),
+        Item(title: "Settings", icon: "gearshape.fill", route: .settings)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                PieceSet.cburnett.image(for: Piece(type: .pawn, color: .white))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 64, height: 64)
+                Text("Chess")
+                    .font(ChessFont.rounded(48, weight: .heavy))
+                    .foregroundStyle(ChessTheme.textPrimary)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 36)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Chess")
+
+            ForEach(items) { item in
+                Button { path.append(item.route) } label: {
+                    Label(item.title, systemImage: item.icon)
+                        .labelStyle(.alignedIcon(width: 44))
                 }
+                .buttonStyle(SidebarRowStyle())
+                .accessibilityIdentifier("sidebar.\(item.title.lowercased())")
             }
-            .overlay {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(
-                        isFocused ? ChessTheme.accent : .white.opacity(0.12),
-                        lineWidth: isFocused ? 3 : 1
-                    )
-            }
-            .shadow(color: isFocused ? ChessTheme.accent.opacity(0.34) : .black.opacity(0.50), radius: isFocused ? 24 : 12, y: isFocused ? 12 : 9)
-            .offset(y: configuration.isPressed ? 7 : isFocused ? -6 : 0)
-            .scaleEffect(isFocused ? 1.035 : 1)
-            .animation(.spring(response: 0.22, dampingFraction: 0.72), value: isFocused)
-            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
+
+            Spacer()
+        }
+        .padding(.top, 60)
+        .padding(.horizontal, 20)
+        .frame(width: 300, alignment: .leading)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(ChessTheme.panel.ignoresSafeArea())
+        .focusSection()
+    }
+}
+
+private struct SidebarRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        SidebarRow(configuration: configuration)
+    }
+
+    private struct SidebarRow: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.isFocused) private var isFocused
+
+        var body: some View {
+            configuration.label
+                .font(ChessFont.body)
+                .foregroundStyle(isFocused ? ChessTheme.textPrimary : ChessTheme.textSecondary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    isFocused ? ChessTheme.focusSurface : .clear,
+                    in: RoundedRectangle(cornerRadius: ChessTheme.cornerRadius, style: .continuous)
+                )
+                .overlay(alignment: .leading) {
+                    Capsule()
+                        .fill(ChessTheme.primary)
+                        .frame(width: 5, height: 36)
+                        .opacity(isFocused ? 1 : 0)
+                }
+                .scaleEffect(configuration.isPressed ? 0.97 : isFocused ? 1.04 : 1)
+                .animation(.spring(response: 0.22, dampingFraction: 0.75), value: isFocused)
+        }
     }
 }

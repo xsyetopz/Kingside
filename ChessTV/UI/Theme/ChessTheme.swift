@@ -1,79 +1,112 @@
 import SwiftUI
 
+// Design system: dark, warm-grey palette with a raised green accent.
+// - `ChessTheme` holds the colors (`background`, `panel`, `raised`, `focusSurface`, text tones,
+//   `primary`/`primaryEdge`, `secondary`/`secondaryEdge`, `win`/`loss`/`draw`, clock colors).
+// - `ChessFont` holds 10-foot typography (body >= 28pt, rounded heavy headings).
+// - `.chessScreen()` paints the app background; `.chessPanel()` paints a sidebar/panel box.
+// - Button styles live in ChessButtonStyles.swift; board colors in BoardTheme.swift.
+// Platform-neutral (no tvOS-only API), so it can be rendered offline on macOS.
+
 enum ChessTheme {
-    static let background = Color(red: 0.025, green: 0.04, blue: 0.07)
-    static let surface = Color(red: 0.075, green: 0.10, blue: 0.15)
-    static let surfaceRaised = Color(red: 0.11, green: 0.14, blue: 0.20)
-    static let accent = Color(red: 0.30, green: 0.84, blue: 0.77)
-    static let accentWarm = Color(red: 0.96, green: 0.67, blue: 0.30)
-    static let lightSquare = Color(red: 0.73, green: 0.76, blue: 0.72)
-    static let darkSquare = Color(red: 0.21, green: 0.31, blue: 0.34)
-    static let selected = Color(red: 0.98, green: 0.72, blue: 0.20)
-    static let legal = Color(red: 0.20, green: 0.92, blue: 0.72)
-    static let danger = Color(red: 1.0, green: 0.30, blue: 0.35)
+    // Surfaces
+    static let background = Color(hex: 0x312E2B)
+    static let panel = Color(hex: 0x262522)
+    static let raised = Color(hex: 0x3C3936)
+    static let focusSurface = Color(hex: 0x4B4845)
 
-    static let backdrop = LinearGradient(
-        colors: [background, Color(red: 0.04, green: 0.09, blue: 0.13)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    // Text
+    static let textPrimary = Color.white
+    static let textSecondary = Color(hex: 0xC3C2C1)
+    static let textMuted = Color(hex: 0x8B8987)
+
+    // Buttons
+    static let primary = Color(hex: 0x81B64C)
+    static let primaryFocused = Color(hex: 0x95C95E)
+    static let primaryEdge = Color(hex: 0x45753C)
+    static let secondary = Color(hex: 0x4B4847)
+    static let secondaryFocused = Color(hex: 0x5D5A58)
+    static let secondaryEdge = Color(hex: 0x3A3735)
+
+    // Results
+    static let win = Color(hex: 0x81B64C)
+    static let loss = Color(hex: 0xE02828)
+    static let lossBright = Color(hex: 0xFA412D)
+    static let draw = Color(hex: 0x8B8987)
+
+    // Clocks
+    static let clockActive = Color.white
+    static let clockActiveText = Color(hex: 0x262522)
+    static let clockInactive = Color(hex: 0x21201D)
+    static let clockInactiveText = Color(hex: 0x8B8987)
+    static let clockLow = Color(hex: 0xE02828)
+
+    /// Standard corner radius for panels and buttons.
+    static let cornerRadius: CGFloat = 12
+
+    // Legacy aliases used by screens that have not been rewritten yet. New code should use the
+    // names above.
+    static let surface = panel
+    static let surfaceRaised = raised
+    static let accent = primary
+    static let legal = win
+    static let danger = lossBright
 }
 
-extension BoardTheme {
-    var lightSquareColor: Color {
-        switch self {
-        case .tournament: Color(red: 0.93, green: 0.92, blue: 0.84)
-        case .midnight: Color(red: 0.69, green: 0.75, blue: 0.75)
-        case .ocean: Color(red: 0.67, green: 0.82, blue: 0.85)
-        case .walnut: Color(red: 0.82, green: 0.71, blue: 0.57)
-        }
-    }
+/// Typography sized for a TV viewed from about 10 feet.
+enum ChessFont {
+    static let display = Font.system(size: 76, weight: .heavy, design: .rounded)
+    static let title = Font.system(size: 54, weight: .heavy, design: .rounded)
+    static let heading = Font.system(size: 38, weight: .bold, design: .rounded)
+    static let subheading = Font.system(size: 32, weight: .bold)
+    static let body = Font.system(size: 28, weight: .semibold)
+    static let bodyRegular = Font.system(size: 28, weight: .regular)
+    static let caption = Font.system(size: 24, weight: .semibold)
+    static let button = Font.system(size: 32, weight: .bold, design: .rounded)
+    static let clock = Font.system(size: 44, weight: .bold, design: .rounded).monospacedDigit()
 
-    var darkSquareColor: Color {
-        switch self {
-        case .tournament: Color(red: 0.075, green: 0.43, blue: 0.18)
-        case .midnight: Color(red: 0.16, green: 0.26, blue: 0.31)
-        case .ocean: Color(red: 0.08, green: 0.34, blue: 0.43)
-        case .walnut: Color(red: 0.36, green: 0.20, blue: 0.15)
-        }
-    }
-
-    var edgeColor: Color {
-        switch self {
-        case .tournament: Color(red: 0.045, green: 0.31, blue: 0.12)
-        case .midnight: Color(red: 0.08, green: 0.17, blue: 0.21)
-        case .ocean: Color(red: 0.04, green: 0.25, blue: 0.33)
-        case .walnut: Color(red: 0.24, green: 0.12, blue: 0.08)
-        }
-    }
-}
-
-struct TVCardStyle: ButtonStyle {
-    @Environment(\.isFocused) private var isFocused
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(28)
-            .background(isFocused ? ChessTheme.surfaceRaised : ChessTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(isFocused ? ChessTheme.accent : .white.opacity(0.08), lineWidth: isFocused ? 4 : 1)
-            }
-            .shadow(color: isFocused ? ChessTheme.accent.opacity(0.30) : .clear, radius: 24)
-            .scaleEffect(isFocused ? 1.055 : 1)
-            .animation(.easeOut(duration: 0.16), value: isFocused)
+    /// A custom size in the same family: rounded for headings, default design for text.
+    static func rounded(_ size: CGFloat, weight: Font.Weight = .bold) -> Font {
+        .system(size: size, weight: weight, design: .rounded)
     }
 }
 
-struct ScreenBackground: ViewModifier {
+extension Color {
+    /// Creates an sRGB color from a 0xRRGGBB literal.
+    init(hex: UInt32, opacity: Double = 1) {
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255,
+            opacity: opacity
+        )
+    }
+}
+
+private struct ScreenBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
+            .foregroundStyle(ChessTheme.textPrimary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(ChessTheme.backdrop.ignoresSafeArea())
+            .background(ChessTheme.background.ignoresSafeArea())
+    }
+}
+
+private struct PanelBackground: ViewModifier {
+    let padding: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .padding(padding)
+            .background(ChessTheme.panel, in: RoundedRectangle(cornerRadius: ChessTheme.cornerRadius, style: .continuous))
     }
 }
 
 extension View {
+    /// Full-screen app background (#312E2B) with white default text.
     func chessScreen() -> some View { modifier(ScreenBackground()) }
+
+    /// Non-focusable sidebar/panel box (#262522) with rounded corners.
+    func chessPanel(padding: CGFloat = 28) -> some View { modifier(PanelBackground(padding: padding)) }
 }

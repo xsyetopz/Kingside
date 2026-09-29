@@ -76,8 +76,27 @@ public struct ChessPosition: Codable, Equatable, Sendable {
         if moves.isEmpty {
             return isInCheck(sideToMove) ? .checkmate(winner: sideToMove.opponent) : .stalemate
         }
+        if hasInsufficientMaterial { return .drawInsufficientMaterial }
         if halfmoveClock >= 100 { return .drawFiftyMove }
         return .ongoing
+    }
+
+    /// K v K, K+B v K, K+N v K, and K+B v K+B with both bishops on the same square color.
+    var hasInsufficientMaterial: Bool {
+        let minors = board.filter { $0.value.type != .king }
+        switch minors.count {
+        case 0:
+            return true
+        case 1:
+            return [.bishop, .knight].contains(minors.first?.value.type)
+        case 2:
+            let bishops = minors.filter { $0.value.type == .bishop }
+            guard bishops.count == 2, bishops.values.map(\.color).contains(.white),
+                  bishops.values.map(\.color).contains(.black) else { return false }
+            return Set(bishops.keys.map { ($0.file + $0.rank) % 2 }).count == 1
+        default:
+            return false
+        }
     }
 
     public func isSquareAttacked(_ target: Square, by color: PieceColor) -> Bool {

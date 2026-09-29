@@ -17,32 +17,33 @@ Chess for the big screen
 
 ## Promotional text
 
-Settle in for an original television-first chess experience with responsive 3D pieces, complete local rules, puzzles, clocks, and controller support.
+Settle in for an original television-first chess experience: play bots, challenge a friend, solve puzzles, and review your games, all on the big screen.
 
 ## Description
 
 CHESS brings the complete game to Apple TV with an interface designed specifically for the television.
 
-Play locally against the computer using only the Siri Remote, or connect a compatible Bluetooth game controller. Navigate the board directionally, select a piece, inspect its legal moves, and watch each move land with responsive 3D animation.
+Play bots or a friend using only the Siri Remote, or connect a compatible Bluetooth game controller. Navigate the board directionally, select a piece, inspect its legal moves, and watch each move slide into place.
 
 Features:
 
-- Complete local chess rules, including castling, en passant, and promotion
-- Check, checkmate, and stalemate detection
-- Configurable computer difficulty
-- Game clocks and move history
-- Undo, restart, orientation, and board preferences
+- Play Bots: original bot personalities from 250 to 2200 Elo
+- Play a Friend: pass-and-play on one Apple TV with bullet, blitz, rapid, or untimed clocks
+- Rated puzzles, Puzzle Rush (3 Minutes, 5 Minutes, Survival), and a Daily Puzzle
+- Game Review with accuracy, move classifications from brilliant to blunder, an evaluation graph, and best-line preview
+- Archive of your finished games
+- Complete chess rules, including castling, en passant, promotion, and draws by repetition, fifty moves, and insufficient material
+- Board themes, classic piece set, and gameplay options such as legal-move dots, coordinates, and auto-promotion
+- Resign, draw offer, takeback, hint, and board flip
 - Automatic restoration of unfinished games
-- Locally bundled chess puzzles
 - Siri Remote and Bluetooth controller support
-- Optional public Chess.com player and game lookup using its documented public API
-- Offline play for local games and puzzles
+- Works entirely offline
 
-CHESS has an original interface, icon, board, and piece artwork. It is not affiliated with or endorsed by Chess.com.
+CHESS has an original interface, icon, and board design; the piece artwork is the CC BY-SA cburnett set (see ACKNOWLEDGEMENTS.md). It is not affiliated with or endorsed by Chess.com.
 
 ## Keywords
 
-chess,board game,puzzles,strategy,offline,computer,Siri Remote,game controller,Apple TV
+chess,board game,puzzles,strategy,offline,bots,Siri Remote,game controller,Apple TV
 
 ## What’s New
 
@@ -50,7 +51,7 @@ Welcome to CHESS 1.0, an original chess experience built for Apple TV.
 
 ## App Review notes
 
-No account or login is required. Local games and puzzles work offline. The Players feature accepts a public Chess.com username and reads public profile/game data from the documented Chess.com PubAPI; it never requests or stores Chess.com credentials and does not enable online play. The application is not affiliated with Chess.com.
+No account or login is required. The app makes no network requests; games, bots, puzzles, and Game Review all work offline. The application is not affiliated with Chess.com.
 
 ## Remaining account-owned fields
 
