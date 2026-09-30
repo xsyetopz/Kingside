@@ -13,17 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d moves</string>
+			<string>%d poteza</string>
 			<key>one</key>
-			<string>%d move</string>
+			<string>%d potez</string>
 			<key>two</key>
-			<string>%d moves</string>
+			<string>%d poteza</string>
 			<key>few</key>
-			<string>%d moves</string>
+			<string>%d poteza</string>
 			<key>many</key>
-			<string>%d moves</string>
+			<string>%d poteza</string>
 			<key>other</key>
-			<string>%d moves</string>
+			<string>%d poteza</string>
 		</dict>
 	</dict>
 	<key>puzzles.streak</key>
@@ -37,17 +37,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles in a row</string>
+			<string>%d zagonetki zaredom</string>
 			<key>one</key>
-			<string>%d puzzle in a row</string>
+			<string>%d zagonetka zaredom</string>
 			<key>two</key>
-			<string>%d puzzles in a row</string>
+			<string>%d zagonetke zaredom</string>
 			<key>few</key>
-			<string>%d puzzles in a row</string>
+			<string>%d zagonetke zaredom</string>
 			<key>many</key>
-			<string>%d puzzles in a row</string>
+			<string>%d zagonetki zaredom</string>
 			<key>other</key>
-			<string>%d puzzles in a row</string>
+			<string>%d zagonetki zaredom</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.strikes</key>
@@ -61,17 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d strikes</string>
+			<string>%d pogrešaka</string>
 			<key>one</key>
-			<string>%d strike</string>
+			<string>%d pogreška</string>
 			<key>two</key>
-			<string>%d strikes</string>
+			<string>%d pogreške</string>
 			<key>few</key>
-			<string>%d strikes</string>
+			<string>%d pogreške</string>
 			<key>many</key>
-			<string>%d strikes</string>
+			<string>%d pogrešaka</string>
 			<key>other</key>
-			<string>%d strikes</string>
+			<string>%d pogrešaka</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.result.score</key>
@@ -85,17 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles solved</string>
+			<string>%d riješenih zagonetki</string>
 			<key>one</key>
-			<string>%d puzzle solved</string>
+			<string>%d riješena zagonetka</string>
 			<key>two</key>
-			<string>%d puzzles solved</string>
+			<string>%d riješene zagonetke</string>
 			<key>few</key>
-			<string>%d puzzles solved</string>
+			<string>%d riješene zagonetke</string>
 			<key>many</key>
-			<string>%d puzzles solved</string>
+			<string>%d riješenih zagonetki</string>
 			<key>other</key>
-			<string>%d puzzles solved</string>
+			<string>%d riješenih zagonetki</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.imported</key>
@@ -109,17 +109,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games imported</string>
+			<string>%d uvezenih partija</string>
 			<key>one</key>
-			<string>%d game imported</string>
+			<string>%d uvezena partija</string>
 			<key>two</key>
-			<string>%d games imported</string>
+			<string>%d uvezene partije</string>
 			<key>few</key>
-			<string>%d games imported</string>
+			<string>%d uvezene partije</string>
 			<key>many</key>
-			<string>%d games imported</string>
+			<string>%d uvezenih partija</string>
 			<key>other</key>
-			<string>%d games imported</string>
+			<string>%d uvezenih partija</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.duplicates</key>
@@ -133,17 +133,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games already in your archive</string>
+			<string>%d partija već u arhivi</string>
 			<key>one</key>
-			<string>%d game already in your archive</string>
+			<string>%d partija već u arhivi</string>
 			<key>two</key>
-			<string>%d games already in your archive</string>
+			<string>%d partije već u arhivi</string>
 			<key>few</key>
-			<string>%d games already in your archive</string>
+			<string>%d partije već u arhivi</string>
 			<key>many</key>
-			<string>%d games already in your archive</string>
+			<string>%d partija već u arhivi</string>
 			<key>other</key>
-			<string>%d games already in your archive</string>
+			<string>%d partija već u arhivi</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.skipped</key>
@@ -157,17 +157,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games could not be imported</string>
+			<string>%d partija nije moguće uvesti</string>
 			<key>one</key>
-			<string>%d game could not be imported</string>
+			<string>%d partiju nije moguće uvesti</string>
 			<key>two</key>
-			<string>%d games could not be imported</string>
+			<string>%d partije nije moguće uvesti</string>
 			<key>few</key>
-			<string>%d games could not be imported</string>
+			<string>%d partije nije moguće uvesti</string>
 			<key>many</key>
-			<string>%d games could not be imported</string>
+			<string>%d partija nije moguće uvesti</string>
 			<key>other</key>
-			<string>%d games could not be imported</string>
+			<string>%d partija nije moguće uvesti</string>
 		</dict>
 	</dict>
 </dict>

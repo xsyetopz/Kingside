@@ -31,6 +31,18 @@ import Testing
         }
     }
 
+    /// A translation with a missing or changed specifier shows wrong text or crashes `String(format:)`.
+    @Test func everyLocaleKeepsTheSourceFormatSpecifiers() throws {
+        let source = try catalogValues(Localization.sourceLocalization)
+        for locale in Localization.availableLocalizations() {
+            let values = try catalogValues(locale)
+            for (key, sourceValue) in source {
+                guard let value = values[key] else { continue }
+                #expect(specifiers(value) == specifiers(sourceValue), "\(locale): \(key) = \(value)")
+            }
+        }
+    }
+
     @Test func resolvesSourceEnglishAndPlurals() {
         let english = Localization(preferredLanguages: ["en-US"])
         #expect(english.resolvedLanguage?.lowercased() == "en-us")
@@ -56,5 +68,28 @@ import Testing
 
     private func catalogKeys(_ locale: String) throws -> Set<String> {
         Set(try plist(locale, "strings").keys).union(try plist(locale, "stringsdict").keys)
+    }
+
+    /// Every string value, with plural values keyed as "key/variable/category".
+    private func catalogValues(_ locale: String) throws -> [String: String] {
+        var values = try plist(locale, "strings").compactMapValues { $0 as? String }
+        for (key, entry) in try plist(locale, "stringsdict") {
+            for (name, value) in try #require(entry as? [String: Any]) {
+                if let text = value as? String {
+                    values["\(key)/\(name)"] = text
+                } else if let variable = value as? [String: Any] {
+                    for (category, text) in variable where !category.hasPrefix("NSString") {
+                        values["\(key)/\(name)/\(category)"] = text as? String
+                    }
+                }
+            }
+        }
+        return values
+    }
+
+    /// The sorted format specifiers in `text`: `%%`, `%#@name@`, and `%@` or `%d` with an optional position.
+    private func specifiers(_ text: String) -> [String] {
+        let pattern = /%(?:%|#@[A-Za-z0-9_]+@|(?:[0-9]+\$)?[-+0-9.#]*(?:ll|l|h)?[@a-zA-Z])/
+        return text.matches(of: pattern).map { String($0.output) }.sorted()
     }
 }

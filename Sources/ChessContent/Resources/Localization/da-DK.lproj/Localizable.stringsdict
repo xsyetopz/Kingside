@@ -13,17 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d moves</string>
+			<string>%d træk</string>
 			<key>one</key>
-			<string>%d move</string>
+			<string>%d træk</string>
 			<key>two</key>
-			<string>%d moves</string>
+			<string>%d træk</string>
 			<key>few</key>
-			<string>%d moves</string>
+			<string>%d træk</string>
 			<key>many</key>
-			<string>%d moves</string>
+			<string>%d træk</string>
 			<key>other</key>
-			<string>%d moves</string>
+			<string>%d træk</string>
 		</dict>
 	</dict>
 	<key>puzzles.streak</key>
@@ -37,17 +37,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles in a row</string>
+			<string>%d opgaver i træk</string>
 			<key>one</key>
-			<string>%d puzzle in a row</string>
+			<string>%d opgave i træk</string>
 			<key>two</key>
-			<string>%d puzzles in a row</string>
+			<string>%d opgaver i træk</string>
 			<key>few</key>
-			<string>%d puzzles in a row</string>
+			<string>%d opgaver i træk</string>
 			<key>many</key>
-			<string>%d puzzles in a row</string>
+			<string>%d opgaver i træk</string>
 			<key>other</key>
-			<string>%d puzzles in a row</string>
+			<string>%d opgaver i træk</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.strikes</key>
@@ -61,17 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d strikes</string>
+			<string>%d fejl</string>
 			<key>one</key>
-			<string>%d strike</string>
+			<string>%d fejl</string>
 			<key>two</key>
-			<string>%d strikes</string>
+			<string>%d fejl</string>
 			<key>few</key>
-			<string>%d strikes</string>
+			<string>%d fejl</string>
 			<key>many</key>
-			<string>%d strikes</string>
+			<string>%d fejl</string>
 			<key>other</key>
-			<string>%d strikes</string>
+			<string>%d fejl</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.result.score</key>
@@ -85,17 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles solved</string>
+			<string>%d opgaver løst</string>
 			<key>one</key>
-			<string>%d puzzle solved</string>
+			<string>%d opgave løst</string>
 			<key>two</key>
-			<string>%d puzzles solved</string>
+			<string>%d opgaver løst</string>
 			<key>few</key>
-			<string>%d puzzles solved</string>
+			<string>%d opgaver løst</string>
 			<key>many</key>
-			<string>%d puzzles solved</string>
+			<string>%d opgaver løst</string>
 			<key>other</key>
-			<string>%d puzzles solved</string>
+			<string>%d opgaver løst</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.imported</key>
@@ -109,17 +109,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games imported</string>
+			<string>%d partier importeret</string>
 			<key>one</key>
-			<string>%d game imported</string>
+			<string>%d parti importeret</string>
 			<key>two</key>
-			<string>%d games imported</string>
+			<string>%d partier importeret</string>
 			<key>few</key>
-			<string>%d games imported</string>
+			<string>%d partier importeret</string>
 			<key>many</key>
-			<string>%d games imported</string>
+			<string>%d partier importeret</string>
 			<key>other</key>
-			<string>%d games imported</string>
+			<string>%d partier importeret</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.duplicates</key>
@@ -133,17 +133,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games already in your archive</string>
+			<string>%d partier findes allerede i dit arkiv</string>
 			<key>one</key>
-			<string>%d game already in your archive</string>
+			<string>%d parti findes allerede i dit arkiv</string>
 			<key>two</key>
-			<string>%d games already in your archive</string>
+			<string>%d partier findes allerede i dit arkiv</string>
 			<key>few</key>
-			<string>%d games already in your archive</string>
+			<string>%d partier findes allerede i dit arkiv</string>
 			<key>many</key>
-			<string>%d games already in your archive</string>
+			<string>%d partier findes allerede i dit arkiv</string>
 			<key>other</key>
-			<string>%d games already in your archive</string>
+			<string>%d partier findes allerede i dit arkiv</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.skipped</key>
@@ -157,17 +157,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games could not be imported</string>
+			<string>%d partier kunne ikke importeres</string>
 			<key>one</key>
-			<string>%d game could not be imported</string>
+			<string>%d parti kunne ikke importeres</string>
 			<key>two</key>
-			<string>%d games could not be imported</string>
+			<string>%d partier kunne ikke importeres</string>
 			<key>few</key>
-			<string>%d games could not be imported</string>
+			<string>%d partier kunne ikke importeres</string>
 			<key>many</key>
-			<string>%d games could not be imported</string>
+			<string>%d partier kunne ikke importeres</string>
 			<key>other</key>
-			<string>%d games could not be imported</string>
+			<string>%d partier kunne ikke importeres</string>
 		</dict>
 	</dict>
 </dict>

@@ -1,7 +1,7 @@
-/* OpenChess source English. Every other locale starts as a full copy of this file.
+/* Kingside source English. Every other locale starts as a full copy of this file.
    Keys are dotted identifiers. Values use ASCII "..." and "'" and no ASCII double quotes. */
 
-"app.name" = "OpenChess";
+"app.name" = "Kingside";
 
 "common.back" = "Back";
 "common.cancel" = "Cancel";
@@ -21,6 +21,8 @@
 "play.passAndPlay.title" = "Pass and Play";
 "play.bots.detail" = "%1$@, Elo %2$d";
 "play.passAndPlay.detail" = "Two players on one device";
+"play.online.title" = "Play Online";
+"play.online.detail" = "Find an opponent or challenge a friend on Lichess";
 
 /* Board themes */
 "boardTheme.harbor.name" = "Harbor";
@@ -301,6 +303,7 @@
 "timeControl.category.bullet.name" = "Bullet";
 "timeControl.category.blitz.name" = "Blitz";
 "timeControl.category.rapid.name" = "Rapid";
+"timeControl.category.classical.name" = "Classical";
 "timeControl.category.untimed.name" = "Untimed";
 "timeControl.1+0.label" = "1 min";
 "timeControl.1+1.label" = "1 | 1";
@@ -321,8 +324,9 @@
 
 /* Attributions */
 "attribution.cburnett.title" = "Cburnett chess pieces";
-"attribution.openchess-synth.title" = "OpenChess synthesized sounds";
+"attribution.kingside-synth.title" = "Kingside synthesized sounds";
 "attribution.lichess-puzzles.title" = "Lichess puzzle database";
+"attribution.ldnoobw.title" = "Chat word filter (LDNOOBW)";
 
 /* Players */
 "player.you.name" = "You";
@@ -374,6 +378,10 @@
 "game.drawOffer.title" = "%@ offers a draw";
 "game.drawOffer.accept" = "Accept";
 "game.drawOffer.decline" = "Decline";
+"online.action.abort" = "Abort";
+"online.action.claimVictory" = "Claim Victory";
+"game.saveFailed.title" = "Game Not Saved";
+"game.saveFailed.detail" = "This game could not be saved, so it cannot be resumed later. You can keep playing.";
 "game.moves.empty" = "No moves yet";
 /* %@: the move number, at the start of a row of the move list. */
 "game.moves.number" = "%@.";
@@ -447,6 +455,7 @@
 "settings.gameplay.title" = "Gameplay";
 "settings.moveAnimation" = "Animate Moves";
 "settings.autoQueen" = "Always Promote to Queen";
+"settings.onlineChat" = "Chat in Online Games";
 "settings.soundHaptics.title" = "Sound and Haptics";
 "settings.soundEffects" = "Sound Effects";
 "settings.haptics" = "Haptics";
@@ -521,19 +530,41 @@
 "games.action.review" = "Review";
 "games.action.delete" = "Delete";
 "games.action.sharePGN" = "Share PGN";
+"games.deleteFailed.title" = "Could Not Delete Game";
+"games.deleteFailed.detail" = "The game could not be removed from your saved games. Try again.";
+"games.unreadable.title" = "Saved Games Unavailable";
+"games.unreadable.detail" = "Your saved games could not be read. They are kept as they are, and new games are not saved.";
 /* Account */
 "account.gameCenter.title" = "Game Center";
-"account.gameCenter.signedOut.detail" = "Game Center is your sign-in for OpenChess.";
+"account.gameCenter.signedOut.detail" = "Game Center is your sign-in for Kingside.";
 "account.gameCenter.signingIn.detail" = "Signing in...";
 /* %@: the player's Game Center name. */
 "account.gameCenter.signedIn.detail" = "Signed in as %@";
 "account.gameCenter.unavailable.title" = "Game Center Is Not Available";
-"account.gameCenter.unavailable.detail" = "Game Center is turned off or restricted on this device. You can change this in the system settings.";
+"account.gameCenter.unavailable.restricted" = "Game Center is turned off or restricted on this device. You can change this in the system settings.";
+"account.gameCenter.unavailable.offline" = "Could not reach Game Center. Check your connection, then quit and reopen Kingside.";
+"account.gameCenter.unavailable.notSetUp" = "This version of Kingside is not set up for Game Center.";
+"account.gameCenter.unavailable.other" = "Game Center could not sign you in. Quit and reopen Kingside to try again.";
 "account.gameCenter.signIn" = "Sign In";
 "account.gameCenter.open" = "Open Game Center";
+"account.lichess.title" = "Lichess";
+"account.lichess.signedOut.detail" = "Online play uses a Lichess account.";
+"account.lichess.signIn" = "Sign in with Lichess";
+"account.lichess.signingIn.detail" = "Signing in…";
+/* %@: the Lichess username. */
+"account.lichess.signedIn.detail" = "Signed in as %@";
+"account.lichess.signOut" = "Sign Out";
+"account.lichess.error.unauthorized" = "Lichess did not accept the sign-in. Try again.";
+"account.lichess.error.rateLimited" = "Lichess is busy. Wait a minute, then try again.";
+"account.lichess.error.network" = "Could not reach Lichess. Check your connection, then try again.";
+"account.lichess.tv.appleAccount" = "Sign in on your iPhone, iPad or Mac with the same Apple Account. The sign-in syncs through iCloud Keychain.";
+"account.lichess.tv.checkAgain" = "Check Again";
+"account.lichess.tv.token.title" = "Or create a personal token";
+"account.lichess.tv.token.field" = "Personal Token";
+"account.lichess.tv.token.signIn" = "Sign In with Token";
 "account.chessCom.title" = "Chess.com";
 "account.chessCom.notLinked.detail" = "Link a Chess.com account to see your ratings and import your games.";
-"account.chessCom.privacy" = "OpenChess reads public Chess.com data only. It never asks for your password.";
+"account.chessCom.privacy" = "Kingside reads public Chess.com data only. It never asks for your password.";
 "account.chessCom.link" = "Link Chess.com Account";
 "account.chessCom.link.confirm" = "Link";
 "account.chessCom.username" = "Chess.com Username";
@@ -558,3 +589,49 @@
 "account.welcome.pitch" = "Play bots, solve puzzles, and review every game.";
 "account.welcome.signIn" = "Sign in with Game Center";
 "account.welcome.notNow" = "Not now";
+
+/* Online lobby */
+"online.lobby.title" = "Play Online";
+"online.rated" = "Rated";
+"online.casual" = "Casual";
+"online.seek.title" = "Quick Game";
+"online.seek.start" = "Find an Opponent";
+"online.seek.waiting" = "Looking for an opponent…";
+"online.challenge.title" = "Challenge a Friend";
+"online.challenge.username" = "Lichess Username";
+"online.challenge.send" = "Send Challenge";
+"online.challenge.waiting" = "Waiting for an answer…";
+"online.challenge.declined" = "Challenge declined";
+"online.challenge.accept" = "Accept";
+"online.challenge.decline" = "Decline";
+"online.incoming.title" = "Challenges";
+/* %1$@: the challenger's name; %2$@: their rating. */
+"online.challenger" = "%1$@ (%2$@)";
+/* %1$@: the time control; %2$@: Rated or Casual. */
+"online.challenge.detail" = "%1$@ · %2$@";
+"online.ongoing.title" = "Your Games";
+/* %1$@: the color you play; %2$@: whose move it is. */
+"online.ongoing.detail" = "%1$@ · %2$@";
+/* %d: minutes on each clock. */
+"online.timeControl.minutes" = "%d min";
+/* %1$d: minutes on each clock; %2$d: seconds added per move. */
+"online.timeControl.clock" = "%1$d | %2$d";
+/* %d: seconds on each clock. */
+"online.timeControl.seconds" = "%d sec";
+/* %1$d: seconds on each clock; %2$d: seconds added per move. */
+"online.timeControl.secondsClock" = "%1$d sec | %2$d";
+/* %d: days per move. */
+"online.timeControl.days" = "%d days per move";
+"online.error.notAllowed" = "Not allowed. Lichess refused this request.";
+"online.connection.error" = "The connection to Lichess was lost.";
+"chat.title" = "Chat";
+"chat.placeholder" = "Message";
+"chat.send" = "Send";
+"chat.empty" = "No messages yet";
+"chat.mute" = "Mute Opponent";
+"chat.unmute" = "Unmute Opponent";
+"chat.report" = "Report Opponent";
+/* %@: a web address. */
+"chat.report.tv" = "To report this opponent, open %@ on another device.";
+/* %@: the player's own name. */
+"chat.line.own" = "%@ (you)";

@@ -13,17 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d moves</string>
+			<string>%d lépés</string>
 			<key>one</key>
-			<string>%d move</string>
+			<string>%d lépés</string>
 			<key>two</key>
-			<string>%d moves</string>
+			<string>%d lépés</string>
 			<key>few</key>
-			<string>%d moves</string>
+			<string>%d lépés</string>
 			<key>many</key>
-			<string>%d moves</string>
+			<string>%d lépés</string>
 			<key>other</key>
-			<string>%d moves</string>
+			<string>%d lépés</string>
 		</dict>
 	</dict>
 	<key>puzzles.streak</key>
@@ -37,17 +37,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles in a row</string>
+			<string>%d feladvány egymás után</string>
 			<key>one</key>
-			<string>%d puzzle in a row</string>
+			<string>%d feladvány egymás után</string>
 			<key>two</key>
-			<string>%d puzzles in a row</string>
+			<string>%d feladvány egymás után</string>
 			<key>few</key>
-			<string>%d puzzles in a row</string>
+			<string>%d feladvány egymás után</string>
 			<key>many</key>
-			<string>%d puzzles in a row</string>
+			<string>%d feladvány egymás után</string>
 			<key>other</key>
-			<string>%d puzzles in a row</string>
+			<string>%d feladvány egymás után</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.strikes</key>
@@ -61,17 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d strikes</string>
+			<string>%d hiba</string>
 			<key>one</key>
-			<string>%d strike</string>
+			<string>%d hiba</string>
 			<key>two</key>
-			<string>%d strikes</string>
+			<string>%d hiba</string>
 			<key>few</key>
-			<string>%d strikes</string>
+			<string>%d hiba</string>
 			<key>many</key>
-			<string>%d strikes</string>
+			<string>%d hiba</string>
 			<key>other</key>
-			<string>%d strikes</string>
+			<string>%d hiba</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.result.score</key>
@@ -85,17 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles solved</string>
+			<string>%d megoldott feladvány</string>
 			<key>one</key>
-			<string>%d puzzle solved</string>
+			<string>%d megoldott feladvány</string>
 			<key>two</key>
-			<string>%d puzzles solved</string>
+			<string>%d megoldott feladvány</string>
 			<key>few</key>
-			<string>%d puzzles solved</string>
+			<string>%d megoldott feladvány</string>
 			<key>many</key>
-			<string>%d puzzles solved</string>
+			<string>%d megoldott feladvány</string>
 			<key>other</key>
-			<string>%d puzzles solved</string>
+			<string>%d megoldott feladvány</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.imported</key>
@@ -109,17 +109,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games imported</string>
+			<string>%d importált játszma</string>
 			<key>one</key>
-			<string>%d game imported</string>
+			<string>%d importált játszma</string>
 			<key>two</key>
-			<string>%d games imported</string>
+			<string>%d importált játszma</string>
 			<key>few</key>
-			<string>%d games imported</string>
+			<string>%d importált játszma</string>
 			<key>many</key>
-			<string>%d games imported</string>
+			<string>%d importált játszma</string>
 			<key>other</key>
-			<string>%d games imported</string>
+			<string>%d importált játszma</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.duplicates</key>
@@ -133,17 +133,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games already in your archive</string>
+			<string>%d játszma már az archívumban</string>
 			<key>one</key>
-			<string>%d game already in your archive</string>
+			<string>%d játszma már az archívumban</string>
 			<key>two</key>
-			<string>%d games already in your archive</string>
+			<string>%d játszma már az archívumban</string>
 			<key>few</key>
-			<string>%d games already in your archive</string>
+			<string>%d játszma már az archívumban</string>
 			<key>many</key>
-			<string>%d games already in your archive</string>
+			<string>%d játszma már az archívumban</string>
 			<key>other</key>
-			<string>%d games already in your archive</string>
+			<string>%d játszma már az archívumban</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.skipped</key>
@@ -157,17 +157,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games could not be imported</string>
+			<string>%d játszmát nem sikerült importálni</string>
 			<key>one</key>
-			<string>%d game could not be imported</string>
+			<string>%d játszmát nem sikerült importálni</string>
 			<key>two</key>
-			<string>%d games could not be imported</string>
+			<string>%d játszmát nem sikerült importálni</string>
 			<key>few</key>
-			<string>%d games could not be imported</string>
+			<string>%d játszmát nem sikerült importálni</string>
 			<key>many</key>
-			<string>%d games could not be imported</string>
+			<string>%d játszmát nem sikerült importálni</string>
 			<key>other</key>
-			<string>%d games could not be imported</string>
+			<string>%d játszmát nem sikerült importálni</string>
 		</dict>
 	</dict>
 </dict>

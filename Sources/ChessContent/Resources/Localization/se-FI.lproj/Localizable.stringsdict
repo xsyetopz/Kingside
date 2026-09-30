@@ -13,17 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d moves</string>
+			<string>%d lávkki</string>
 			<key>one</key>
-			<string>%d move</string>
+			<string>%d lávki</string>
 			<key>two</key>
-			<string>%d moves</string>
+			<string>%d lávkki</string>
 			<key>few</key>
-			<string>%d moves</string>
+			<string>%d lávkki</string>
 			<key>many</key>
-			<string>%d moves</string>
+			<string>%d lávkki</string>
 			<key>other</key>
-			<string>%d moves</string>
+			<string>%d lávkki</string>
 		</dict>
 	</dict>
 	<key>puzzles.streak</key>
@@ -37,17 +37,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles in a row</string>
+			<string>%d gáttu ráiddus</string>
 			<key>one</key>
-			<string>%d puzzle in a row</string>
+			<string>%d gáttus ráiddus</string>
 			<key>two</key>
-			<string>%d puzzles in a row</string>
+			<string>%d gáttu ráiddus</string>
 			<key>few</key>
-			<string>%d puzzles in a row</string>
+			<string>%d gáttu ráiddus</string>
 			<key>many</key>
-			<string>%d puzzles in a row</string>
+			<string>%d gáttu ráiddus</string>
 			<key>other</key>
-			<string>%d puzzles in a row</string>
+			<string>%d gáttu ráiddus</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.strikes</key>
@@ -61,17 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d strikes</string>
+			<string>%d boasttuvuođa</string>
 			<key>one</key>
-			<string>%d strike</string>
+			<string>%d boasttuvuohta</string>
 			<key>two</key>
-			<string>%d strikes</string>
+			<string>%d boasttuvuođa</string>
 			<key>few</key>
-			<string>%d strikes</string>
+			<string>%d boasttuvuođa</string>
 			<key>many</key>
-			<string>%d strikes</string>
+			<string>%d boasttuvuođa</string>
 			<key>other</key>
-			<string>%d strikes</string>
+			<string>%d boasttuvuođa</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.result.score</key>
@@ -85,17 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles solved</string>
+			<string>%d gáttu čoavdojuvvon</string>
 			<key>one</key>
-			<string>%d puzzle solved</string>
+			<string>%d gáttus čoavdojuvvon</string>
 			<key>two</key>
-			<string>%d puzzles solved</string>
+			<string>%d gáttu čoavdojuvvon</string>
 			<key>few</key>
-			<string>%d puzzles solved</string>
+			<string>%d gáttu čoavdojuvvon</string>
 			<key>many</key>
-			<string>%d puzzles solved</string>
+			<string>%d gáttu čoavdojuvvon</string>
 			<key>other</key>
-			<string>%d puzzles solved</string>
+			<string>%d gáttu čoavdojuvvon</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.imported</key>
@@ -109,17 +109,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games imported</string>
+			<string>%d stoahkama dovdojuvvon</string>
 			<key>one</key>
-			<string>%d game imported</string>
+			<string>%d stoahkka dovdojuvvon</string>
 			<key>two</key>
-			<string>%d games imported</string>
+			<string>%d stoahkama dovdojuvvon</string>
 			<key>few</key>
-			<string>%d games imported</string>
+			<string>%d stoahkama dovdojuvvon</string>
 			<key>many</key>
-			<string>%d games imported</string>
+			<string>%d stoahkama dovdojuvvon</string>
 			<key>other</key>
-			<string>%d games imported</string>
+			<string>%d stoahkama dovdojuvvon</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.duplicates</key>
@@ -133,17 +133,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games already in your archive</string>
+			<string>%d stoahkama leat juo du arkiivvas</string>
 			<key>one</key>
-			<string>%d game already in your archive</string>
+			<string>%d stoahkka lea juo du arkiivvas</string>
 			<key>two</key>
-			<string>%d games already in your archive</string>
+			<string>%d stoahkama leat juo du arkiivvas</string>
 			<key>few</key>
-			<string>%d games already in your archive</string>
+			<string>%d stoahkama leat juo du arkiivvas</string>
 			<key>many</key>
-			<string>%d games already in your archive</string>
+			<string>%d stoahkama leat juo du arkiivvas</string>
 			<key>other</key>
-			<string>%d games already in your archive</string>
+			<string>%d stoahkama leat juo du arkiivvas</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.skipped</key>
@@ -157,17 +157,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games could not be imported</string>
+			<string>%d stoahkama ii sáhttán dovdat</string>
 			<key>one</key>
-			<string>%d game could not be imported</string>
+			<string>%d stoahkka ii sáhttán dovdat</string>
 			<key>two</key>
-			<string>%d games could not be imported</string>
+			<string>%d stoahkama ii sáhttán dovdat</string>
 			<key>few</key>
-			<string>%d games could not be imported</string>
+			<string>%d stoahkama ii sáhttán dovdat</string>
 			<key>many</key>
-			<string>%d games could not be imported</string>
+			<string>%d stoahkama ii sáhttán dovdat</string>
 			<key>other</key>
-			<string>%d games could not be imported</string>
+			<string>%d stoahkama ii sáhttán dovdat</string>
 		</dict>
 	</dict>
 </dict>

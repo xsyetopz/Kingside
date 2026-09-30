@@ -13,17 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d moves</string>
+			<string>%d gājienu</string>
 			<key>one</key>
-			<string>%d move</string>
+			<string>%d gājiens</string>
 			<key>two</key>
-			<string>%d moves</string>
+			<string>%d gājieni</string>
 			<key>few</key>
-			<string>%d moves</string>
+			<string>%d gājieni</string>
 			<key>many</key>
-			<string>%d moves</string>
+			<string>%d gājieni</string>
 			<key>other</key>
-			<string>%d moves</string>
+			<string>%d gājieni</string>
 		</dict>
 	</dict>
 	<key>puzzles.streak</key>
@@ -37,17 +37,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles in a row</string>
+			<string>%d uzdevumu pēc kārtas</string>
 			<key>one</key>
-			<string>%d puzzle in a row</string>
+			<string>%d uzdevums pēc kārtas</string>
 			<key>two</key>
-			<string>%d puzzles in a row</string>
+			<string>%d uzdevumi pēc kārtas</string>
 			<key>few</key>
-			<string>%d puzzles in a row</string>
+			<string>%d uzdevumi pēc kārtas</string>
 			<key>many</key>
-			<string>%d puzzles in a row</string>
+			<string>%d uzdevumi pēc kārtas</string>
 			<key>other</key>
-			<string>%d puzzles in a row</string>
+			<string>%d uzdevumi pēc kārtas</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.strikes</key>
@@ -61,17 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d strikes</string>
+			<string>%d kļūdu</string>
 			<key>one</key>
-			<string>%d strike</string>
+			<string>%d kļūda</string>
 			<key>two</key>
-			<string>%d strikes</string>
+			<string>%d kļūdas</string>
 			<key>few</key>
-			<string>%d strikes</string>
+			<string>%d kļūdas</string>
 			<key>many</key>
-			<string>%d strikes</string>
+			<string>%d kļūdas</string>
 			<key>other</key>
-			<string>%d strikes</string>
+			<string>%d kļūdas</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.result.score</key>
@@ -85,17 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles solved</string>
+			<string>%d atrisinātu uzdevumu</string>
 			<key>one</key>
-			<string>%d puzzle solved</string>
+			<string>%d atrisināts uzdevums</string>
 			<key>two</key>
-			<string>%d puzzles solved</string>
+			<string>%d atrisināti uzdevumi</string>
 			<key>few</key>
-			<string>%d puzzles solved</string>
+			<string>%d atrisināti uzdevumi</string>
 			<key>many</key>
-			<string>%d puzzles solved</string>
+			<string>%d atrisināti uzdevumi</string>
 			<key>other</key>
-			<string>%d puzzles solved</string>
+			<string>%d atrisināti uzdevumi</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.imported</key>
@@ -109,17 +109,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games imported</string>
+			<string>%d importētu partiju</string>
 			<key>one</key>
-			<string>%d game imported</string>
+			<string>%d importēta partija</string>
 			<key>two</key>
-			<string>%d games imported</string>
+			<string>%d importētas partijas</string>
 			<key>few</key>
-			<string>%d games imported</string>
+			<string>%d importētas partijas</string>
 			<key>many</key>
-			<string>%d games imported</string>
+			<string>%d importētas partijas</string>
 			<key>other</key>
-			<string>%d games imported</string>
+			<string>%d importētas partijas</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.duplicates</key>
@@ -133,17 +133,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games already in your archive</string>
+			<string>%d partiju jau ir arhīvā</string>
 			<key>one</key>
-			<string>%d game already in your archive</string>
+			<string>%d partija jau ir arhīvā</string>
 			<key>two</key>
-			<string>%d games already in your archive</string>
+			<string>%d partijas jau ir arhīvā</string>
 			<key>few</key>
-			<string>%d games already in your archive</string>
+			<string>%d partijas jau ir arhīvā</string>
 			<key>many</key>
-			<string>%d games already in your archive</string>
+			<string>%d partijas jau ir arhīvā</string>
 			<key>other</key>
-			<string>%d games already in your archive</string>
+			<string>%d partijas jau ir arhīvā</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.skipped</key>
@@ -157,17 +157,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games could not be imported</string>
+			<string>%d partiju nevarēja importēt</string>
 			<key>one</key>
-			<string>%d game could not be imported</string>
+			<string>%d partija nevarēja importēt</string>
 			<key>two</key>
-			<string>%d games could not be imported</string>
+			<string>%d partijas nevarēja importēt</string>
 			<key>few</key>
-			<string>%d games could not be imported</string>
+			<string>%d partijas nevarēja importēt</string>
 			<key>many</key>
-			<string>%d games could not be imported</string>
+			<string>%d partijas nevarēja importēt</string>
 			<key>other</key>
-			<string>%d games could not be imported</string>
+			<string>%d partijas nevarēja importēt</string>
 		</dict>
 	</dict>
 </dict>

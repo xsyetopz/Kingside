@@ -13,17 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d moves</string>
+			<string>%d mutări</string>
 			<key>one</key>
-			<string>%d move</string>
+			<string>%d mutare</string>
 			<key>two</key>
-			<string>%d moves</string>
+			<string>%d mutări</string>
 			<key>few</key>
-			<string>%d moves</string>
+			<string>%d mutări</string>
 			<key>many</key>
-			<string>%d moves</string>
+			<string>%d de mutări</string>
 			<key>other</key>
-			<string>%d moves</string>
+			<string>%d de mutări</string>
 		</dict>
 	</dict>
 	<key>puzzles.streak</key>
@@ -37,17 +37,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles in a row</string>
+			<string>%d probleme la rând</string>
 			<key>one</key>
-			<string>%d puzzle in a row</string>
+			<string>%d problemă la rând</string>
 			<key>two</key>
-			<string>%d puzzles in a row</string>
+			<string>%d probleme la rând</string>
 			<key>few</key>
-			<string>%d puzzles in a row</string>
+			<string>%d probleme la rând</string>
 			<key>many</key>
-			<string>%d puzzles in a row</string>
+			<string>%d de probleme la rând</string>
 			<key>other</key>
-			<string>%d puzzles in a row</string>
+			<string>%d de probleme la rând</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.strikes</key>
@@ -61,17 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d strikes</string>
+			<string>%d greșeli</string>
 			<key>one</key>
-			<string>%d strike</string>
+			<string>%d greșeală</string>
 			<key>two</key>
-			<string>%d strikes</string>
+			<string>%d greșeli</string>
 			<key>few</key>
-			<string>%d strikes</string>
+			<string>%d greșeli</string>
 			<key>many</key>
-			<string>%d strikes</string>
+			<string>%d de greșeli</string>
 			<key>other</key>
-			<string>%d strikes</string>
+			<string>%d de greșeli</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.result.score</key>
@@ -85,17 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles solved</string>
+			<string>%d probleme rezolvate</string>
 			<key>one</key>
-			<string>%d puzzle solved</string>
+			<string>%d problemă rezolvată</string>
 			<key>two</key>
-			<string>%d puzzles solved</string>
+			<string>%d probleme rezolvate</string>
 			<key>few</key>
-			<string>%d puzzles solved</string>
+			<string>%d probleme rezolvate</string>
 			<key>many</key>
-			<string>%d puzzles solved</string>
+			<string>%d de probleme rezolvate</string>
 			<key>other</key>
-			<string>%d puzzles solved</string>
+			<string>%d de probleme rezolvate</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.imported</key>
@@ -109,17 +109,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games imported</string>
+			<string>%d partide importate</string>
 			<key>one</key>
-			<string>%d game imported</string>
+			<string>%d partidă importată</string>
 			<key>two</key>
-			<string>%d games imported</string>
+			<string>%d partide importate</string>
 			<key>few</key>
-			<string>%d games imported</string>
+			<string>%d partide importate</string>
 			<key>many</key>
-			<string>%d games imported</string>
+			<string>%d de partide importate</string>
 			<key>other</key>
-			<string>%d games imported</string>
+			<string>%d de partide importate</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.duplicates</key>
@@ -133,17 +133,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games already in your archive</string>
+			<string>%d partide deja în arhiva ta</string>
 			<key>one</key>
-			<string>%d game already in your archive</string>
+			<string>%d partidă deja în arhiva ta</string>
 			<key>two</key>
-			<string>%d games already in your archive</string>
+			<string>%d partide deja în arhiva ta</string>
 			<key>few</key>
-			<string>%d games already in your archive</string>
+			<string>%d partide deja în arhiva ta</string>
 			<key>many</key>
-			<string>%d games already in your archive</string>
+			<string>%d de partide deja în arhiva ta</string>
 			<key>other</key>
-			<string>%d games already in your archive</string>
+			<string>%d de partide deja în arhiva ta</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.skipped</key>
@@ -157,17 +157,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games could not be imported</string>
+			<string>%d partide nu au putut fi importate</string>
 			<key>one</key>
-			<string>%d game could not be imported</string>
+			<string>%d partidă nu a putut fi importată</string>
 			<key>two</key>
-			<string>%d games could not be imported</string>
+			<string>%d partide nu au putut fi importate</string>
 			<key>few</key>
-			<string>%d games could not be imported</string>
+			<string>%d partide nu au putut fi importate</string>
 			<key>many</key>
-			<string>%d games could not be imported</string>
+			<string>%d de partide nu au putut fi importate</string>
 			<key>other</key>
-			<string>%d games could not be imported</string>
+			<string>%d de partide nu au putut fi importate</string>
 		</dict>
 	</dict>
 </dict>

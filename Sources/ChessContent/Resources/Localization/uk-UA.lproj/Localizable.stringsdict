@@ -13,17 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d moves</string>
+			<string>%d ходів</string>
 			<key>one</key>
-			<string>%d move</string>
+			<string>%d хід</string>
 			<key>two</key>
-			<string>%d moves</string>
+			<string>%d ходи</string>
 			<key>few</key>
-			<string>%d moves</string>
+			<string>%d ходи</string>
 			<key>many</key>
-			<string>%d moves</string>
+			<string>%d ходів</string>
 			<key>other</key>
-			<string>%d moves</string>
+			<string>%d ходу</string>
 		</dict>
 	</dict>
 	<key>puzzles.streak</key>
@@ -37,17 +37,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles in a row</string>
+			<string>%d задач поспіль</string>
 			<key>one</key>
-			<string>%d puzzle in a row</string>
+			<string>%d задача поспіль</string>
 			<key>two</key>
-			<string>%d puzzles in a row</string>
+			<string>%d задачі поспіль</string>
 			<key>few</key>
-			<string>%d puzzles in a row</string>
+			<string>%d задачі поспіль</string>
 			<key>many</key>
-			<string>%d puzzles in a row</string>
+			<string>%d задач поспіль</string>
 			<key>other</key>
-			<string>%d puzzles in a row</string>
+			<string>%d задачі поспіль</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.strikes</key>
@@ -61,17 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d strikes</string>
+			<string>%d помилок</string>
 			<key>one</key>
-			<string>%d strike</string>
+			<string>%d помилка</string>
 			<key>two</key>
-			<string>%d strikes</string>
+			<string>%d помилки</string>
 			<key>few</key>
-			<string>%d strikes</string>
+			<string>%d помилки</string>
 			<key>many</key>
-			<string>%d strikes</string>
+			<string>%d помилок</string>
 			<key>other</key>
-			<string>%d strikes</string>
+			<string>%d помилки</string>
 		</dict>
 	</dict>
 	<key>puzzleRush.result.score</key>
@@ -85,17 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d puzzles solved</string>
+			<string>%d задач розв'язано</string>
 			<key>one</key>
-			<string>%d puzzle solved</string>
+			<string>%d задача розв'язана</string>
 			<key>two</key>
-			<string>%d puzzles solved</string>
+			<string>%d задачі розв'язані</string>
 			<key>few</key>
-			<string>%d puzzles solved</string>
+			<string>%d задачі розв'язані</string>
 			<key>many</key>
-			<string>%d puzzles solved</string>
+			<string>%d задач розв'язано</string>
 			<key>other</key>
-			<string>%d puzzles solved</string>
+			<string>%d задачі розв'язано</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.imported</key>
@@ -109,17 +109,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games imported</string>
+			<string>%d ігор імпортовано</string>
 			<key>one</key>
-			<string>%d game imported</string>
+			<string>%d гра імпортована</string>
 			<key>two</key>
-			<string>%d games imported</string>
+			<string>%d гри імпортовані</string>
 			<key>few</key>
-			<string>%d games imported</string>
+			<string>%d гри імпортовані</string>
 			<key>many</key>
-			<string>%d games imported</string>
+			<string>%d ігор імпортовано</string>
 			<key>other</key>
-			<string>%d games imported</string>
+			<string>%d гри імпортовано</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.duplicates</key>
@@ -133,17 +133,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games already in your archive</string>
+			<string>%d ігор уже у вашому архіві</string>
 			<key>one</key>
-			<string>%d game already in your archive</string>
+			<string>%d гра вже у вашому архіві</string>
 			<key>two</key>
-			<string>%d games already in your archive</string>
+			<string>%d гри вже у вашому архіві</string>
 			<key>few</key>
-			<string>%d games already in your archive</string>
+			<string>%d гри вже у вашому архіві</string>
 			<key>many</key>
-			<string>%d games already in your archive</string>
+			<string>%d ігор уже у вашому архіві</string>
 			<key>other</key>
-			<string>%d games already in your archive</string>
+			<string>%d гри вже у вашому архіві</string>
 		</dict>
 	</dict>
 	<key>account.chessCom.skipped</key>
@@ -157,17 +157,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>zero</key>
-			<string>%d games could not be imported</string>
+			<string>%d ігор не вдалося імпортувати</string>
 			<key>one</key>
-			<string>%d game could not be imported</string>
+			<string>%d гру не вдалося імпортувати</string>
 			<key>two</key>
-			<string>%d games could not be imported</string>
+			<string>%d гри не вдалося імпортувати</string>
 			<key>few</key>
-			<string>%d games could not be imported</string>
+			<string>%d гри не вдалося імпортувати</string>
 			<key>many</key>
-			<string>%d games could not be imported</string>
+			<string>%d ігор не вдалося імпортувати</string>
 			<key>other</key>
-			<string>%d games could not be imported</string>
+			<string>%d гри не вдалося імпортувати</string>
 		</dict>
 	</dict>
 </dict>
