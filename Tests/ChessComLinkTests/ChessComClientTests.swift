@@ -29,7 +29,7 @@ actor FakeTransport: HTTPTransport {
 
 let testConfiguration = ChessComConfiguration(
     baseURL: URL(string: "https://pub.example.test/pub/")!,
-    userAgent: "OpenChessTests/1.0 (contact: tests@example.invalid)")
+    userAgent: "KingsideTests/1.0 (contact: tests@example.invalid)")
 
 func fixture(_ name: String) throws -> Data {
     let url = try #require(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures"))

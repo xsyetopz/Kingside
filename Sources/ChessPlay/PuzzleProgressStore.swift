@@ -4,7 +4,7 @@ import Observation
 
 /// Saved puzzle progress: rated puzzle rating and history, streak, Puzzle Rush bests,
 /// seen puzzle ids and solved Daily Puzzle days. The synthesized Codable shape is the one
-/// stored under `OpenChess.puzzleProgress.v1`.
+/// stored under `Kingside.puzzleProgress.v1`.
 public struct PuzzleProgress: Codable, Equatable, Sendable {
     public var rating: Int
     /// Number of rated results recorded (drives the K-factor).
@@ -27,7 +27,7 @@ public struct PuzzleProgress: Codable, Equatable, Sendable {
 @Observable
 @MainActor
 public final class PuzzleProgressStore {
-    public static let defaultsKey = "OpenChess.puzzleProgress.v1"
+    public static let defaultsKey = "Kingside.puzzleProgress.v1"
 
     public private(set) var progress: PuzzleProgress { didSet { save() } }
     private let defaults: UserDefaults

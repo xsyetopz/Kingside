@@ -3,7 +3,7 @@ import XCTest
 /// Launch-to-board smoke tests. `--uitesting` gives each run empty storage, no sound, and no
 /// Game Center or welcome sheet. Elements are found by accessibility identifier, not by text.
 @MainActor
-final class OpenChessUITests: XCTestCase {
+final class KingsideUITests: XCTestCase {
     private var app: XCUIApplication!
 
     override func setUp() async throws {
@@ -66,14 +66,24 @@ final class OpenChessUITests: XCTestCase {
         XCUIRemote.shared.press(.menu)
     }
     #else
+    /// On macOS `tap()` does not reach SwiftUI buttons; a click does.
     private func activate(_ element: XCUIElement) {
+        #if os(macOS)
+        element.click()
+        #else
         element.tap()
+        #endif
     }
 
+    /// macOS has no navigation bar; the back button sits in the window toolbar.
     private func goBack() {
+        #if os(macOS)
+        let back = app.toolbars.buttons["chevron.backward"].firstMatch
+        #else
         let back = app.navigationBars.buttons.firstMatch
+        #endif
         XCTAssertTrue(back.waitForExistence(timeout: 5))
-        back.tap()
+        activate(back)
     }
     #endif
 }

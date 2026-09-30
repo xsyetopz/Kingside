@@ -3,7 +3,7 @@
         {
             "id": "synth",
             "nameKey": "soundPack.synth.name",
-            "attributionID": "openchess-synth",
+            "attributionID": "kingside-synth",
             "sampleRate": 44100.0,
             "voiceCount": 4,
             "peakLevel": 0.8,

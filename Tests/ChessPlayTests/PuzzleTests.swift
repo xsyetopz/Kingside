@@ -212,7 +212,7 @@ import Testing
         }
     }
 
-    /// JSON the app wrote under `OpenChess.puzzleProgress.v1` before `ChessPlay` existed.
+    /// JSON the app wrote under `Kingside.puzzleProgress.v1` before `ChessPlay` existed.
     @MainActor
     @Test func legacyProgressStillDecodes() throws {
         let tuning = try Shared.catalog.tuning.puzzleRating
@@ -222,7 +222,7 @@ import Testing
             "dailySolved":["2026-09-28"]}
             """
         try withTemporaryDefaults { defaults in
-            defaults.set(Data(legacy.utf8), forKey: "OpenChess.puzzleProgress.v1")
+            defaults.set(Data(legacy.utf8), forKey: "Kingside.puzzleProgress.v1")
             let store = PuzzleProgressStore(defaults: defaults, rating: tuning)
             #expect(store.progress.rating == 1234)
             #expect(store.progress.ratedPlayed == 57)
