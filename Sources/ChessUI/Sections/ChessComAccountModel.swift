@@ -33,7 +33,7 @@ struct ChessComImportSummary: Equatable {
     var imported = 0
     /// Already in the archive.
     var duplicates = 0
-    /// Other rules than standard chess, or a PGN that does not replay.
+    /// Other rules than standard chess, a PGN that does not replay, or a failed save.
     var skipped = 0
 }
 
@@ -95,12 +95,17 @@ final class ChessComAccountModel {
 
 /// Turns Chess.com games into `SavedGame`s of the local archive.
 enum ChessComImporting {
-    /// Saves each standard-chess game whose id is not stored yet. Returns the counts.
+    /// Saves each standard-chess game whose id is not stored yet. Returns the counts. When the
+    /// archive cannot be read, nothing can be saved, so every game counts as skipped.
     static func importGames(
         _ sources: [ChessComGame], username: String, into store: GamePersistenceStore
     ) async -> ChessComImportSummary {
-        var known = Set(await store.allGames().map(\.id))
         var summary = ChessComImportSummary()
+        guard let stored = try? await store.allGames() else {
+            summary.skipped = sources.count
+            return summary
+        }
+        var known = Set(stored.map(\.id))
         let importer = ChessComGameImporter()
         for source in sources {
             let id = savedGameID(for: source.url)

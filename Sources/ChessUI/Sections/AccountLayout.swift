@@ -1,6 +1,7 @@
 import ChessComLink
 import ChessContent
 import ChessCore
+import ChessOnline
 import ChessPlay
 import Foundation
 
@@ -13,6 +14,17 @@ enum AccountLayout {
         let record: ChessComStats.Record?
 
         var id: String { timeClass }
+    }
+
+    /// Localisation key of what to tell the player when Game Center is unavailable. GameKit
+    /// authenticates once per launch, so the texts do not offer a retry in the app.
+    static func gameCenterDetailKey(_ reason: GameCenterUnavailableReason) -> String {
+        switch reason {
+        case .restricted: "account.gameCenter.unavailable.restricted"
+        case .offline: "account.gameCenter.unavailable.offline"
+        case .notSetUp: "account.gameCenter.unavailable.notSetUp"
+        case .other: "account.gameCenter.unavailable.other"
+        }
     }
 
     /// The time classes the player has a rating in, in the order Chess.com lists them.

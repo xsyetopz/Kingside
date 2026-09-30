@@ -5,13 +5,21 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.localization) private var localization
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AppSection = .play
+    /// The Play stack's pages, here so a started game can be pushed from any screen.
+    @State private var playPath: [AppRoute] = []
 
     var body: some View {
         content
             .task {
                 model.signInAtLaunch()
                 await model.reloadGames()
+            }
+            .onChange(of: model.lichess.startedGameID) { _, id in showStartedGame(id) }
+            // Events only report changes, so reload the games a background period may have hidden.
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await model.lichess.refresh() } }
             }
             .sheet(isPresented: Binding(get: { model.showsWelcome }, set: { if !$0 { model.finishWelcome() } })) {
                 WelcomeSheet { selection = .account }
@@ -26,6 +34,14 @@ struct RootView: View {
             }
     }
 
+    /// Opens the game that has just started, unless it is already showing.
+    private func showStartedGame(_ id: String?) {
+        guard let id, case .signedIn = model.lichess.phase else { return }
+        let route = AppRoute.onlineGame(id: id)
+        selection = .play
+        if playPath.last != route { playPath.append(route) }
+    }
+
     #if os(macOS)
     @ViewBuilder private var content: some View {
         NavigationSplitView {
@@ -35,7 +51,7 @@ struct RootView: View {
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
-            SectionStack(section: selection)
+            SectionStack(section: selection, playPath: $playPath)
                 .id(selection)
         }
     }
@@ -43,7 +59,7 @@ struct RootView: View {
     @ViewBuilder private var content: some View {
         TabView(selection: $selection) {
             ForEach(AppSection.allCases) { section in
-                SectionStack(section: section)
+                SectionStack(section: section, playPath: $playPath)
                     .tabItem { Label(localization(section.titleKey), systemImage: section.systemImage) }
                     .tag(section)
             }
@@ -55,10 +71,14 @@ struct RootView: View {
 /// One section's navigation stack and the screens it can push.
 struct SectionStack: View {
     let section: AppSection
-    @State private var path: [AppRoute] = []
+    /// The Play section's pages, which the root owns.
+    @Binding var playPath: [AppRoute]
+    @State private var ownPath: [AppRoute] = []
+
+    private var path: Binding<[AppRoute]> { section == .play ? $playPath : $ownPath }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack(path: path) {
             SectionHome(section: section)
                 .navigationDestination(for: AppRoute.self) { route in
                     switch route {
@@ -78,6 +98,10 @@ struct SectionStack: View {
                         ReviewScreen(gameID: id)
                     case .chessComLink:
                         ChessComLinkScreen()
+                    case .onlineLobby:
+                        OnlineLobbyScreen()
+                    case .onlineGame(let id):
+                        OnlineGameScreen(id: id)
                     }
                 }
         }

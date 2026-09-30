@@ -50,7 +50,16 @@ struct GamesLayoutTests {
     @Test func detailJoinsResultMovesAndDate() throws {
         let saved = try game(mode: .passAndPlay, result: .draw, plies: ["e2e4", "e7e5"])
         let detail = GamesLayout.detail(saved, localization: localization, locale: Locale(identifier: "en_US"))
-        #expect(detail.hasPrefix("Draw · 1 move · "))
+        #expect(detail.hasPrefix("Draw\u{00A0}· 1\u{00A0}move\u{00A0}· "))
         #expect(detail.contains("2026"))
+    }
+
+    /// A wrapped detail line breaks only after a separator, so no line starts with "·".
+    @Test func detailBreaksOnlyAfterSeparators() throws {
+        let saved = try game(mode: .passAndPlay, result: .ongoing, plies: ["e2e4"])
+        let detail = GamesLayout.detail(saved, localization: localization, locale: Locale(identifier: "en_US"))
+        let breakable = detail.indices.filter { detail[$0] == " " }
+        #expect(breakable.count == 2)
+        #expect(breakable.allSatisfy { detail[detail.index(before: $0)] == "·" })
     }
 }

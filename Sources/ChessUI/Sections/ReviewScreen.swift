@@ -39,7 +39,7 @@ private struct ReviewView: View {
         let style = model.catalog.interface
         GeometryReader { proxy in
             if GameLayout.isWide(proxy.size, style: style.game) {
-                wideLayout(style)
+                wideLayout(style, isShort: GameLayout.barsInPanel(proxy.size, style: style.game))
             } else {
                 narrowLayout(style)
             }
@@ -81,16 +81,31 @@ private struct ReviewView: View {
         ply = ReviewLayout.ply(ply, step: step, moveCount: review.moveCount)
     }
 
-    private func wideLayout(_ style: InterfaceStyle) -> some View {
+    /// On a short screen the panel scrolls and the moves run in one row, as in the narrow
+    /// layout, because a vertical move list would get too little height to show a move.
+    private func wideLayout(_ style: InterfaceStyle, isShort: Bool) -> some View {
         HStack(spacing: style.sectionGap) {
             board.frame(maxWidth: .infinity, maxHeight: .infinity)
-            VStack(spacing: style.gap) {
-                summary
-                coach
-                moves(.vertical)
-                    .frame(maxHeight: .infinity)
-                    .surface(style)
-                controls
+            Group {
+                if isShort {
+                    ScrollView {
+                        VStack(spacing: style.gap) {
+                            summary
+                            coach
+                            controls
+                            moves(.horizontal)
+                        }
+                    }
+                } else {
+                    VStack(spacing: style.gap) {
+                        summary
+                        coach
+                        moves(.vertical)
+                            .frame(maxHeight: .infinity)
+                            .surface(style)
+                        controls
+                    }
+                }
             }
             .frame(width: style.game.panelWidth * style.platformScale)
         }

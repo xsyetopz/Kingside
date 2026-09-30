@@ -8,6 +8,11 @@ enum GameLayout {
         size.height > 0 && size.width / size.height >= style.wideAspectRatio
     }
 
+    /// Whether the wide layout puts the player bars in the panel instead of around the board.
+    static func barsInPanel(_ size: CGSize, style: GameLayoutStyle) -> Bool {
+        size.height < style.compactHeight
+    }
+
     /// Remaining time as `m:ss`, or `h:mm:ss` from an hour. Partial seconds round up, so a
     /// clock shows zero only once it has flagged.
     static func clockText(_ seconds: TimeInterval) -> String {

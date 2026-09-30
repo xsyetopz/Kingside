@@ -7,10 +7,15 @@ import SwiftUI
 struct GamesHome: View {
     @Environment(AppModel.self) private var model
     @Environment(\.localization) private var localization
+    @State private var deleteFailed = false
 
     var body: some View {
         Group {
-            if model.savedGames.isEmpty {
+            if model.savedGamesUnreadable {
+                ContentUnavailableView(
+                    localization("games.unreadable.title"), systemImage: "exclamationmark.triangle",
+                    description: Text(localization("games.unreadable.detail")))
+            } else if model.savedGames.isEmpty {
                 ContentUnavailableView(
                     localization("games.empty.title"), systemImage: "clock.arrow.circlepath",
                     description: Text(localization("games.empty.detail")))
@@ -43,6 +48,10 @@ struct GamesHome: View {
             }
         }
         .screenTitle(localization("section.games.title"))
+        .alert(localization("games.deleteFailed.title"), isPresented: $deleteFailed) {
+        } message: {
+            Text(localization("games.deleteFailed.detail"))
+        }
     }
 
     /// A finished game opens its review; an unfinished one continues.
@@ -63,8 +72,17 @@ struct GamesHome: View {
 
     private func delete(_ game: SavedGame) {
         Task {
-            try? await model.gameStore.delete(id: game.id)
+            let failed: Bool
+            do {
+                try await model.gameStore.delete(id: game.id)
+                failed = false
+            } catch {
+                failed = true
+            }
+            // Reload before presenting: on macOS, swapping the list for the unavailable view while
+            // the alert is being presented dismisses it.
             await model.reloadGames()
+            deleteFailed = failed
         }
     }
 }
@@ -104,6 +122,8 @@ private struct GameCard: View {
         CardLabel(
             title: GamesLayout.title(game, localization: localization),
             subtitle: GamesLayout.detail(game, localization: localization, locale: locale),
+            // It wraps only between its three parts, so it is at most three lines.
+            subtitleLineLimit: nil,
             detail: game.isFinished ? nil : localization("games.action.continue")
         ) {
             BoardThumbnail(

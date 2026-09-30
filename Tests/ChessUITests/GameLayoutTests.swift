@@ -6,7 +6,7 @@ import Testing
 struct GameLayoutTests {
     private var style: GameLayoutStyle {
         get throws {
-            let json = #"{"wideAspectRatio": 1.3, "panelWidth": 340, "avatarSize": 44}"#
+            let json = #"{"wideAspectRatio": 1.3, "panelWidth": 340, "avatarSize": 44, "compactHeight": 480}"#
             return try JSONDecoder().decode(GameLayoutStyle.self, from: Data(json.utf8))
         }
     }
@@ -18,6 +18,13 @@ struct GameLayoutTests {
         #expect(!GameLayout.isWide(CGSize(width: 390, height: 700), style: style))
         #expect(!GameLayout.isWide(CGSize(width: 800, height: 800), style: style))
         #expect(!GameLayout.isWide(.zero, style: style))
+    }
+
+    @Test func shortScreensMoveThePlayerBarsIntoThePanel() throws {
+        let style = try style
+        #expect(GameLayout.barsInPanel(CGSize(width: 750, height: 300), style: style))
+        #expect(!GameLayout.barsInPanel(CGSize(width: 1300, height: 950), style: style))
+        #expect(!GameLayout.barsInPanel(CGSize(width: 800, height: 480), style: style))
     }
 
     @Test func clockTextShowsMinutesAndRoundsPartialSecondsUp() {

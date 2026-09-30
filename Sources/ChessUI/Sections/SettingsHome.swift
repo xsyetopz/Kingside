@@ -23,9 +23,9 @@ struct SettingsHome: View {
                 BoardThumbnail(position: .initial, side: style.home.heroThumbnailSize * style.platformScale)
                     .padding(.top, style.sectionGap)
                 form(showsPreview: false)
+                    .frame(maxWidth: style.home.formMaxWidth * style.platformScale)
             }
             .padding(.leading, style.sectionGap)
-            .frame(maxWidth: style.home.contentMaxWidth * style.platformScale)
             .frame(maxWidth: .infinity)
         }
         #endif
@@ -47,6 +47,7 @@ struct SettingsHome: View {
             Section(localization("settings.gameplay.title")) {
                 Toggle(localization("settings.moveAnimation"), isOn: $settings.value.moveAnimation)
                 Toggle(localization("settings.autoQueen"), isOn: $settings.value.autoPromoteToQueen)
+                Toggle(localization("settings.onlineChat"), isOn: $settings.value.chatEnabled)
             }
             Section(localization("settings.soundHaptics.title")) {
                 Toggle(localization("settings.soundEffects"), isOn: $settings.value.soundEffects)

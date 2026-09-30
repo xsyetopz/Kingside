@@ -41,6 +41,7 @@ struct ChessComLinkScreen: View {
                 .disabled(trimmed.isEmpty || isChecking)
             }
         }
+        .readableRows(model.catalog.interface)
         .screenTitle(localization("account.chessCom.link"), chrome: .pushed)
     }
 

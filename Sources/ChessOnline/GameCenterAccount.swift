@@ -7,9 +7,8 @@ public enum GameCenterState: Equatable, Sendable {
     case signedOut
     case signingIn
     case signedIn(displayName: String)
-    /// Game Center cannot be used on this device, for example because it is restricted; `message`
-    /// is the system's description.
-    case unavailable(message: String)
+    /// Game Center cannot be used now, for `reason`.
+    case unavailable(GameCenterUnavailableReason)
 
     /// Maps what GameKit reported to a state. `needsUserInterface` is true when GameKit handed over
     /// a sign-in screen. A cancelled sign-in leaves the player signed out; any other error means
@@ -23,9 +22,43 @@ public enum GameCenterState: Equatable, Sendable {
             if nsError.domain == GKError.errorDomain, nsError.code == GKError.Code.cancelled.rawValue {
                 return .signedOut
             }
-            return .unavailable(message: error.localizedDescription)
+            return .unavailable(GameCenterUnavailableReason(nsError))
         }
         return needsUserInterface ? .signingIn : .signedOut
+    }
+}
+
+/// Why Game Center cannot be used, in terms the player can act on. GameKit's own error text is
+/// written for developers, so the app shows its own text for each reason.
+public enum GameCenterUnavailableReason: Equatable, Sendable {
+    /// Turned off, or blocked by Screen Time, age limits, or Lockdown Mode.
+    case restricted
+    /// Game Center's servers could not be reached.
+    case offline
+    /// Game Center does not know this build of the app, as with a development build.
+    case notSetUp
+    /// Anything else.
+    case other
+
+    init(_ error: NSError) {
+        if error.domain == NSURLErrorDomain {
+            self = .offline
+            return
+        }
+        guard error.domain == GKError.errorDomain, let code = GKError.Code(rawValue: error.code) else {
+            self = .other
+            return
+        }
+        switch code {
+        case .parentalControlsBlocked, .underage, .userDenied, .notAuthorized, .lockdownMode:
+            self = .restricted
+        case .communicationsFailure, .connectionTimeout:
+            self = .offline
+        case .gameUnrecognized, .notSupported, .appUnlisted, .apiNotAvailable:
+            self = .notSetUp
+        default:
+            self = .other
+        }
     }
 }
 

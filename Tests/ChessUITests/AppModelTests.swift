@@ -17,7 +17,7 @@ struct AppModelTests {
     }
 
     @Test func uiTestingArgumentUsesThrowawayStorageAndNoFeedback() {
-        let storage = AppModel.Storage.live(arguments: ["OpenChess", "--uitesting"])
+        let storage = AppModel.Storage.live(arguments: ["Kingside", "--uitesting"])
         #expect(storage.defaults != .standard)
         #expect(storage.gamesFileURL.path().hasPrefix(FileManager.default.temporaryDirectory.path()))
         #expect(!storage.playsFeedback)
@@ -43,9 +43,20 @@ struct AppModelTests {
         #expect(model.unfinishedGame == nil)
     }
 
-    @Test func userAgentNamesTheContactURL() throws {
+    @Test func unreadableGamesFileIsReportedNotShownAsEmpty() async throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let fileURL = directory.appending(path: GamePersistenceStore.fileName)
+        try Data("not json".utf8).write(to: fileURL)
+        let model = try makeModel()
+        await model.reloadGames()
+        #expect(model.savedGamesUnreadable)
+        #expect(model.savedGames.isEmpty)
+    }
+
+    @Test func userAgentNamesTheContact() throws {
         let catalog = try ContentCatalog.load()
-        let agent = catalog.services.chessCom.userAgent(product: "OpenChess", version: "1.0")
-        #expect(agent.contains(catalog.services.chessCom.contactURL.absoluteString))
+        let agent = catalog.services.userAgent(product: "Kingside", version: "1.0")
+        #expect(agent.contains(catalog.services.contact))
     }
 }

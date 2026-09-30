@@ -13,12 +13,15 @@ enum GamesLayout {
         return game.player(human.opponent).name
     }
 
-    /// Result and move count and date, such as "You Won! · 31 moves · Jan 15, 2026".
+    /// Result and move count and date, such as "You Won! · 31 moves · Jan 15, 2026". When it
+    /// wraps, it wraps only after a separator: no part is split, and no line starts with "·".
     static func detail(_ game: SavedGame, localization: Localization, locale: Locale) -> String {
-        localization.string(
-            "games.row.detail", state(game, localization: localization),
-            localization.plural("common.moves", count: moveCount(game)),
-            game.updatedAt.formatted(.dateTime.day().month(.abbreviated).year().locale(locale)))
+        let nonBreaking = { (part: String) in part.replacingOccurrences(of: " ", with: "\u{00A0}") }
+        return localization.string(
+            "games.row.detail", nonBreaking(state(game, localization: localization)),
+            nonBreaking(localization.plural("common.moves", count: moveCount(game))),
+            nonBreaking(game.updatedAt.formatted(.dateTime.day().month(.abbreviated).year().locale(locale))))
+            .replacingOccurrences(of: " · ", with: "\u{00A0}· ")
     }
 
     /// The result title, or "In Progress" for a game that is not over.

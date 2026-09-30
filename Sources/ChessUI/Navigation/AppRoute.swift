@@ -35,4 +35,7 @@ enum AppRoute: Hashable {
     case dailyPuzzle(PuzzleDay)
     case review(SavedGame.ID)
     case chessComLink
+    case onlineLobby
+    /// A game on Lichess, by its id.
+    case onlineGame(id: String)
 }

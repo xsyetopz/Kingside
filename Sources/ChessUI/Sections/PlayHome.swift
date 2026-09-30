@@ -37,6 +37,16 @@ struct PlayHome: View {
                     }
                 }
                 .accessibilityIdentifier("play.passAndPlay")
+                if isSignedInToLichess {
+                    NavigationLink(value: AppRoute.onlineLobby) {
+                        Label {
+                            titled(localization("play.online.title"), localization("play.online.detail"))
+                        } icon: {
+                            Image(systemName: "globe")
+                        }
+                    }
+                    .accessibilityIdentifier("play.online")
+                }
             }
             .iconColumnLabels(model.catalog.interface)
         } wide: {
@@ -98,6 +108,23 @@ struct PlayHome: View {
         }
         .cardButtonStyle()
         .accessibilityIdentifier("play.passAndPlay")
+        if isSignedInToLichess {
+            NavigationLink(value: AppRoute.onlineLobby) {
+                CardLabel(
+                    title: localization("play.online.title"), subtitle: localization("play.online.detail"),
+                    isCompact: true
+                ) {
+                    SymbolBadge(systemImage: "globe")
+                }
+            }
+            .cardButtonStyle()
+            .accessibilityIdentifier("play.online")
+        }
+    }
+
+    private var isSignedInToLichess: Bool {
+        if case .signedIn = model.lichess.phase { return true }
+        return false
     }
 
     /// The bot Play Bots starts with: the last one picked, or the catalog default.

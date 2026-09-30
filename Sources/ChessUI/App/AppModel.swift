@@ -5,6 +5,7 @@ import ChessFeedback
 import ChessOnline
 import ChessPlay
 import Foundation
+import LichessLink
 import Observation
 
 /// The composition root: builds the stores, engine, feedback, and clients once, and makes the
@@ -19,11 +20,17 @@ public final class AppModel {
     public let gameStore: GamePersistenceStore
     public let engine: ChessEngine
     public let chessCom: ChessComClient
+    public let lichess: LichessAccountModel
+    /// The OAuth calls of the Lichess browser sign-in.
+    let lichessOAuth: LichessOAuth
     public let gameCenter: GameCenterAccount
     /// False under `--uitesting`: no Game Center sign-in and no welcome sheet.
     public let usesOnlineServices: Bool
     /// Newest first, as `GamePersistenceStore.allGames()` returns them.
     public private(set) var savedGames: [SavedGame] = []
+    /// The games file exists but cannot be read. The store leaves it untouched, so no game is
+    /// saved until it reads again.
+    public private(set) var savedGamesUnreadable = false
 
     @ObservationIgnored let feedback: any FeedbackSink
     @ObservationIgnored private let audio: AudioFeedback?
@@ -51,14 +58,14 @@ public final class AppModel {
         /// directory per process, no sound, and no online services, so UI tests start clean.
         public static func live(arguments: [String] = ProcessInfo.processInfo.arguments) -> Storage {
             if arguments.contains("--uitesting") {
-                let name = "OpenChess.UITests.\(ProcessInfo.processInfo.processIdentifier)"
+                let name = "Kingside.UITests.\(ProcessInfo.processInfo.processIdentifier)"
                 return Storage(
                     defaults: UserDefaults(suiteName: name) ?? .standard,
                     gamesFileURL: FileManager.default.temporaryDirectory.appending(components: name, GamePersistenceStore.fileName),
                     playsFeedback: false, usesOnlineServices: false)
             }
             let url = (try? GamePersistenceStore.defaultFileURL())
-                ?? FileManager.default.temporaryDirectory.appending(components: "OpenChess", GamePersistenceStore.fileName)
+                ?? FileManager.default.temporaryDirectory.appending(components: "Kingside", GamePersistenceStore.fileName)
             return Storage(defaults: .standard, gamesFileURL: url, playsFeedback: true)
         }
     }
@@ -68,6 +75,7 @@ public final class AppModel {
         localization: Localization = Localization(),
         storage: Storage,
         transport: any HTTPTransport = URLSessionTransport(),
+        lichessTransport: any LichessTransport = URLSessionLichessTransport(),
         bundle: Bundle = .main
     ) {
         self.catalog = catalog
@@ -78,13 +86,25 @@ public final class AppModel {
         engine = ChessEngine()
         gameCenter = GameCenterAccount()
         usesOnlineServices = storage.usesOnlineServices
-        let endpoints = catalog.services.chessCom
+        let services = catalog.services
         let product = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? localization.string("app.name")
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        let userAgent = services.userAgent(product: product, version: version)
         chessCom = ChessComClient(
             configuration: ChessComConfiguration(
-                baseURL: endpoints.baseURL, userAgent: endpoints.userAgent(product: product, version: version)),
+                baseURL: services.chessCom.baseURL, userAgent: userAgent),
             transport: transport)
+        let lichessConfiguration = LichessConfiguration(
+            baseURL: services.lichess.baseURL, userAgent: userAgent, clientID: services.lichess.clientID,
+            redirectURI: services.lichess.redirectURI)
+        lichessOAuth = LichessOAuth(configuration: lichessConfiguration, transport: lichessTransport)
+        // UI tests get an empty in-memory store and never call `start()`, so they make no requests.
+        let tokenStore: any TokenStore = storage.usesOnlineServices
+            ? KeychainTokenStore(service: Self.lichessKeychainService, account: "access-token")
+            : InMemoryTokenStore()
+        lichess = LichessAccountModel(store: tokenStore) { tokenProvider in
+            LichessClient(configuration: lichessConfiguration, transport: lichessTransport, tokenProvider: tokenProvider)
+        }
 
         if storage.playsFeedback, let pack = catalog.soundPack(id: catalog.defaults.soundPackID) {
             let audio = AudioFeedback(pack: pack, isEnabled: settings.value.soundEffects)
@@ -133,9 +153,14 @@ public final class AppModel {
     /// The first-launch welcome sheet is due.
     public var showsWelcome: Bool { usesOnlineServices && !settings.value.hasSeenWelcome }
 
-    /// Signs in to Game Center at launch, unless the welcome sheet will offer it first.
+    private static let lichessKeychainService = "io.github.xsyetopz.Kingside.lichess"
+
+    /// Signs in to Game Center at launch, unless the welcome sheet will offer it first. Resumes
+    /// the Lichess session, if one is stored.
     public func signInAtLaunch() {
-        guard usesOnlineServices, !showsWelcome else { return }
+        guard usesOnlineServices else { return }
+        Task { await lichess.start() }
+        guard !showsWelcome else { return }
         gameCenter.authenticate()
     }
 
@@ -149,12 +174,27 @@ public final class AppModel {
     public var unfinishedGame: SavedGame? { savedGames.first { !$0.isFinished } }
 
     public func reloadGames() async {
-        savedGames = await gameStore.allGames()
+        do {
+            savedGames = try await gameStore.allGames()
+            savedGamesUnreadable = false
+        } catch {
+            savedGames = []
+            savedGamesUnreadable = true
+        }
     }
 
     public func makeGameSession(_ launch: GameLaunch) -> GameSession {
         GameSession(
             launch: launch, engine: engine, catalog: catalog, localization: localization, settings: settings,
+            store: gameStore, feedback: feedback
+        ) { [weak self] in
+            Task { await self?.reloadGames() }
+        }
+    }
+
+    func makeOnlineGameSession(_ connection: any OnlineGameConnection) -> OnlineGameSession {
+        OnlineGameSession(
+            connection: connection, catalog: catalog, localization: localization, settings: settings,
             store: gameStore, feedback: feedback
         ) { [weak self] in
             Task { await self?.reloadGames() }

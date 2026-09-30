@@ -4,9 +4,9 @@ import ChessPlay
 import SwiftUI
 
 /// One player: avatar, name, rating, material lead, and the clock of a timed game.
-struct PlayerBar: View {
+struct PlayerBar<Game: PlayableGame>: View {
     let slot: PlayerSlot
-    let session: GameSession
+    let session: Game
 
     @Environment(AppModel.self) private var model
     @Environment(\.localization) private var localization
@@ -71,8 +71,8 @@ struct AvatarView: View {
 }
 
 /// The turn or result line, and the bot's latest chat line.
-struct GameStatus: View {
-    let session: GameSession
+struct GameStatus<Game: PlayableGame>: View {
+    let session: Game
     @Environment(AppModel.self) private var model
     @Environment(\.localization) private var localization
 
@@ -139,6 +139,9 @@ struct MoveList: View {
                         sheet(style)
                     }
                 }
+                // One line is only as tall as its moves; a horizontal scroll view would otherwise take
+                // all free height and shrink the board above it.
+                .fixedSize(horizontal: false, vertical: axis == .horizontal)
                 #if os(tvOS)
                 // Focusable so the remote can scroll it; a scroll view draws no focus effect.
                 .focusable()
@@ -199,8 +202,8 @@ struct MoveList: View {
 }
 
 /// The game actions as buttons: a flat list for a menu, or equal-width buttons in a grid.
-struct GameActions: View {
-    let session: GameSession
+struct GameActions<Game: PlayableGame>: View {
+    let session: Game
     let newGame: () -> Void
     let confirmResign: () -> Void
     /// Lays the buttons out in two equal columns, Resign across both.
@@ -209,13 +212,16 @@ struct GameActions: View {
 
     var body: some View {
         if inGrid {
-            Grid {
+            EqualColumns {
                 if session.isGameOver {
-                    GridRow { rematch; newGameButton }
+                    rematch
+                    newGameButton
                 } else {
-                    GridRow { hint; takeback }
-                    GridRow { offerDraw; flip }
-                    GridRow { resign.gridCellColumns(2) }
+                    hint
+                    takeback
+                    offerDraw
+                    flip
+                    resign
                 }
             }
         } else if session.isGameOver {
@@ -230,7 +236,11 @@ struct GameActions: View {
         }
     }
 
-    private var rematch: some View {
+    @ViewBuilder private var rematch: some View {
+        if session.supportsRematch { rematchButton }
+    }
+
+    private var rematchButton: some View {
         button("game.action.rematch", "arrow.counterclockwise") { session.apply(.rematch) }
     }
 
@@ -238,19 +248,23 @@ struct GameActions: View {
         button("game.action.newGame", "plus", action: newGame)
     }
 
-    private var hint: some View {
-        button("game.action.hint", "lightbulb") { session.apply(.requestHint) }
-            .disabled(!session.canMove || session.isLoadingHint)
+    @ViewBuilder private var hint: some View {
+        if session.supportsHint {
+            button("game.action.hint", "lightbulb") { session.apply(.requestHint) }
+                .disabled(!session.canMove || session.isLoadingHint)
+        }
     }
 
-    private var takeback: some View {
-        button("game.action.takeback", "arrow.uturn.backward") { session.apply(.takeback) }
-            .disabled(!session.canTakeback)
+    @ViewBuilder private var takeback: some View {
+        if session.supportsTakeback {
+            button("game.action.takeback", "arrow.uturn.backward") { session.apply(.takeback) }
+                .disabled(!session.canTakeback)
+        }
     }
 
     private var offerDraw: some View {
         button("game.action.offerDraw", "equal.circle") { session.apply(.offerDraw) }
-            .disabled(session.pendingDrawOffer != nil)
+            .disabled(!session.canOfferDraw)
     }
 
     private var flip: some View {
@@ -273,8 +287,8 @@ struct GameActions: View {
 }
 
 /// Shown when the game ends: the result, and what to do next.
-struct GameResultSheet: View {
-    let session: GameSession
+struct GameResultSheet<Game: PlayableGame>: View {
+    let session: Game
     let newGame: () -> Void
     @Environment(AppModel.self) private var model
     @Environment(\.localization) private var localization
@@ -288,10 +302,12 @@ struct GameResultSheet: View {
                 Text(session.resultReason).font(.title3).foregroundStyle(.secondary)
             }
             VStack(spacing: style.gap) {
-                Button { session.apply(.rematch) } label: {
-                    Text(localization("game.action.rematch")).frame(maxWidth: .infinity)
+                if session.supportsRematch {
+                    Button { session.apply(.rematch) } label: {
+                        Text(localization("game.action.rematch")).frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
                 Button {
                     dismiss()
                     newGame()

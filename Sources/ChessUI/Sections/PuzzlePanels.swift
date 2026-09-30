@@ -57,6 +57,7 @@ struct PuzzleScreenLayout<Header: View>: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) { flipButton.labelStyle(.iconOnly) }
         }
+        .focusedSceneValue(\.gameMenuTarget, GameMenuTarget(flip: { board.apply(.flipBoard) }))
         #endif
     }
 
@@ -73,18 +74,15 @@ struct PuzzleScreenLayout<Header: View>: View {
         VStack(spacing: style.gap) {
             header
             statusCard(style)
-            actionButton(primary.title, primary.systemImage, isEnabled: primary.isEnabled, action: primary.perform)
-                .buttonStyle(.borderedProminent)
+            actionButton(primary).buttonStyle(.borderedProminent)
             if isWide {
-                // Equal cells, two to a row, as in the game panel.
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: style.gap), count: 2), spacing: style.gap) {
-                    secondaryActions
-                }
-                .buttonStyle(.bordered)
+                // Equal cells, two to a row, and a last odd one across both, as in the game panel.
+                EqualColumns(spacing: style.gap) { secondaryButtons }
+                    .buttonStyle(.bordered)
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: style.gap) { secondaryActions }.buttonStyle(.bordered)
-                    HStack(spacing: style.gap) { secondaryActions }.buttonStyle(.bordered).labelStyle(.iconOnly)
+                    HStack(spacing: style.gap) { secondaryButtons }.buttonStyle(.bordered)
+                    HStack(spacing: style.gap) { secondaryButtons }.buttonStyle(.bordered).labelStyle(.iconOnly)
                 }
             }
         }
@@ -104,23 +102,35 @@ struct PuzzleScreenLayout<Header: View>: View {
         .surface(style)
     }
 
-    @ViewBuilder private var secondaryActions: some View {
-        actionButton(localization("game.action.hint"), "lightbulb", isEnabled: board.canHint) {
-            board.apply(.requestHint)
-        }
-        actionButton(localization("puzzles.action.showSolution"), "eye", isEnabled: board.canShowSolution) {
-            board.showSolution()
-        }
+    /// The buttons under the primary one, in order.
+    private var secondaryActions: [PuzzleAction] {
+        var actions = [
+            PuzzleAction(title: localization("game.action.hint"), systemImage: "lightbulb", isEnabled: board.canHint) {
+                board.apply(.requestHint)
+            },
+            PuzzleAction(
+                title: localization("puzzles.action.showSolution"), systemImage: "eye", isEnabled: board.canShowSolution
+            ) {
+                board.showSolution()
+            },
+        ]
         if offersRetry {
-            actionButton(localization("common.retry"), "arrow.counterclockwise", isEnabled: board.canRetry) {
-                board.retry()
-            }
+            actions.append(
+                PuzzleAction(title: localization("common.retry"), systemImage: "arrow.counterclockwise", isEnabled: board.canRetry) {
+                    board.retry()
+                })
         }
         #if os(tvOS)
-        actionButton(localization("game.action.flipBoard"), "arrow.up.arrow.down", isEnabled: true) {
+        actions.append(PuzzleAction(title: localization("game.action.flipBoard"), systemImage: "arrow.up.arrow.down") {
             board.apply(.flipBoard)
-        }
+        })
         #endif
+        return actions
+    }
+
+    private var secondaryButtons: some View {
+        let actions = secondaryActions
+        return ForEach(actions.indices, id: \.self) { actionButton(actions[$0]) }
     }
 
     #if !os(tvOS)
@@ -139,6 +149,10 @@ struct PuzzleScreenLayout<Header: View>: View {
             Label(title, systemImage: systemImage).lineLimit(1).frame(maxWidth: .infinity)
         }
         .disabled(!isEnabled)
+    }
+
+    private func actionButton(_ action: PuzzleAction) -> some View {
+        actionButton(action.title, action.systemImage, isEnabled: action.isEnabled, action: action.perform)
     }
 }
 

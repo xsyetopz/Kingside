@@ -31,8 +31,19 @@ import Testing
         #expect(resolve(error: gameKitError(.cancelled)) == .signedOut)
     }
 
-    @Test func restrictionIsUnavailableWithTheSystemMessage() {
-        #expect(resolve(error: gameKitError(.parentalControlsBlocked)) == .unavailable(message: "Not allowed"))
-        #expect(resolve(error: URLError(.notConnectedToInternet)) != .signedOut)
+    @Test func gameKitErrorsMapToTheReasonThePlayerCanActOn() {
+        #expect(resolve(error: gameKitError(.parentalControlsBlocked)) == .unavailable(.restricted))
+        #expect(resolve(error: gameKitError(.underage)) == .unavailable(.restricted))
+        #expect(resolve(error: gameKitError(.communicationsFailure)) == .unavailable(.offline))
+        #expect(resolve(error: gameKitError(.gameUnrecognized)) == .unavailable(.notSetUp))
+        #expect(resolve(error: gameKitError(.unknown)) == .unavailable(.other))
+    }
+
+    @Test func networkErrorIsOffline() {
+        #expect(resolve(error: URLError(.notConnectedToInternet)) == .unavailable(.offline))
+    }
+
+    @Test func errorOutsideGameKitAndTheNetworkIsOther() {
+        #expect(resolve(error: CocoaError(.fileNoSuchFile)) == .unavailable(.other))
     }
 }

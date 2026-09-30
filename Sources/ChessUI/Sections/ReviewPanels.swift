@@ -163,6 +163,9 @@ struct ReviewMoveList: View {
                         .padding(style.gap)
                 }
             }
+            // One line is only as tall as its moves; a horizontal scroll view would otherwise take
+            // all free height and shrink the board above it.
+            .fixedSize(horizontal: false, vertical: axis == .horizontal)
             .onChange(of: ply) { _, new in
                 withAnimation { proxy.scrollTo((new + 1) / 2) }
             }

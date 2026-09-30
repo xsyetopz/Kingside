@@ -1,5 +1,6 @@
 import ChessComLink
 import ChessContent
+import ChessOnline
 import ChessPlay
 import Foundation
 import Testing
@@ -37,7 +38,7 @@ private func decodeGame(_ json: String) throws -> ChessComGame {
 
 private func makeClient(_ handler: @escaping @Sendable (URL) -> (Int, Data)) -> ChessComClient {
     ChessComClient(
-        configuration: ChessComConfiguration(baseURL: baseURL, userAgent: "OpenChessTests/1.0"),
+        configuration: ChessComConfiguration(baseURL: baseURL, userAgent: "KingsideTests/1.0"),
         transport: StubTransport(handler: handler))
 }
 
@@ -47,6 +48,13 @@ struct AccountTests {
 
     private func makeStore() -> GamePersistenceStore {
         GamePersistenceStore(fileURL: FileManager.default.temporaryDirectory.appending(path: "AccountTests-\(UUID().uuidString)/games.json"))
+    }
+
+    @Test func everyGameCenterReasonHasItsOwnEnglishText() {
+        let reasons: [GameCenterUnavailableReason] = [.restricted, .offline, .notSetUp, .other]
+        let texts = reasons.map { localization.string(AccountLayout.gameCenterDetailKey($0), defaultValue: "\u{0}") }
+        #expect(!texts.contains("\u{0}"))
+        #expect(Set(texts).count == reasons.count)
     }
 
     @Test func ratingsListTimeClassesInOrderAndSkipMissingOnes() throws {
@@ -98,6 +106,20 @@ struct AccountTests {
         #expect(ChessComImporting.savedGameID(for: one) != ChessComImporting.savedGameID(for: two))
     }
 
+    @Test func importIntoUnreadableArchiveSkipsEveryGame() async throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appending(path: "AccountTests-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+        let damaged = Data("not json".utf8)
+        try damaged.write(to: fileURL)
+        let games = [try decodeGame(gameJSON(id: 1)), try decodeGame(gameJSON(id: 2))]
+
+        let summary = await ChessComImporting.importGames(
+            games, username: "ann", into: GamePersistenceStore(fileURL: fileURL))
+        #expect(summary == ChessComImportSummary(imported: 0, duplicates: 0, skipped: 2))
+        #expect(try Data(contentsOf: fileURL) == damaged)
+    }
+
     @Test func importSkipsDuplicatesAndVariants() async throws {
         let store = makeStore()
         let games = [try decodeGame(gameJSON(id: 1)), try decodeGame(gameJSON(id: 2)), try decodeGame(gameJSON(id: 3, rules: "chess960"))]
@@ -107,7 +129,7 @@ struct AccountTests {
         let second = await ChessComImporting.importGames(games, username: "ann", into: store)
         #expect(second == ChessComImportSummary(imported: 0, duplicates: 2, skipped: 1))
 
-        let saved = await store.allGames()
+        let saved = try await store.allGames()
         #expect(saved.count == 2)
         let one = try #require(saved.first { $0.id == ChessComImporting.savedGameID(for: games[0].url) })
         #expect(one.white.name == "Ann" && one.black.name == "Bob")
@@ -150,7 +172,7 @@ struct AccountTests {
     }
 
     @Test func uiTestingTurnsOnlineServicesOffAndWelcomeShowsOnce() throws {
-        #expect(!AppModel.Storage.live(arguments: ["OpenChess", "--uitesting"]).usesOnlineServices)
+        #expect(!AppModel.Storage.live(arguments: ["Kingside", "--uitesting"]).usesOnlineServices)
 
         let defaults = try #require(UserDefaults(suiteName: "AccountTests.\(UUID().uuidString)"))
         let storage = AppModel.Storage(

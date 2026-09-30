@@ -6,7 +6,8 @@
 	"game": {
 		"wideAspectRatio": 1.3,
 		"panelWidth": 340,
-		"avatarSize": 44
+		"avatarSize": 44,
+		"compactHeight": 480
 	},
 	"puzzles": {
 		"strikeSize": 32
@@ -21,6 +22,8 @@
 		"macWindowWidth": 480
 	},
 	"home": {
+		"macWindowWidth": 1200,
+		"macWindowHeight": 800,
 		"iconColumnWidth": 28,
 		"iconSpacing": 14,
 		"tileMinWidth": 300,
@@ -28,6 +31,7 @@
 		"thumbnailSize": 120,
 		"heroThumbnailSize": 220,
 		"contentMaxWidth": 1200,
+		"formMaxWidth": 540,
 		"setupPaneWidth": 380,
 		"choiceTileMinWidth": 120,
 		"heroAvatarScale": 3

@@ -3,7 +3,7 @@ import ChessContent
 import ChessOnline
 import SwiftUI
 
-/// The Account tab: the Game Center sign-in, and the optional read-only Chess.com link.
+/// The Account tab: the Game Center and Lichess sign-ins, and the optional read-only Chess.com link.
 struct AccountHome: View {
     @Environment(AppModel.self) private var model
     @Environment(\.localization) private var localization
@@ -20,10 +20,9 @@ struct AccountHome: View {
             HStack(alignment: .top, spacing: style.sectionGap) {
                 badge(side: style.home.heroThumbnailSize * style.platformScale)
                     .padding(.top, style.sectionGap)
-                list
+                list.frame(maxWidth: style.home.formMaxWidth * style.platformScale)
             }
             .padding(.leading, style.sectionGap)
-            .frame(maxWidth: style.home.contentMaxWidth * style.platformScale)
             .frame(maxWidth: .infinity)
         }
         .screenTitle(localization("section.account.title"))
@@ -42,6 +41,7 @@ struct AccountHome: View {
     private var list: some View {
         List {
             GameCenterSection()
+            LichessAccountSection()
             if let linkedUsername, let chessCom, chessCom.username == linkedUsername {
                 ChessComLinkedSections(account: chessCom)
             } else if linkedUsername == nil {
@@ -91,14 +91,11 @@ private struct GameCenterSection: View {
                 Button(localization("account.gameCenter.open"), systemImage: "gamecontroller") {
                     model.gameCenter.openDashboard()
                 }
-            case .unavailable(let message):
+            case .unavailable(let reason):
                 VStack(alignment: .leading) {
                     Text(localization("account.gameCenter.unavailable.title"))
-                    Text(localization("account.gameCenter.unavailable.detail"))
+                    Text(localization(AccountLayout.gameCenterDetailKey(reason)))
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text(message)
-                        .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }

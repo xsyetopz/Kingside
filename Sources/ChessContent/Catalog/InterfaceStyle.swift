@@ -26,6 +26,9 @@ public struct GameLayoutStyle: Codable, Hashable, Sendable {
     public let panelWidth: Double
     /// Diameter of a player's avatar.
     public let avatarSize: Double
+    /// Height below which the wide layout moves the player bars from above and below the board
+    /// into the panel, so a short screen such as a landscape phone gives the board its height.
+    public let compactHeight: Double
 }
 
 /// Sizes of the puzzle screens, which share the game screen's wide or narrow rule.
@@ -61,6 +64,11 @@ public struct HomeLayoutStyle: Codable, Hashable, Sendable {
     public let heroThumbnailSize: Double
     /// Widest the grid gets, so cards do not stretch across a large window.
     public let contentMaxWidth: Double
+    /// Size of a new macOS window, room for the sidebar, a board, and the panel beside it.
+    public let macWindowWidth: Double
+    public let macWindowHeight: Double
+    /// Widest the rows of a list or form get, so lines stay readable on a wide screen.
+    public let formMaxWidth: Double
     /// Width of a setup screen's pane that shows the current choice and Start, beside the options.
     public let setupPaneWidth: Double
     /// Narrowest an option tile on a setup screen may get, such as a bot or a time control.

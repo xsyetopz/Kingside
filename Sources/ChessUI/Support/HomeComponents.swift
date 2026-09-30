@@ -51,6 +51,36 @@ extension View {
     }
 }
 
+extension View {
+    /// Keeps a scrolling list's or form's rows at most `formMaxWidth` wide and centered. Outside
+    /// tvOS its background and scrolling still span the whole width.
+    func readableRows(_ style: InterfaceStyle) -> some View {
+        modifier(ReadableRows(maxWidth: style.home.formMaxWidth * style.platformScale))
+    }
+}
+
+private struct ReadableRows: ViewModifier {
+    let maxWidth: Double
+    #if !os(tvOS)
+    @State private var inset = 0.0
+    #endif
+
+    func body(content: Content) -> some View {
+        #if os(tvOS)
+        // tvOS lists ignore `contentMargins`, and their background is clear, so a frame is enough.
+        content
+            .frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
+        #else
+        content
+            .contentMargins(.horizontal, inset, for: .scrollContent)
+            .onGeometryChange(for: Double.self) { $0.size.width } action: { width in
+                inset = max(0, (width - maxWidth) / 2)
+            }
+        #endif
+    }
+}
+
 // MARK: - Cards
 
 /// A scrolling grid of cards, as many columns as fit `tileMinWidth`, centered and at most
@@ -120,6 +150,8 @@ struct CardSection<Content: View>: View {
 struct CardLabel<Artwork: View>: View {
     let title: String
     var subtitle: String?
+    /// Two lines by default, so a long bio stays short; `nil` shows all of it.
+    var subtitleLineLimit: Int? = 2
     var detail: String?
     var isSelected = false
     var isCompact = false
@@ -127,11 +159,12 @@ struct CardLabel<Artwork: View>: View {
     @Environment(AppModel.self) private var model
 
     init(
-        title: String, subtitle: String? = nil, detail: String? = nil, isSelected: Bool = false,
-        isCompact: Bool = false, @ViewBuilder artwork: () -> Artwork
+        title: String, subtitle: String? = nil, subtitleLineLimit: Int? = 2, detail: String? = nil,
+        isSelected: Bool = false, isCompact: Bool = false, @ViewBuilder artwork: () -> Artwork
     ) {
         self.title = title
         self.subtitle = subtitle
+        self.subtitleLineLimit = subtitleLineLimit
         self.detail = detail
         self.isSelected = isSelected
         self.isCompact = isCompact
@@ -145,7 +178,8 @@ struct CardLabel<Artwork: View>: View {
             VStack(alignment: .leading, spacing: style.gap / 4) {
                 Text(title).font(.headline)
                 if let subtitle {
-                    Text(subtitle).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                    Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+                        .lineLimit(subtitleLineLimit)
                 }
                 if let detail {
                     Text(detail).font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.tint)
@@ -334,6 +368,7 @@ extension View {
         navigationTitle(title)
             .toolbar(.hidden, for: .navigationBar)
             .toolbar(chrome == .root ? .automatic : .hidden, for: .tabBar)
+            .modifier(HiddenTabBarInset(isHidden: chrome != .root))
         #elseif os(iOS)
         navigationTitle(title)
             .toolbar(chrome == .board ? .hidden : .automatic, for: .tabBar)
@@ -342,6 +377,27 @@ extension View {
         #endif
     }
 }
+
+#if os(tvOS)
+/// A hidden tvOS tab bar still reserves its height at the top of the safe area, which leaves
+/// a gap above pushed screens. This replaces that top inset with the overscan inset, which the
+/// TV safe area has equally at the top and bottom.
+private struct HiddenTabBarInset: ViewModifier {
+    let isHidden: Bool
+    @State private var overscan = 0.0
+
+    func body(content: Content) -> some View {
+        if isHidden {
+            content
+                .safeAreaPadding(.top, overscan)
+                .ignoresSafeArea(.container, edges: .top)
+                .onGeometryChange(for: Double.self) { $0.safeAreaInsets.bottom } action: { overscan = $0 }
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 /// A pushed screen's title inside its scrolling content on tvOS, where `screenTitle` hides the
 /// navigation bar; nothing elsewhere, where the navigation bar shows it.

@@ -45,7 +45,6 @@ struct LicensesScreen: View {
     @Environment(\.localization) private var localization
 
     var body: some View {
-        let style = model.catalog.interface
         Form {
             ScreenHeading(title: localization("licenses.title")).listRowBackground(Color.clear)
             ForEach(LicenseGroup.groups(in: model.catalog)) { group in
@@ -62,8 +61,7 @@ struct LicensesScreen: View {
             }
         }
         .formStyle(.grouped)
-        .frame(maxWidth: style.home.contentMaxWidth * style.platformScale)
-        .frame(maxWidth: .infinity)
+        .readableRows(model.catalog.interface)
         .screenTitle(localization("licenses.title"), chrome: .pushed)
     }
 }
@@ -72,6 +70,7 @@ struct LicensesScreen: View {
 private struct LicenseNoticeScreen: View {
     let title: String
     let notice: String
+    @Environment(AppModel.self) private var model
 
     var body: some View {
         List {
@@ -82,6 +81,7 @@ private struct LicenseNoticeScreen: View {
                     .modifier(ReadOnlyRow())
             }
         }
+        .readableRows(model.catalog.interface)
         .screenTitle(title, chrome: .pushed)
     }
 }
