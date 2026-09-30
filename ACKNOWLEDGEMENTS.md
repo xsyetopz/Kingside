@@ -69,3 +69,15 @@ puzzle id, FEN, UCI moves, rating and themes. Thanks to lichess.org and its cont
 
 License: Creative Commons CC0 1.0 Universal (public domain dedication,
 <https://creativecommons.org/publicdomain/zero/1.0/>).
+
+## Chat word filter (LDNOOBW)
+
+`Sources/ChessContent/Resources/Catalogs/chat-filter.json` is derived from the English list of
+"List of Dirty, Naughty, Obscene, and Otherwise Bad Words" by Shutterstock, Inc. and contributors
+(<https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words>, commit
+`5faf2ba42d7b1c0977169ec3611df25a3c08eb13`, file `en`). The entries were lowercased, and
+multi-word and hyphenated entries were removed. The app shows the notice under Settings > Licenses
+(`Sources/ChessContent/Resources/Licenses/ldnoobw-notice.txt`).
+
+License: Creative Commons Attribution 4.0 International (CC BY 4.0,
+<https://creativecommons.org/licenses/by/4.0/>).

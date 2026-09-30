@@ -21,6 +21,7 @@ public struct ContentCatalog: Sendable {
     public let tuning: PlayTuning
     public let openingBook: OpeningBook
     public let services: ServiceEndpoints
+    public let chatFilter: ChatFilter
     public let interface: InterfaceStyle
 
     public static func load(from bundle: Bundle = Localization.moduleBundle) throws -> ContentCatalog {
@@ -61,6 +62,7 @@ public struct ContentCatalog: Sendable {
             tuning: try decode(PlayTuning.self, "play-tuning"),
             openingBook: try decode(OpeningBook.self, "opening-book"),
             services: try decode(ServiceEndpoints.self, "services"),
+            chatFilter: try decode(ChatFilter.self, "chat-filter"),
             interface: try decode(InterfaceStyle.self, "interface"))
     }
 

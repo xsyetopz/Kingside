@@ -9,11 +9,11 @@
 			"noticeFile": "cburnett-notice"
 		},
 		{
-			"id": "openchess-synth",
-			"titleKey": "attribution.openchess-synth.title",
-			"author": "OpenChess contributors",
-			"license": "LicenseRef-OpenChess",
-			"source": "https://github.com/xsyetopz/OpenChess"
+			"id": "kingside-synth",
+			"titleKey": "attribution.kingside-synth.title",
+			"author": "Kingside contributors",
+			"license": "LicenseRef-Kingside",
+			"source": "https://github.com/xsyetopz/Kingside"
 		},
 		{
 			"id": "lichess-puzzles",
@@ -21,6 +21,14 @@
 			"author": "lichess.org and its contributors",
 			"license": "CC0-1.0",
 			"source": "https://database.lichess.org/#puzzles"
+		},
+		{
+			"id": "ldnoobw",
+			"titleKey": "attribution.ldnoobw.title",
+			"author": "Shutterstock, Inc. and contributors",
+			"license": "CC-BY-4.0",
+			"source": "https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words",
+			"noticeFile": "ldnoobw-notice"
 		}
 	]
 }

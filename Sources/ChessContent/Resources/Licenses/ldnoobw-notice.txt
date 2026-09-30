@@ -1,0 +1,12 @@
+Chat word filter: "List of Dirty, Naughty, Obscene, and Otherwise Bad Words"
+by Shutterstock, Inc. and contributors.
+Source: https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words
+(commit 5faf2ba42d7b1c0977169ec3611df25a3c08eb13, file "en").
+
+Licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+
+Changes: the entries were lowercased, and multi-word and hyphenated entries were removed.
+
+The material is provided as-is and as-available, without warranties of any kind, as stated in
+section 5 of the license.
