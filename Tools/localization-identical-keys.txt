@@ -1,0 +1,20 @@
+# Keys whose value is correctly the same in every language, such as names.
+# Tools/check-localizations.sh does not report these as stale English.
+app.name
+bot.pip.name
+bot.maisie.name
+bot.bramble.name
+bot.rosa.name
+bot.gus.name
+bot.nadia.name
+bot.quill.name
+bot.priya.name
+bot.viktor.name
+bot.odette.name
+bot.atlas.name
+bot.orrin.name
+timeControl.1+1.label
+timeControl.2+1.label
+timeControl.3+2.label
+timeControl.15+10.label
+pieceSet.cburnett.name

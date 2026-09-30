@@ -1,0 +1,132 @@
+{
+	"comment": "Modules each SwiftPM target may import. Target-to-target edges are also checked by `swift build --explicit-target-dependency-import-check error`; this file adds the system frameworks, which SwiftPM does not check. Planned targets are listed in docs/architecture/0001-swiftpm-first-multiplatform.md and get an entry when they are created.",
+	"targets": {
+		"ChessCore": {
+			"path": "Sources/ChessCore",
+			"allow": ["Foundation"]
+		},
+		"ChessBench": {
+			"path": "Tools/ChessBench",
+			"allow": ["Foundation", "ChessCore"]
+		},
+		"ChessCoreTests": {
+			"path": "Tests/ChessCoreTests",
+			"allow": ["Foundation", "Testing", "ChessCore"]
+		},
+		"ChessContent": {
+			"path": "Sources/ChessContent",
+			"allow": ["Foundation", "ChessCore"]
+		},
+		"ChessComLink": {
+			"path": "Sources/ChessComLink",
+			"allow": ["Foundation", "ChessCore"]
+		},
+		"ChessComLinkTests": {
+			"path": "Tests/ChessComLinkTests",
+			"allow": ["Foundation", "Testing", "ChessCore", "ChessComLink"]
+		},
+		"ChessOnline": {
+			"path": "Sources/ChessOnline",
+			"allow": ["Foundation", "GameKit", "Observation"]
+		},
+		"ChessOnlineTests": {
+			"path": "Tests/ChessOnlineTests",
+			"allow": ["Foundation", "GameKit", "Testing", "ChessOnline"]
+		},
+		"ChessPlay": {
+			"path": "Sources/ChessPlay",
+			"allow": ["Foundation", "Observation", "ChessCore", "ChessContent"]
+		},
+		"ChessPlayTests": {
+			"path": "Tests/ChessPlayTests",
+			"allow": [
+				"Foundation",
+				"Observation",
+				"Testing",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay"
+			]
+		},
+		"ChessContentTests": {
+			"path": "Tests/ChessContentTests",
+			"allow": ["Foundation", "Testing", "ChessCore", "ChessContent"]
+		},
+		"ChessBoardScene": {
+			"path": "Sources/ChessBoardScene",
+			"allow": [
+				"Foundation",
+				"SpriteKit",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay"
+			]
+		},
+		"ChessBoardSceneTests": {
+			"path": "Tests/ChessBoardSceneTests",
+			"allow": [
+				"Foundation",
+				"Testing",
+				"SpriteKit",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay",
+				"ChessBoardScene"
+			]
+		},
+		"ChessFeedback": {
+			"path": "Sources/ChessFeedback",
+			"allow": [
+				"Foundation",
+				"AVFAudio",
+				"CoreHaptics",
+				"GameController",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay"
+			]
+		},
+		"ChessFeedbackTests": {
+			"path": "Tests/ChessFeedbackTests",
+			"allow": [
+				"Foundation",
+				"Testing",
+				"AVFAudio",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay",
+				"ChessFeedback"
+			]
+		},
+		"ChessUI": {
+			"path": "Sources/ChessUI",
+			"allow": [
+				"Foundation",
+				"Observation",
+				"SwiftUI",
+				"SpriteKit",
+				"_SpriteKit_SwiftUI",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay",
+				"ChessBoardScene",
+				"ChessFeedback",
+				"ChessComLink",
+				"ChessOnline"
+			]
+		},
+		"ChessUITests": {
+			"path": "Tests/ChessUITests",
+			"allow": [
+				"Foundation",
+				"Testing",
+				"ChessUI",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay",
+				"ChessComLink"
+			]
+		}
+	},
+	"unlisted_roots": ["Sources", "Tests"]
+}
