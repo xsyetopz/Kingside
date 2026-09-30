@@ -1,12 +1,12 @@
-# CHESS — App Store metadata draft
+# OpenChess — App Store metadata draft
 
 ## App record
 
 - Platform: tvOS
-- Name: CHESS (subject to availability in App Store Connect)
+- Name: OpenChess (subject to availability in App Store Connect)
 - Primary language: English (U.S.)
-- Bundle ID: `com.sohail.ChessTV`
-- SKU suggestion: `CHESS-TV-001`
+- Bundle ID: `io.github.xsyetopz.OpenChess`
+- SKU suggestion: `OPENCHESS-001`
 - Version: 1.0
 - Primary category: Games — Board
 - Secondary category: Games — Strategy
@@ -21,7 +21,7 @@ Settle in for an original television-first chess experience: play bots, challeng
 
 ## Description
 
-CHESS brings the complete game to Apple TV with an interface designed specifically for the television.
+OpenChess brings the complete game to Apple TV with an interface designed specifically for the television.
 
 Play bots or a friend using only the Siri Remote, or connect a compatible Bluetooth game controller. Navigate the board directionally, select a piece, inspect its legal moves, and watch each move slide into place.
 
@@ -39,7 +39,7 @@ Features:
 - Siri Remote and Bluetooth controller support
 - Works entirely offline
 
-CHESS has an original interface, icon, and board design; the piece artwork is the CC BY-SA cburnett set (see ACKNOWLEDGEMENTS.md). It is not affiliated with or endorsed by Chess.com.
+OpenChess has an original interface, icon, and board design; the piece artwork is the BSD-licensed cburnett set (see ACKNOWLEDGEMENTS.md). It is not affiliated with or endorsed by Chess.com.
 
 ## Keywords
 
@@ -47,7 +47,7 @@ chess,board game,puzzles,strategy,offline,bots,Siri Remote,game controller,Apple
 
 ## What’s New
 
-Welcome to CHESS 1.0, an original chess experience built for Apple TV.
+Welcome to OpenChess 1.0, an original chess experience built for Apple TV.
 
 ## App Review notes
 
