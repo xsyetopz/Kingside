@@ -7,7 +7,7 @@ import Testing
 
 @Suite struct PersistenceTests {
     private func makeStore(in directory: URL) -> GamePersistenceStore {
-        GamePersistenceStore(fileURL: directory.appending(components: "OpenChess", GamePersistenceStore.fileName))
+        GamePersistenceStore(fileURL: directory.appending(components: "Kingside", GamePersistenceStore.fileName))
     }
 
     private func defaultBot() throws -> PlayerInfo {
@@ -42,7 +42,7 @@ import Testing
             let store = makeStore(in: directory)
             let saved = try makeGame()
             try await store.save(saved)
-            let restored = await store.unfinishedGame()
+            let restored = try await store.unfinishedGame()
             #expect(restored == saved)
             #expect(restored?.clock.remaining(.white) == 167.5)
             #expect(restored?.humanColor == .white)
@@ -56,7 +56,7 @@ import Testing
             let second = try makeGame(updatedAt: Date(timeIntervalSince1970: 200))
             try await store.save(first)
             try await store.save(second)
-            let all = await store.allGames()
+            let all = try await store.allGames()
             #expect(all.map(\.id) == [second.id])
         }
     }
@@ -69,8 +69,8 @@ import Testing
             game.result = .blackWon
             game.termination = .resignation
             try await store.save(game)
-            let unfinished = await store.unfinishedGame()
-            let all = await store.allGames()
+            let unfinished = try await store.unfinishedGame()
+            let all = try await store.allGames()
             #expect(unfinished == nil)
             #expect(all.map(\.result) == [.blackWon])
         }
@@ -82,7 +82,7 @@ import Testing
             let game = try makeGame(result: .draw)
             try await store.save(game)
             try await store.delete(id: game.id)
-            let all = await store.allGames()
+            let all = try await store.allGames()
             #expect(all.isEmpty)
         }
     }
@@ -97,13 +97,26 @@ import Testing
         #expect(pgn.hasSuffix("0-1") || pgn.contains("0-1\n"))
     }
 
+    @Test func unreadableArchiveIsNotOverwritten() async throws {
+        try await withTemporaryDirectory { directory in
+            let fileURL = directory.appending(component: GamePersistenceStore.fileName)
+            let damaged = Data("[{\"id\": \"truncated".utf8)
+            try damaged.write(to: fileURL)
+            let store = GamePersistenceStore(fileURL: fileURL)
+
+            await #expect(throws: DecodingError.self) { try await store.save(try makeGame()) }
+            await #expect(throws: DecodingError.self) { try await store.delete(id: UUID()) }
+            #expect(try Data(contentsOf: fileURL) == damaged)
+        }
+    }
+
     @Test func legacyArchiveFileLoads() async throws {
         try await withTemporaryDirectory { directory in
             let fileURL = directory.appending(component: GamePersistenceStore.fileName)
             try FileManager.default.copyItem(at: fixtureURL("saved-games-v2.json"), to: fileURL)
             let store = GamePersistenceStore(fileURL: fileURL)
 
-            let all = await store.allGames()
+            let all = try await store.allGames()
             #expect(all.count == 2)
             // Newest first.
             #expect(all.map(\.id.uuidString) == [
@@ -127,7 +140,7 @@ import Testing
             #expect(botGame.result == .ongoing)
             #expect(botGame.termination == nil)
 
-            let unfinished = await store.unfinishedGame()
+            let unfinished = try await store.unfinishedGame()
             #expect(unfinished?.id == botGame.id)
         }
     }
@@ -163,49 +176,6 @@ import Testing
             #expect(!second.value.soundEffects)
             #expect(second.value.playBotsColor == .random)
             #expect(second.value == first.value)
-        }
-    }
-
-    @MainActor
-    @Test func legacyPlayBotsKeysMigrateIntoEmptySettings() throws {
-        try withTemporaryDefaults { defaults in
-            defaults.set("martin", forKey: SettingsStore.legacyPlayBotsBotIDKey)
-            defaults.set("black", forKey: SettingsStore.legacyPlayBotsColorKey)
-            let store = SettingsStore(defaults: defaults)
-            #expect(store.value.playBotsBotID == "martin")
-            #expect(store.value.playBotsColor == .black)
-
-            // The migrated values are saved, so they survive once the legacy keys are gone.
-            defaults.removeObject(forKey: SettingsStore.legacyPlayBotsBotIDKey)
-            defaults.removeObject(forKey: SettingsStore.legacyPlayBotsColorKey)
-            let reloaded = SettingsStore(defaults: defaults)
-            #expect(reloaded.value.playBotsBotID == "martin")
-            #expect(reloaded.value.playBotsColor == .black)
-        }
-    }
-
-    @MainActor
-    @Test func legacyPlayBotsKeysDoNotOverwriteStoredFields() throws {
-        try withTemporaryDefaults { defaults in
-            let stored = Data(#"{"playBotsBotID":"bramble","playBotsColor":"random"}"#.utf8)
-            defaults.set(stored, forKey: SettingsStore.defaultsKey)
-            defaults.set("martin", forKey: SettingsStore.legacyPlayBotsBotIDKey)
-            defaults.set("black", forKey: SettingsStore.legacyPlayBotsColorKey)
-            let store = SettingsStore(defaults: defaults)
-            #expect(store.value.playBotsBotID == "bramble")
-            #expect(store.value.playBotsColor == .random)
-        }
-    }
-
-    @MainActor
-    @Test func legacyPlayBotsKeysFillOnlyMissingFields() throws {
-        try withTemporaryDefaults { defaults in
-            defaults.set(Data(#"{"playBotsBotID":"bramble"}"#.utf8), forKey: SettingsStore.defaultsKey)
-            defaults.set("martin", forKey: SettingsStore.legacyPlayBotsBotIDKey)
-            defaults.set("black", forKey: SettingsStore.legacyPlayBotsColorKey)
-            let store = SettingsStore(defaults: defaults)
-            #expect(store.value.playBotsBotID == "bramble")
-            #expect(store.value.playBotsColor == .black)
         }
     }
 }

@@ -12,10 +12,22 @@ public enum GameMode: Codable, Hashable, Sendable {
     case bot(id: String)
     /// Two people sharing one device.
     case passAndPlay
+    /// On an online service, such as `lichess`; `gameID` is the service's game id.
+    case online(service: String, gameID: String)
 
     public var botID: String? {
         if case .bot(let id) = self { return id }
         return nil
+    }
+
+    /// The human's side: the non-bot side in a bot game, the `PlayerInfo.isLocalUser` side in
+    /// an online game, nil in pass-and-play (and in an online game with no marked side).
+    public func humanColor(white: PlayerInfo, black: PlayerInfo) -> PieceColor? {
+        switch self {
+        case .bot: white.isBot ? .black : .white
+        case .passAndPlay: nil
+        case .online: white.isLocalUser ? .white : (black.isLocalUser ? .black : nil)
+        }
     }
 }
 
@@ -26,11 +38,19 @@ public struct PlayerInfo: Codable, Hashable, Sendable {
     public var rating: Int?
     /// `Bot.id` when this side is played by a bot, nil for a human.
     public var botID: String?
+    /// Online games: true on the side the signed-in player played. Not stored when false, so
+    /// bot and pass-and-play games keep their old encoding.
+    public var isLocalUser: Bool {
+        get { localUser ?? false }
+        set { localUser = newValue ? true : nil }
+    }
+    private var localUser: Bool?
 
-    public init(name: String, rating: Int? = nil, botID: String? = nil) {
+    public init(name: String, rating: Int? = nil, botID: String? = nil, isLocalUser: Bool = false) {
         self.name = name
         self.rating = rating
         self.botID = botID
+        self.isLocalUser = isLocalUser
     }
 
     /// `bot` as a player, with its localised name and its Elo.
@@ -164,18 +184,21 @@ public struct SavedGame: Codable, Identifiable, Equatable, Sendable {
 
     public func player(_ color: PieceColor) -> PlayerInfo { color == .white ? white : black }
 
-    /// The human's color in a bot game; nil in pass-and-play.
-    public var humanColor: PieceColor? {
-        guard mode.botID != nil else { return nil }
-        return white.isBot ? .black : .white
-    }
+    /// The human's color in a bot or online game; nil in pass-and-play. See `GameMode.humanColor`.
+    public var humanColor: PieceColor? { mode.humanColor(white: white, black: black) }
 
     /// PGN with Event, Site, Date, White, Black, Result, TimeControl, Termination and
     /// WhiteElo/BlackElo when known.
     public var pgn: String {
+        let event, site: String
+        switch mode {
+        case .bot: (event, site) = ("Casual Game vs Bot", "Kingside")
+        case .passAndPlay: (event, site) = ("Pass and Play", "Kingside")
+        case .online(let service, _): (event, site) = ("Online Game", service)
+        }
         var tags = [
-            "Event": mode.botID == nil ? "Pass and Play" : "Casual Game vs Bot",
-            "Site": "OpenChess",
+            "Event": event,
+            "Site": site,
             "Date": Self.pgnDate(createdAt),
             "Round": "-",
             "White": white.name,

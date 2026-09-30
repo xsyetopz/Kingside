@@ -45,6 +45,9 @@ public final class GameSession {
     public private(set) var isLoadingHint = false
     /// Pass-and-play: the color that offered a draw, waiting for the other side to answer.
     public private(set) var pendingDrawOffer: PieceColor?
+    /// True after a save failed, so the screen can say the game will not resume; the screen
+    /// sets it back to false. Raised once per session, not after every move.
+    public var showsSaveFailure = false
     public private(set) var moveRows: [MoveRow] = []
     /// Opponent pieces captured by each color.
     public private(set) var capturedPieces: [PieceColor: [PieceType]] = [.white: [], .black: []]
@@ -91,9 +94,10 @@ public final class GameSession {
     @ObservationIgnored private var clockTask: Task<Void, Never>?
     /// The latest save; each save waits for the previous one, so the newest snapshot wins.
     @ObservationIgnored private(set) var saveTask: Task<Void, Never>?
+    @ObservationIgnored private var hasReportedSaveFailure = false
 
     /// `catalog` supplies the bots and `tuning`. `onSave` runs on the main actor after each
-    /// completed save. `clock` drives the game clock and the bot's minimum think time.
+    /// successful save. `clock` drives the game clock and the bot's minimum think time.
     public init(
         launch: GameLaunch,
         engine: ChessEngine,
@@ -161,7 +165,7 @@ public final class GameSession {
         return nil
     }
     /// The human's color in a bot game; nil in pass-and-play.
-    public var humanColor: PieceColor? { mode.botID == nil ? nil : (white.isBot ? .black : .white) }
+    public var humanColor: PieceColor? { mode.humanColor(white: white, black: black) }
     public var isPassAndPlay: Bool { mode == .passAndPlay }
     public var isGameOver: Bool { result != .ongoing }
     /// True when the player may move pieces now.
@@ -581,9 +585,19 @@ public final class GameSession {
         let previous = saveTask
         saveTask = Task { [weak self, store] in
             await previous?.value
-            try? await store.save(snapshot)
-            self?.onSave()
+            do {
+                try await store.save(snapshot)
+                self?.onSave()
+            } catch {
+                self?.reportSaveFailure()
+            }
         }
+    }
+
+    private func reportSaveFailure() {
+        guard !hasReportedSaveFailure else { return }
+        hasReportedSaveFailure = true
+        showsSaveFailure = true
     }
 
     // MARK: - Pure rules
@@ -651,7 +665,7 @@ public final class GameSession {
         return inCheck ? localization.string("game.turn.check", base) : base
     }
 
-    private nonisolated static func seconds(_ duration: Duration) -> TimeInterval {
+    nonisolated static func seconds(_ duration: Duration) -> TimeInterval {
         let parts = duration.components
         return TimeInterval(parts.seconds) + TimeInterval(parts.attoseconds) / 1e18
     }

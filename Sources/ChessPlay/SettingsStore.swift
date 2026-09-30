@@ -22,7 +22,7 @@ public enum BotColorChoice: String, Codable, CaseIterable, Identifiable, Sendabl
     public var titleKey: String { "playBots.color.\(rawValue).name" }
 }
 
-/// Per-device settings, stored as JSON under `OpenChess.settings.v1`.
+/// Per-device settings, stored as JSON under `Kingside.settings.v1`.
 public struct AppSettings: Codable, Equatable, Sendable {
     /// `BoardTheme.id`; nil means `ContentDefaults.boardThemeID`. Older builds stored the names
     /// `green`, `brown`, `blue`, and `purple`; they are kept as stored and resolve to the default.
@@ -47,6 +47,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var chessComUsername: String?
     /// The first-launch welcome sheet has been shown.
     public var hasSeenWelcome = false
+    /// Shows the chat in online games; off hides the panel and every incoming line.
+    public var chatEnabled = true
 
     public init() {}
 
@@ -75,6 +77,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         playBotsColor = value(.playBotsColor, defaults.playBotsColor)
         chessComUsername = optional(.chessComUsername)
         hasSeenWelcome = value(.hasSeenWelcome, defaults.hasSeenWelcome)
+        chatEnabled = value(.chatEnabled, defaults.chatEnabled)
     }
 
     /// The chosen board theme, or the catalog default when none is chosen or the id is unknown.
@@ -92,48 +95,21 @@ public struct AppSettings: Codable, Equatable, Sendable {
 @Observable
 @MainActor
 public final class SettingsStore {
-    public static let defaultsKey = "OpenChess.settings.v1"
-    /// `@AppStorage` keys of the Play Bots screen before the choice moved into `AppSettings`.
-    public static let legacyPlayBotsBotIDKey = "OpenChess.playBots.botID"
-    public static let legacyPlayBotsColorKey = "OpenChess.playBots.color"
+    public static let defaultsKey = "Kingside.settings.v1"
 
     public var value: AppSettings { didSet { save() } }
     private let defaults: UserDefaults
 
     public init(defaults: UserDefaults) {
         self.defaults = defaults
-        let stored = defaults.data(forKey: Self.defaultsKey)
-        var settings = stored.flatMap { try? JSONDecoder().decode(AppSettings.self, from: $0) } ?? AppSettings()
-        let migrated = Self.migrateLegacyPlayBots(into: &settings, storedData: stored, defaults: defaults)
-        value = settings
-        if migrated { save() }
+        value = defaults.data(forKey: Self.defaultsKey)
+            .flatMap { try? JSONDecoder().decode(AppSettings.self, from: $0) } ?? AppSettings()
     }
 
     /// The sound effects switch.
     public var soundEnabled: Bool {
         get { value.soundEffects }
         set { value.soundEffects = newValue }
-    }
-
-    /// Copies the legacy Play Bots keys into `settings` for each field the stored settings lack.
-    /// Returns true when anything was copied.
-    private static func migrateLegacyPlayBots(
-        into settings: inout AppSettings, storedData: Data?, defaults: UserDefaults
-    ) -> Bool {
-        let storedKeys = storedData
-            .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-            .map { Set($0.keys) } ?? []
-        var migrated = false
-        if !storedKeys.contains("playBotsBotID"), let botID = defaults.string(forKey: legacyPlayBotsBotIDKey) {
-            settings.playBotsBotID = botID
-            migrated = true
-        }
-        if !storedKeys.contains("playBotsColor"),
-           let color = defaults.string(forKey: legacyPlayBotsColorKey).flatMap(BotColorChoice.init(rawValue:)) {
-            settings.playBotsColor = color
-            migrated = true
-        }
-        return migrated
     }
 
     private func save() {

@@ -27,6 +27,7 @@ final class TestClock: Clock, @unchecked Sendable {
     var now: Instant { lock.withLock { current } }
     var minimumResolution: Duration { .zero }
     var hasSleepers: Bool { lock.withLock { !sleepers.isEmpty } }
+    var sleeperCount: Int { lock.withLock { sleepers.count } }
 
     func sleep(until deadline: Instant, tolerance: Duration? = nil) async throws {
         let id = UUID()
@@ -99,7 +100,7 @@ final class GameSessionTests {
     private let store: GamePersistenceStore
 
     init() {
-        store = GamePersistenceStore(fileURL: directory.appending(components: "OpenChess", GamePersistenceStore.fileName))
+        store = GamePersistenceStore(fileURL: directory.appending(components: "Kingside", GamePersistenceStore.fileName))
     }
 
     deinit {
@@ -243,12 +244,29 @@ final class GameSessionTests {
         #expect(sink.events.last == .gameOver(.blackWon))
         await session.saveTask?.value
 
-        let saved = await store.allGames()
+        let saved = try await store.allGames()
         #expect(saved.count == 1)
         let game = try #require(saved.first)
         #expect(game.id == session.id)
         #expect(game.result == .blackWon)
         #expect(game.termination == .checkmate)
         #expect(game.game.moves.count == 4)
+    }
+
+    @Test func failedSaveIsReportedOnce() async throws {
+        // A regular file where the store's directory should be makes every write fail.
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data().write(to: directory.appending(component: "Kingside"))
+        let session = try makeSession(passAndPlay())
+        #expect(!session.showsSaveFailure)
+
+        try play(["e2e4"], in: session)
+        await session.saveTask?.value
+        #expect(session.showsSaveFailure)
+
+        session.showsSaveFailure = false
+        try play(["e7e5"], in: session)
+        await session.saveTask?.value
+        #expect(!session.showsSaveFailure)
     }
 }

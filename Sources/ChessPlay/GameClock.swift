@@ -19,6 +19,13 @@ public struct GameClock: Codable, Equatable, Sendable {
         blackRemaining = TimeInterval(timeControl.initialSeconds)
     }
 
+    /// A clock with the given remaining times, such as those an online server reports.
+    public init(timeControl: TimeControl, whiteRemaining: TimeInterval, blackRemaining: TimeInterval) {
+        self.timeControl = timeControl
+        self.whiteRemaining = max(0, whiteRemaining)
+        self.blackRemaining = max(0, blackRemaining)
+    }
+
     public var isTimed: Bool { timeControl.isTimed }
 
     public func remaining(_ color: PieceColor) -> TimeInterval {

@@ -1,12 +1,13 @@
 import ChessCore
 import Foundation
 
-/// Stores local games as one JSON file, by default `OpenChess/saved-games-v2.json` in
+/// Stores local games as one JSON file, by default `Kingside/saved-games-v2.json` in
 /// Application Support. It is the only writer of that file on a device.
 /// - At most one game is unfinished: saving an ongoing game drops any other ongoing game.
 /// - Finished games form the archive; only the newest `archiveLimit` are kept.
 /// - `allGames()` is sorted newest first by `updatedAt`.
 /// - Writes replace the file atomically, so a crash during a write keeps the old archive.
+/// - A file that exists but does not decode is never overwritten; reads and writes throw.
 public actor GamePersistenceStore {
     public static let archiveLimit = 200
     public static let fileName = "saved-games-v2.json"
@@ -22,31 +23,38 @@ public actor GamePersistenceStore {
         decoder.dateDecodingStrategy = .iso8601
     }
 
-    /// `OpenChess/saved-games-v2.json` in the user's Application Support directory.
+    /// `Kingside/saved-games-v2.json` in the user's Application Support directory.
     public static func defaultFileURL(fileManager: FileManager = .default) throws -> URL {
         try fileManager.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            .appending(components: "OpenChess", fileName)
+            .appending(components: "Kingside", fileName)
     }
 
-    public func allGames() -> [SavedGame] {
-        guard let data = try? Data(contentsOf: fileURL),
-              let games = try? decoder.decode([SavedGame].self, from: data) else { return [] }
+    /// Empty when the file does not exist yet. Throws when it exists but cannot be read or
+    /// decoded, so `save` and `delete` never replace an archive they could not read.
+    public func allGames() throws -> [SavedGame] {
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch CocoaError.fileReadNoSuchFile {
+            return []
+        }
+        let games = try decoder.decode([SavedGame].self, from: data)
         return games.sorted { $0.updatedAt > $1.updatedAt }
     }
 
     /// The game to offer on Resume, if any.
-    public func unfinishedGame() -> SavedGame? { allGames().first { !$0.isFinished } }
+    public func unfinishedGame() throws -> SavedGame? { try allGames().first { !$0.isFinished } }
 
     /// Inserts or replaces `game` by id.
     public func save(_ game: SavedGame) throws {
-        var games = allGames().filter { $0.id != game.id }
+        var games = try allGames().filter { $0.id != game.id }
         if !game.isFinished { games.removeAll { !$0.isFinished } }
         games.append(game)
         try write(games)
     }
 
     public func delete(id: UUID) throws {
-        try write(allGames().filter { $0.id != id })
+        try write(try allGames().filter { $0.id != id })
     }
 
     private func write(_ games: [SavedGame]) throws {
