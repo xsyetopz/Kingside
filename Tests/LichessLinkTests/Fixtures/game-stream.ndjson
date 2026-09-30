@@ -1,0 +1,9 @@
+{"type":"gameFull","id":"rCRw1Auv","variant":{"key":"standard","name":"Standard","short":"Std"},"clock":{"initial":300000,"increment":3000},"speed":"blitz","perf":{"name":"Blitz"},"rated":true,"createdAt":1714000000000,"white":{"id":"georges","name":"Georges","title":null,"rating":1838,"provisional":false},"black":{"id":"philippe","name":"Philippe","title":"FM","rating":1790},"initialFen":"startpos","state":{"type":"gameState","moves":"e2e4 e7e5","wtime":300000,"btime":298000,"winc":3000,"binc":3000,"status":"started"}}
+
+{"type":"gameState","moves":"e2e4 e7e5 g1f3","wtime":297000,"btime":298000,"winc":3000,"binc":3000,"status":"started","bdraw":true,"wtakeback":false}
+{"type":"chatLine","room":"player","username":"Philippe","text":"Good luck!"}
+{"type":"opponentGone","gone":true,"claimWinInSeconds":20}
+{"type":"opponentGone","gone":false}
+{"type":"somethingNew","x":1}
+{"type":"gameState","moves":"e2e4 e7e5 g1f3 d8h4 f3h4","wtime":290000,"btime":250000,"winc":3000,"binc":3000,"status":"resign","winner":"white"}
+{"type":"gameFull","id":"aiGame01","speed":"rapid","rated":false,"white":{"id":"georges","name":"Georges","rating":1838},"black":{"aiLevel":3,"id":null,"name":"Stockfish level 3"},"initialFen":"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1","clock":{"initial":600000,"increment":0},"state":{"type":"gameState","moves":"","wtime":600000,"btime":600000,"winc":0,"binc":0,"status":"started"}}

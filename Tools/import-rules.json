@@ -25,6 +25,14 @@
 			"path": "Tests/ChessComLinkTests",
 			"allow": ["Foundation", "Testing", "ChessCore", "ChessComLink"]
 		},
+		"LichessLink": {
+			"path": "Sources/LichessLink",
+			"allow": ["Foundation", "ChessCore", "CryptoKit", "Security"]
+		},
+		"LichessLinkTests": {
+			"path": "Tests/LichessLinkTests",
+			"allow": ["Foundation", "Testing", "ChessCore", "LichessLink"]
+		},
 		"ChessOnline": {
 			"path": "Sources/ChessOnline",
 			"allow": ["Foundation", "GameKit", "Observation"]
@@ -104,6 +112,7 @@
 				"Foundation",
 				"Observation",
 				"SwiftUI",
+				"AuthenticationServices",
 				"SpriteKit",
 				"_SpriteKit_SwiftUI",
 				"ChessCore",
@@ -112,6 +121,7 @@
 				"ChessBoardScene",
 				"ChessFeedback",
 				"ChessComLink",
+				"LichessLink",
 				"ChessOnline"
 			]
 		},
@@ -124,7 +134,9 @@
 				"ChessCore",
 				"ChessContent",
 				"ChessPlay",
-				"ChessComLink"
+				"ChessComLink",
+				"LichessLink",
+				"ChessOnline"
 			]
 		}
 	},

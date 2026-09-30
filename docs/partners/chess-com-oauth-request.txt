@@ -1,0 +1,68 @@
+Chess.com "OAuth \ Connected Board Request" form: draft answers
+=================================================================
+
+Form: https://docs.google.com/forms/d/e/1FAIpQLSds2AeKLj9xqgu96Pu-rEAS0ItyqDbZbSgUFer0Mo6qMRx4Jg/viewform
+Linked from: https://support.chess.com/en/articles/9650547-published-data-api
+Fields last checked: 2026-09-30. Check the live form before sending; the fields may have changed.
+Background and rules: docs/architecture/0002-online-services-and-partner-access.md
+
+Items marked [FILL IN] need your own details.
+
+
+1. Your Name (required)
+   [FILL IN]
+
+2. Your Email Address (required)
+   [FILL IN] (Chess.com will reply here. Use the same address as the app's User-Agent contact.)
+
+3. Your Chess.com Username (required)
+   [FILL IN]
+
+4. Application Name (required)
+   Kingside
+
+5. Briefly describe your application and why it requires Chess.com OAuth or Connected Board
+   access. (required)
+
+   Kingside is a native chess app for iPhone, iPad, Mac, and Apple TV, built in Swift and SwiftUI.
+   It has bots, pass-and-play, puzzles, and engine game review, and it works offline.
+
+   Today Kingside uses only the Published-Data API. A player types their Chess.com username, and
+   the app shows their public ratings and imports their recent games for review. It sends a
+   User-Agent with contact details, makes requests one at a time, and caches responses.
+
+   We are asking for OAuth so that players can sign in with their Chess.com account instead of
+   typing a username. Signing in proves that the account is theirs, and it lets them see their own
+   games and ratings in the app. If Chess.com offers it to partners, we would also like to let
+   signed-in members play their Chess.com games from Kingside, under whatever rules and scopes you
+   set. The app has a native board for touch, mouse, keyboard, and the Apple TV remote, which could
+   help members who play on Apple TV or with accessibility needs.
+
+   Kingside is not affiliated with Chess.com. It uses no Chess.com logos or artwork, and it gives
+   no engine help during online games. It uses only the interfaces Chess.com provides.
+
+6. Please share a link to something that demonstrates your project in progress. (required)
+   [FILL IN] The source repository is private, so Chess.com cannot open it. Choose one:
+     - a TestFlight public link,
+     - an unlisted video or a screenshot page of the app, or
+     - a project web page.
+   You can also offer read access to the repository if they ask for it.
+
+7. Public Logo URL (optional; 200x200 square recommended, max 5 MB)
+   [FILL IN or leave empty] Host a 200x200 PNG made from Artwork/Brand/KingsideIconMaster.png.
+
+8. Terms of Service URL (optional; if empty, you and your users agree to Chess.com's Terms)
+   [FILL IN or leave empty] Kingside has no terms page yet.
+
+9. Privacy Policy URL (optional; if empty, you and your users agree to Chess.com's Privacy Policy)
+   [FILL IN or leave empty] AppStore/AppleTVPrivacyPolicy.md covers tvOS only, and it is not hosted.
+   Host a privacy policy for all platforms before you send the form.
+
+10. Are creating a Connected Board app? (required; Yes / No)
+    No
+
+
+After you send the form
+-----------------------
+- Save Chess.com's reply. App Review can ask for proof of permission (App Review Guideline 5.2.2).
+- Until Chess.com approves access in writing, the app keeps using only the Published-Data API.

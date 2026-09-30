@@ -224,9 +224,13 @@ import Testing
         let catalog = try ContentCatalog.load()
         let chessCom = catalog.services.chessCom
         #expect(chessCom.baseURL.scheme == "https")
-        #expect(chessCom.contactURL.scheme == "https")
         #expect(chessCom.profileURL(username: "hikaru")?.absoluteString.hasSuffix("/hikaru") == true)
-        #expect(chessCom.userAgent(product: "OpenChess", version: "1.0").contains(chessCom.contactURL.absoluteString))
+        let lichess = catalog.services.lichess
+        #expect(lichess.baseURL.scheme == "https")
+        #expect(lichess.redirectURI.scheme?.isEmpty == false)
+        #expect(!lichess.clientID.isEmpty)
+        #expect(!catalog.services.contact.isEmpty)
+        #expect(catalog.services.userAgent(product: "Kingside", version: "1.0") == "Kingside/1.0 (+\(catalog.services.contact))")
 
         let style = catalog.interface
         for value in [style.cornerRadius, style.spacing, style.sectionSpacing, style.board.cornerRadius, style.board.shadowRadius] {
@@ -236,6 +240,7 @@ import Testing
         #expect((1...3).contains(style.game.wideAspectRatio))
         #expect((0...1024).contains(style.game.panelWidth))
         #expect((0...128).contains(style.game.avatarSize))
+        #expect((0...2048).contains(style.game.compactHeight))
         #expect((0...128).contains(style.puzzles.strikeSize))
         #expect((0...256).contains(style.account.avatarSize))
         #expect((0...256).contains(style.account.welcomeIconSize))
@@ -245,6 +250,8 @@ import Testing
         #expect((0...64).contains(style.home.iconSpacing))
         #expect((160...800).contains(style.home.tileMinWidth))
         #expect(style.home.tileMinWidth <= style.home.contentMaxWidth)
+        #expect((800...1600).contains(style.home.macWindowWidth))
+        #expect((500...1000).contains(style.home.macWindowHeight))
         #expect((0...400).contains(style.home.tileMinHeight))
         #expect((32...512).contains(style.home.thumbnailSize))
         #expect(style.home.thumbnailSize <= style.home.heroThumbnailSize)

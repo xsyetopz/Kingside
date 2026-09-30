@@ -1,7 +1,12 @@
 {
+    "contact": "CONTACT_EMAIL_PLACEHOLDER",
     "chessCom": {
         "baseURL": "https://api.chess.com/pub/",
-        "profileURLTemplate": "https://www.chess.com/member/{username}",
-        "contactURL": "https://github.com/xsyetopz/OpenChess"
+        "profileURLTemplate": "https://www.chess.com/member/{username}"
+    },
+    "lichess": {
+        "baseURL": "https://lichess.org",
+        "clientID": "kingside",
+        "redirectURI": "io.github.xsyetopz.kingside://oauth"
     }
 }
