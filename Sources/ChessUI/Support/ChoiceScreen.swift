@@ -6,51 +6,59 @@ import SwiftUI
 /// Settings uses it on iOS and tvOS instead of `Picker`: on tvOS a picker's pushed list
 /// renders blank inside the path-based `SectionStack`.
 struct ChoiceScreen<Option: Identifiable, Artwork: View>: View {
-    let title: String
-    let options: [Option]
-    @Binding var selection: Option.ID
-    let name: (Option) -> String
-    /// Options without artwork get short cards.
-    var isCompact = false
-    @ViewBuilder let artwork: (Option) -> Artwork
+  let title: String
+  let options: [Option]
+  @Binding
+  var selection: Option.ID
+  let name: (Option) -> String
+  /// Options without artwork get short cards.
+  var isCompact = false
+  @ViewBuilder
+  let artwork: (Option) -> Artwork
 
-    @Environment(\.dismiss) private var dismiss
+  @Environment(\.dismiss)
+  private var dismiss
 
-    var body: some View {
-        WidthAdaptive {
-            List(options) { option in
-                Button { pick(option) } label: {
-                    HStack {
-                        artwork(option)
-                        Text(name(option)).foregroundStyle(Color.primary)
-                        Spacer(minLength: 0)
-                        if option.id == selection {
-                            Image(systemName: "checkmark").foregroundStyle(.tint)
-                        }
-                    }
-                }
-                .accessibilityAddTraits(option.id == selection ? .isSelected : [])
+  var body: some View {
+    WidthAdaptive {
+      List(options) { option in
+        Button {
+          pick(option)
+        } label: {
+          HStack {
+            artwork(option)
+            Text(name(option)).foregroundStyle(Color.primary)
+            Spacer(minLength: 0)
+            if option.id == selection {
+              Image(systemName: "checkmark").foregroundStyle(.tint)
             }
-        } wide: {
-            CardGrid {
-                ScreenHeading(title: title)
-            } content: {
-                ForEach(options) { option in
-                    Button { pick(option) } label: {
-                        CardLabel(title: name(option), isSelected: option.id == selection, isCompact: isCompact) {
-                            artwork(option)
-                        }
-                    }
-                    .cardButtonStyle(isSelected: option.id == selection)
-                    .accessibilityAddTraits(option.id == selection ? .isSelected : [])
-                }
-            }
+          }
         }
-        .screenTitle(title, chrome: .pushed)
+        .accessibilityAddTraits(option.id == selection ? .isSelected : [])
+      }
+    } wide: {
+      CardGrid {
+        ScreenHeading(title: title)
+      } content: {
+        ForEach(options) { option in
+          Button {
+            pick(option)
+          } label: {
+            CardLabel(title: name(option), isSelected: option.id == selection, isCompact: isCompact)
+            {
+              artwork(option)
+            }
+          }
+          .cardButtonStyle(isSelected: option.id == selection)
+          .accessibilityAddTraits(option.id == selection ? .isSelected : [])
+        }
+      }
     }
+    .screenTitle(title, chrome: .pushed)
+  }
 
-    private func pick(_ option: Option) {
-        selection = option.id
-        dismiss()
-    }
+  private func pick(_ option: Option) {
+    selection = option.id
+    dismiss()
+  }
 }
