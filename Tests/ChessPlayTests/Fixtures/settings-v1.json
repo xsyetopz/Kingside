@@ -1,0 +1,11 @@
+{
+	"boardTheme": "green",
+	"pieceSet": "cburnett",
+	"orientation": "black",
+	"soundEffects": false,
+	"moveAnimation": true,
+	"showLegalMoves": true,
+	"showCoordinates": false,
+	"highlightLastMove": true,
+	"autoPromoteToQueen": true
+}

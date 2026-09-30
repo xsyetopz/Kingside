@@ -1,0 +1,114 @@
+{
+	"themes": [
+		{
+			"id": "harbor",
+			"nameKey": "boardTheme.harbor.name",
+			"squares": {
+				"light": "#E3E6DC",
+				"dark": "#5F7F8A"
+			},
+			"lastMove": {
+				"light": "#E6D5A3",
+				"dark": "#A4A27A"
+			},
+			"selection": {
+				"light": "#E7CE8C",
+				"dark": "#C0AF74"
+			},
+			"coordinates": {
+				"light": "#4A6670",
+				"dark": "#F2F4EE"
+			},
+			"legalMove": "#1D313859",
+			"check": "#C8483AD9"
+		},
+		{
+			"id": "cedar",
+			"nameKey": "boardTheme.cedar.name",
+			"squares": {
+				"light": "#EBDCC4",
+				"dark": "#8A6248"
+			},
+			"lastMove": {
+				"light": "#E6D088",
+				"dark": "#B6944A"
+			},
+			"selection": {
+				"light": "#E5CC6F",
+				"dark": "#C8A74A"
+			},
+			"coordinates": {
+				"light": "#6E4C37",
+				"dark": "#F6EEDF"
+			},
+			"legalMove": "#2E1F1659",
+			"check": "#C43D2FD9"
+		},
+		{
+			"id": "heather",
+			"nameKey": "boardTheme.heather.name",
+			"squares": {
+				"light": "#E9E1EC",
+				"dark": "#7D6890"
+			},
+			"lastMove": {
+				"light": "#EAD6AC",
+				"dark": "#B49A7E"
+			},
+			"selection": {
+				"light": "#EAD292",
+				"dark": "#CAAD76"
+			},
+			"coordinates": {
+				"light": "#645276",
+				"dark": "#F6F1F8"
+			},
+			"legalMove": "#2A203359",
+			"check": "#C9423CD9"
+		},
+		{
+			"id": "terracotta",
+			"nameKey": "boardTheme.terracotta.name",
+			"squares": {
+				"light": "#F1E2D3",
+				"dark": "#B0674D"
+			},
+			"lastMove": {
+				"light": "#ECD696",
+				"dark": "#CC9854"
+			},
+			"selection": {
+				"light": "#EBD07E",
+				"dark": "#D7AC56"
+			},
+			"coordinates": {
+				"light": "#8A4A34",
+				"dark": "#FBF3EA"
+			},
+			"legalMove": "#3A1E1459",
+			"check": "#B5302AD9"
+		},
+		{
+			"id": "graphite",
+			"nameKey": "boardTheme.graphite.name",
+			"squares": {
+				"light": "#D2D5D9",
+				"dark": "#565D66"
+			},
+			"lastMove": {
+				"light": "#AFCADC",
+				"dark": "#718EA3"
+			},
+			"selection": {
+				"light": "#A1C6DE",
+				"dark": "#7CA2BB"
+			},
+			"coordinates": {
+				"light": "#454B53",
+				"dark": "#EEF0F2"
+			},
+			"legalMove": "#15191E59",
+			"check": "#D24B3ED9"
+		}
+	]
+}

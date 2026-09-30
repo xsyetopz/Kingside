@@ -1,16 +1,46 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
 import PackageDescription
 
+// Layering rules for the targets are in `Tools/import-rules.json` and checked by
+// `Tools/check-imports.sh`; see docs/architecture/0001-swiftpm-first-multiplatform.md.
 let package = Package(
-    name: "ChessTV",
-    platforms: [.macOS(.v14), .tvOS(.v17)],
+    name: "OpenChess",
+    defaultLocalization: "en-US",
+    // The floor is set by Observation and CKSyncEngine (iOS 17, tvOS 17, macOS 14); see the ADR.
+    platforms: [.iOS(.v17), .tvOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "ChessCore", targets: ["ChessCore"]),
-        .executable(name: "ChessCoreValidation", targets: ["ChessCoreValidation"])
+        .library(name: "ChessContent", targets: ["ChessContent"]),
+        .library(name: "ChessComLink", targets: ["ChessComLink"]),
+        .library(name: "ChessOnline", targets: ["ChessOnline"]),
+        .library(name: "ChessPlay", targets: ["ChessPlay"]),
+        .library(name: "ChessBoardScene", targets: ["ChessBoardScene"]),
+        .library(name: "ChessFeedback", targets: ["ChessFeedback"]),
+        .library(name: "ChessUI", targets: ["ChessUI"]),
+        .executable(name: "ChessBench", targets: ["ChessBench"]),
     ],
     targets: [
         .target(name: "ChessCore"),
-        .executableTarget(name: "ChessCoreValidation", dependencies: ["ChessCore"], path: "Tools/ChessCoreValidation"),
-        .testTarget(name: "ChessCoreTests", dependencies: ["ChessCore"])
+        .target(name: "ChessContent", dependencies: ["ChessCore"], resources: [.process("Resources")]),
+        .target(name: "ChessComLink", dependencies: ["ChessCore"]),
+        .target(name: "ChessOnline"),
+        .target(name: "ChessPlay", dependencies: ["ChessCore", "ChessContent"]),
+        .target(name: "ChessBoardScene", dependencies: ["ChessCore", "ChessContent", "ChessPlay"]),
+        .target(name: "ChessFeedback", dependencies: ["ChessCore", "ChessContent", "ChessPlay"]),
+        .target(
+            name: "ChessUI",
+            dependencies: ["ChessCore", "ChessContent", "ChessPlay", "ChessBoardScene", "ChessFeedback", "ChessComLink", "ChessOnline"]),
+        .executableTarget(name: "ChessBench", dependencies: ["ChessCore"], path: "Tools/ChessBench"),
+        .testTarget(name: "ChessCoreTests", dependencies: ["ChessCore"]),
+        .testTarget(name: "ChessContentTests", dependencies: ["ChessContent"]),
+        .testTarget(name: "ChessComLinkTests", dependencies: ["ChessComLink", "ChessCore"], resources: [.copy("Fixtures")]),
+        .testTarget(name: "ChessOnlineTests", dependencies: ["ChessOnline"]),
+        .testTarget(
+            name: "ChessPlayTests", dependencies: ["ChessPlay", "ChessCore", "ChessContent"], resources: [.copy("Fixtures")]),
+        .testTarget(name: "ChessBoardSceneTests", dependencies: ["ChessBoardScene", "ChessPlay", "ChessCore", "ChessContent"]),
+        .testTarget(name: "ChessFeedbackTests", dependencies: ["ChessFeedback", "ChessPlay", "ChessCore", "ChessContent"]),
+        .testTarget(
+            name: "ChessUITests",
+            dependencies: ["ChessUI", "ChessPlay", "ChessCore", "ChessContent", "ChessComLink"]),
     ]
 )

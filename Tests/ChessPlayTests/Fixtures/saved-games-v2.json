@@ -1,0 +1,116 @@
+[
+	{
+		"id": "5B1C3F0E-1111-4A2B-9C3D-000000000001",
+		"createdAt": "2025-05-01T10:00:00Z",
+		"updatedAt": "2025-05-01T10:05:00Z",
+		"mode": { "passAndPlay": {} },
+		"white": { "name": "Anna" },
+		"black": { "name": "Ben" },
+		"timeControl": { "initialSeconds": 180, "incrementSeconds": 2 },
+		"autoFlip": true,
+		"game": {
+			"position": {
+				"board": [
+					{ "file": 4, "rank": 0 },
+					{ "type": "king", "color": "white" },
+					{ "file": 0, "rank": 7 },
+					{ "type": "rook", "color": "white" },
+					{ "file": 4, "rank": 7 },
+					{ "type": "king", "color": "black" }
+				],
+				"sideToMove": "black",
+				"castlingRights": 0,
+				"halfmoveClock": 1,
+				"fullmoveNumber": 40
+			},
+			"moves": [
+				{
+					"id": "5B1C3F0E-2222-4A2B-9C3D-000000000002",
+					"move": {
+						"from": { "file": 0, "rank": 0 },
+						"to": { "file": 0, "rank": 7 }
+					},
+					"san": "Ra8+",
+					"positionBefore": {
+						"board": [
+							{ "file": 4, "rank": 0 },
+							{ "type": "king", "color": "white" },
+							{ "file": 0, "rank": 0 },
+							{ "type": "rook", "color": "white" },
+							{ "file": 4, "rank": 7 },
+							{ "type": "king", "color": "black" }
+						],
+						"sideToMove": "white",
+						"castlingRights": 0,
+						"halfmoveClock": 0,
+						"fullmoveNumber": 40
+					}
+				}
+			],
+			"initialPosition": {
+				"board": [
+					{ "file": 4, "rank": 0 },
+					{ "type": "king", "color": "white" },
+					{ "file": 0, "rank": 0 },
+					{ "type": "rook", "color": "white" },
+					{ "file": 4, "rank": 7 },
+					{ "type": "king", "color": "black" }
+				],
+				"sideToMove": "white",
+				"castlingRights": 0,
+				"halfmoveClock": 0,
+				"fullmoveNumber": 40
+			}
+		},
+		"result": "draw",
+		"termination": "agreement",
+		"clock": {
+			"timeControl": { "initialSeconds": 180, "incrementSeconds": 2 },
+			"whiteRemaining": 170.5,
+			"blackRemaining": 95
+		}
+	},
+	{
+		"id": "5B1C3F0E-3333-4A2B-9C3D-000000000003",
+		"createdAt": "2025-05-02T09:00:00Z",
+		"updatedAt": "2025-05-02T09:00:00Z",
+		"mode": { "bot": { "id": "martin" } },
+		"white": { "name": "Martin", "rating": 250, "botID": "martin" },
+		"black": { "name": "You" },
+		"timeControl": { "initialSeconds": 0, "incrementSeconds": 0 },
+		"autoFlip": false,
+		"game": {
+			"position": {
+				"board": [
+					{ "file": 4, "rank": 0 },
+					{ "type": "king", "color": "white" },
+					{ "file": 4, "rank": 7 },
+					{ "type": "king", "color": "black" }
+				],
+				"sideToMove": "white",
+				"castlingRights": 0,
+				"halfmoveClock": 0,
+				"fullmoveNumber": 1
+			},
+			"moves": [],
+			"initialPosition": {
+				"board": [
+					{ "file": 4, "rank": 0 },
+					{ "type": "king", "color": "white" },
+					{ "file": 4, "rank": 7 },
+					{ "type": "king", "color": "black" }
+				],
+				"sideToMove": "white",
+				"castlingRights": 0,
+				"halfmoveClock": 0,
+				"fullmoveNumber": 1
+			}
+		},
+		"result": "ongoing",
+		"clock": {
+			"timeControl": { "initialSeconds": 0, "incrementSeconds": 0 },
+			"whiteRemaining": 0,
+			"blackRemaining": 0
+		}
+	}
+]

@@ -1,0 +1,62 @@
+{
+	"clock": {
+		"lowTimeSeconds": 10,
+		"tickMilliseconds": 100
+	},
+	"drawOffer": {
+		"minimumPly": 30,
+		"maximumAdvantage": 30,
+		"equalMargin": 50,
+		"lowMaterialLimit": 12,
+		"analysisMilliseconds": 300
+	},
+	"game": {
+		"botThinkBaseSeconds": 0.4,
+		"botThinkExtraSeconds": 0.8,
+		"botThinkBusyMoveCount": 40,
+		"blunderCentipawns": 250,
+		"blunderAnalysisMilliseconds": 200,
+		"hintAnalysisMilliseconds": 1000
+	},
+	"puzzleRating": {
+		"initial": 800,
+		"minimum": 100,
+		"provisionalGames": 50,
+		"provisionalKFactor": 32,
+		"establishedKFactor": 16
+	},
+	"puzzleSelection": {
+		"ratedWindow": 200,
+		"rushStartRating": 400,
+		"rushRatingStep": 50,
+		"rushMaximumRating": 2700,
+		"rushWindow": 75,
+		"dailyMinimumRating": 1200,
+		"dailyMaximumRating": 2000
+	},
+	"puzzleRush": {
+		"maxStrikes": 3,
+		"timeLimits": {
+			"threeMinutes": 180,
+			"fiveMinutes": 300
+		},
+		"nextPuzzleMilliseconds": 700
+	},
+	"puzzleBoard": {
+		"introMilliseconds": 700,
+		"replyMilliseconds": 500,
+		"solutionStepMilliseconds": 800
+	},
+	"review": {
+		"excellentLoss": 0.02,
+		"goodLoss": 0.05,
+		"inaccuracyLoss": 0.1,
+		"mistakeLoss": 0.2,
+		"greatGap": 0.15,
+		"brilliantMaterial": 2,
+		"brilliantMinWinProbability": 0.45,
+		"missMinBestWinProbability": 0.75,
+		"missMinWinProbabilityAfter": 0.5,
+		"analysisMilliseconds": 250
+	}
+}

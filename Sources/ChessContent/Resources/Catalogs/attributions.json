@@ -1,0 +1,26 @@
+{
+	"attributions": [
+		{
+			"id": "cburnett",
+			"titleKey": "attribution.cburnett.title",
+			"author": "Colin M.L. Burnett (Cburnett)",
+			"license": "BSD-3-Clause",
+			"source": "https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces",
+			"noticeFile": "cburnett-notice"
+		},
+		{
+			"id": "openchess-synth",
+			"titleKey": "attribution.openchess-synth.title",
+			"author": "OpenChess contributors",
+			"license": "LicenseRef-OpenChess",
+			"source": "https://github.com/xsyetopz/OpenChess"
+		},
+		{
+			"id": "lichess-puzzles",
+			"titleKey": "attribution.lichess-puzzles.title",
+			"author": "lichess.org and its contributors",
+			"license": "CC0-1.0",
+			"source": "https://database.lichess.org/#puzzles"
+		}
+	]
+}

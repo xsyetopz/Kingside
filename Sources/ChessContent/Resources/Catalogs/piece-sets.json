@@ -1,0 +1,23 @@
+{
+	"sets": [
+		{
+			"id": "cburnett",
+			"nameKey": "pieceSet.cburnett.name",
+			"attributionID": "cburnett",
+			"fileNamePattern": "cburnett-{color}{piece}",
+			"fileExtension": "pdf",
+			"colorCodes": {
+				"white": "w",
+				"black": "b"
+			},
+			"pieceCodes": {
+				"king": "K",
+				"queen": "Q",
+				"rook": "R",
+				"bishop": "B",
+				"knight": "N",
+				"pawn": "P"
+			}
+		}
+	]
+}

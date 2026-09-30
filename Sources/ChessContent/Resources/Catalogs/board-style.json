@@ -1,0 +1,47 @@
+{
+	"animation": {
+		"moveSeconds": 0.22,
+		"captureFadeSeconds": 0.15,
+		"focusSeconds": 0.1
+	},
+	"zPositions": {
+		"squares": 0,
+		"check": 1,
+		"coordinates": 2,
+		"legalMarkers": 3,
+		"pieces": 4,
+		"badge": 5,
+		"hintArrow": 6,
+		"focusRing": 7,
+		"movingPiece": 8
+	},
+	"markers": {
+		"piece": 0.9,
+		"legalDot": 0.33,
+		"captureRing": 0.96,
+		"captureRingWidth": 0.09,
+		"check": 0.95,
+		"coordinateFont": 0.19,
+		"coordinateInset": 0.05,
+		"arrowShaftWidth": 0.22,
+		"arrowHeadWidth": 0.54,
+		"arrowHeadLength": 0.42,
+		"arrowStartInset": 0.2
+	},
+	"focusRing": {
+		"widthRatio": 0.055,
+		"minimumWidth": 3,
+		"color": "#FFFFFF"
+	},
+	"badge": {
+		"correctColor": "#3E9B4FFF",
+		"incorrectColor": "#D64545FF",
+		"glyphColor": "#FFFFFF",
+		"diameterRatio": 0.36,
+		"cornerInsetRatio": 0.2,
+		"glyphRatio": 0.5,
+		"glyphLineRatio": 0.14
+	},
+	"hintArrowColor": "#F2A33ACC",
+	"coordinateFontName": "HelveticaNeue-Bold"
+}

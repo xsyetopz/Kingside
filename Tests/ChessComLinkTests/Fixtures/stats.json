@@ -1,0 +1,68 @@
+{
+	"chess_daily": {
+		"last": {
+			"rating": 2239,
+			"date": 1770563021,
+			"rd": 103
+		},
+		"best": {
+			"rating": 2464,
+			"date": 1397136740
+		},
+		"record": {
+			"win": 73,
+			"loss": 11,
+			"draw": 4,
+			"time_per_move": 32755,
+			"timeout_percent": 0
+		}
+	},
+	"chess_rapid": {
+		"last": {
+			"rating": 2838,
+			"date": 1786796329,
+			"rd": 44
+		},
+		"best": {
+			"rating": 2927,
+			"date": 1645902514
+		},
+		"record": {
+			"win": 205,
+			"loss": 69,
+			"draw": 220
+		}
+	},
+	"chess_blitz": {
+		"last": {
+			"rating": 3471,
+			"date": 1790695170,
+			"rd": 32
+		},
+		"best": {
+			"rating": 3471,
+			"date": 1790695170
+		},
+		"record": {
+			"win": 35870,
+			"loss": 5532,
+			"draw": 4362
+		}
+	},
+	"chess_bullet": {
+		"last": {
+			"rating": 3391,
+			"date": 1790445545,
+			"rd": 28
+		},
+		"best": {
+			"rating": 3570,
+			"date": 1605136047
+		},
+		"record": {
+			"win": 16976,
+			"loss": 2478,
+			"draw": 1160
+		}
+	}
+}

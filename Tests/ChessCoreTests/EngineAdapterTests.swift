@@ -1,154 +1,155 @@
-import XCTest
+import Testing
+
 @testable import ChessCore
 
-final class EngineAdapterTests: XCTestCase {
-    private static let kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+private let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+private let kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+// Positions 3 and 4 of the standard perft suite (en passant and promotion edge cases).
+private let position3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"
+private let position4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"
 
-    private func perft(_ fen: String, _ depth: Int) throws -> Int {
-        var board = EngineBoard(try ChessPosition(fen: fen))
+struct PerftCase: Sendable, CustomTestStringConvertible {
+    let name: String
+    let fen: String
+    let depth: Int
+    let nodes: Int
+    var testDescription: String { "\(name) depth \(depth)" }
+}
+
+@Suite struct EngineAdapterTests {
+    @Test(arguments: [
+        PerftCase(name: "start", fen: startFEN, depth: 1, nodes: 20),
+        PerftCase(name: "start", fen: startFEN, depth: 2, nodes: 400),
+        PerftCase(name: "start", fen: startFEN, depth: 3, nodes: 8_902),
+        PerftCase(name: "start", fen: startFEN, depth: 4, nodes: 197_281),
+        PerftCase(name: "kiwipete", fen: kiwipete, depth: 1, nodes: 48),
+        PerftCase(name: "kiwipete", fen: kiwipete, depth: 2, nodes: 2_039),
+        PerftCase(name: "kiwipete", fen: kiwipete, depth: 3, nodes: 97_862),
+        PerftCase(name: "position 3", fen: position3, depth: 1, nodes: 14),
+        PerftCase(name: "position 3", fen: position3, depth: 2, nodes: 191),
+        PerftCase(name: "position 3", fen: position3, depth: 3, nodes: 2_812),
+        PerftCase(name: "position 3", fen: position3, depth: 4, nodes: 43_238),
+        PerftCase(name: "position 4", fen: position4, depth: 3, nodes: 9_467),
+    ])
+    func perft(_ test: PerftCase) throws {
+        var board = EngineBoard(try ChessPosition(fen: test.fen))
         defer { board.deallocate() }
-        return board.perft(depth)
+        #expect(board.perft(test.depth) == test.nodes)
     }
 
-    func testPerftStartPosition() throws {
-        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-        XCTAssertEqual(try perft(fen, 1), 20)
-        XCTAssertEqual(try perft(fen, 2), 400)
-        XCTAssertEqual(try perft(fen, 3), 8_902)
-        XCTAssertEqual(try perft(fen, 4), 197_281)
+    @Test(arguments: [kiwipete, position3, "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2"])
+    func internalLegalMovesMatchChessPosition(fen: String) throws {
+        let position = try ChessPosition(fen: fen)
+        var board = EngineBoard(position)
+        defer { board.deallocate() }
+        #expect(Set(board.legalMoves().map(\.chessMove)) == Set(position.legalMoves()))
     }
 
-    func testPerftKiwipete() throws {
-        XCTAssertEqual(try perft(Self.kiwipete, 1), 48)
-        XCTAssertEqual(try perft(Self.kiwipete, 2), 2_039)
-        XCTAssertEqual(try perft(Self.kiwipete, 3), 97_862)
-    }
-
-    func testPerftEnPassantAndPromotionEdgeCases() throws {
-        // Position 3 and position 4 from the standard perft suite.
-        let position3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"
-        XCTAssertEqual(try perft(position3, 1), 14)
-        XCTAssertEqual(try perft(position3, 2), 191)
-        XCTAssertEqual(try perft(position3, 3), 2_812)
-        XCTAssertEqual(try perft(position3, 4), 43_238)
-        XCTAssertEqual(try perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 3), 9_467)
-    }
-
-    func testInternalLegalMovesMatchChessPosition() throws {
-        for fen in [Self.kiwipete, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2"] {
-            let position = try ChessPosition(fen: fen)
-            var board = EngineBoard(position)
-            defer { board.deallocate() }
-            XCTAssertEqual(Set(board.legalMoves().map(\.chessMove)), Set(position.legalMoves()), fen)
-        }
-    }
-
-    func testIncrementalHashMatchesRecomputedHash() throws {
-        var board = EngineBoard(try ChessPosition(fen: Self.kiwipete))
+    @Test func incrementalHashMatchesRecomputedHash() throws {
+        var board = EngineBoard(try ChessPosition(fen: kiwipete))
         defer { board.deallocate() }
         var generator = SplitMix(seed: 7)
         for _ in 0..<200 {
             let moves = board.legalMoves()
             guard !moves.isEmpty else { break }
             board.make(moves[Int(generator.next() % UInt64(moves.count))])
-            XCTAssertEqual(board.hash, board.computeHash())
+            #expect(board.hash == board.computeHash())
         }
     }
 
-    func testFindsMateInOne() async throws {
+    @Test func findsMateInOne() async throws {
         let position = try ChessPosition(fen: "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1")
         let analysis = try await ChessEngine().analyze(position: position, limit: .depth(3))
-        XCTAssertEqual(analysis.bestMove, ChessMove(uci: "d1d8"))
-        XCTAssertEqual(analysis.evaluation.mateIn, 1)
+        #expect(analysis.bestMove == ChessMove(uci: "d1d8"))
+        #expect(analysis.evaluation.mateIn == 1)
     }
 
-    func testFindsMateInTwo() async throws {
+    @Test func findsMateInTwo() async throws {
         // 1. Rd8+ Rxd8 (forced) 2. Rxd8#.
         let position = try ChessPosition(fen: "2r3k1/5ppp/8/8/8/8/3R1PPP/3R2K1 w - - 0 1")
         let analysis = try await ChessEngine().analyze(position: position, limit: .depth(5))
-        XCTAssertEqual(analysis.evaluation.mateIn, 2)
-        XCTAssertEqual(analysis.bestMove, ChessMove(uci: "d2d8"))
-        XCTAssertEqual(analysis.principalVariation.first, analysis.bestMove)
+        #expect(analysis.evaluation.mateIn == 2)
+        #expect(analysis.bestMove == ChessMove(uci: "d2d8"))
+        #expect(analysis.principalVariation.first == analysis.bestMove)
     }
 
-    func testTakesHangingQueen() async throws {
-        let game = ChessGame(position: try ChessPosition(fen: "rnb1kbnr/pppp1ppp/8/4p1q1/4P3/3P4/PPP2PPP/RNBQKBNR w KQkq - 0 1"))
+    @Test func takesHangingQueen() async throws {
+        let game = ChessGame(
+            position: try ChessPosition(
+                fen: "rnb1kbnr/pppp1ppp/8/4p1q1/4P3/3P4/PPP2PPP/RNBQKBNR w KQkq - 0 1"))
         let move = try await ChessEngine().bestMove(game: game, strength: EngineStrength(elo: 2200))
-        XCTAssertEqual(move, ChessMove(uci: "c1g5"))
+        #expect(move == ChessMove(uci: "c1g5"))
     }
 
-    func testLowStrengthReturnsLegalMoves() async throws {
+    @Test func lowStrengthReturnsLegalMoves() async throws {
         let engine = ChessEngine()
         var game = ChessGame()
         for _ in 0..<12 {
             guard !game.position.legalMoves().isEmpty else { break }
             let move = try await engine.bestMove(game: game, strength: EngineStrength(elo: 250))
-            XCTAssertTrue(game.position.legalMoves().contains(move))
+            #expect(game.position.legalMoves().contains(move))
             try game.makeMove(move)
         }
     }
 
-    func testAnalysisScoresFromWhitePointOfView() async throws {
+    @Test func analysisScoresFromWhitePointOfView() async throws {
         let engine = ChessEngine()
         // White is a queen up; the score is positive whoever is to move.
         let whiteToMove = try ChessPosition(fen: "4k3/8/8/8/8/8/8/3QK3 w - - 0 1")
         let blackToMove = try ChessPosition(fen: "4k3/8/8/8/8/8/8/3QK3 b - - 0 1")
         let first = try await engine.analyze(position: whiteToMove, limit: .depth(2))
         let second = try await engine.analyze(position: blackToMove, limit: .depth(2))
-        XCTAssertGreaterThan(first.evaluation.centipawns, 500)
-        XCTAssertGreaterThan(second.evaluation.centipawns, 500)
-        XCTAssertNotNil(first.secondBestEvaluation)
+        #expect(first.evaluation.centipawns > 500)
+        #expect(second.evaluation.centipawns > 500)
+        #expect(first.secondBestEvaluation != nil)
 
         // Black mates in one: the mate count is negative.
         let blackMates = try ChessPosition(fen: "3r2k1/8/8/8/8/8/5PPP/6K1 b - - 0 1")
         let mate = try await engine.analyze(position: blackMates, limit: .depth(3))
-        XCTAssertEqual(mate.evaluation.mateIn, -1)
-        XCTAssertLessThan(mate.evaluation.centipawns, 0)
+        #expect(mate.evaluation.mateIn == -1)
+        #expect(mate.evaluation.centipawns < 0)
 
         // Already checkmated: no move, mate 0, sign shows the winner.
         let mated = try ChessPosition(fen: "3R2k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1")
         let over = try await engine.analyze(position: mated, limit: .depth(3))
-        XCTAssertNil(over.bestMove)
-        XCTAssertEqual(over.evaluation.mateIn, 0)
-        XCTAssertGreaterThan(over.evaluation.centipawns, 0)
+        #expect(over.bestMove == nil)
+        #expect(over.evaluation.mateIn == 0)
+        #expect(over.evaluation.centipawns > 0)
     }
 
-    func testRepetitionInHistoryScoresAsDraw() async throws {
+    @Test func repetitionInHistoryScoresAsDraw() async throws {
         // White has a bare king against king and queen. After Kb1 Qc6 Ka1 Qc5 the start
         // position is back on the board, so Kb1 now repeats a position from the history.
         var game = ChessGame(position: try ChessPosition(fen: "7k/8/8/2q5/8/8/8/K7 w - - 0 1"))
-        for uci in ["a1b1", "c5c6", "b1a1", "c6c5"] { try game.makeMove(XCTUnwrap(ChessMove(uci: uci))) }
-        let engine = ChessEngine()
-        let withHistory = try await engine.analyze(
+        for uci in ["a1b1", "c5c6", "b1a1", "c6c5"] { try game.makeMove(move(uci)) }
+        let withHistory = try await ChessEngine().analyze(
             position: game.position, history: game.moves.map(\.positionBefore), limit: .depth(4)
         )
-        XCTAssertEqual(withHistory.evaluation.centipawns, 0)
-        XCTAssertEqual(withHistory.bestMove, ChessMove(uci: "a1b1"))
+        #expect(withHistory.evaluation.centipawns == 0)
+        #expect(withHistory.bestMove == ChessMove(uci: "a1b1"))
 
-        let withoutHistory = try await ChessEngine().analyze(position: game.position, limit: .depth(4))
-        XCTAssertLessThan(withoutHistory.evaluation.centipawns, -500)
+        let withoutHistory = try await ChessEngine().analyze(
+            position: game.position, limit: .depth(4))
+        #expect(withoutHistory.evaluation.centipawns < -500)
     }
 
-    func testCancellationStopsSearch() async throws {
+    @Test func cancellationStopsSearch() async {
         let engine = ChessEngine()
         let task = Task { try await engine.analyze(position: .initial, limit: .time(.seconds(30))) }
         task.cancel()
-        do {
-            _ = try await task.value
-            XCTFail("Expected cancellation")
-        } catch is CancellationError {}
+        await #expect(throws: CancellationError.self) { try await task.value }
     }
 
-    func testStrengthSettingsScaleWithElo() {
+    @Test func strengthSettingsScaleWithElo() {
         let weak = EngineStrength(elo: 100)
         let strong = EngineStrength(elo: 3000)
-        XCTAssertEqual(weak.elo, 250)
-        XCTAssertEqual(strong.elo, 2200)
-        XCTAssertEqual(weak.searchDepth, 1)
-        XCTAssertLessThan(weak.searchDepth, EngineStrength(elo: 1500).searchDepth)
-        XCTAssertGreaterThan(weak.evaluationNoise, EngineStrength(elo: 1500).evaluationNoise)
-        XCTAssertEqual(strong.evaluationNoise, 0)
-        XCTAssertEqual(strong.mistakeChance, 0)
+        #expect(weak.elo == 250)
+        #expect(strong.elo == 2200)
+        #expect(weak.searchDepth == 1)
+        #expect(weak.searchDepth < EngineStrength(elo: 1500).searchDepth)
+        #expect(weak.evaluationNoise > EngineStrength(elo: 1500).evaluationNoise)
+        #expect(strong.evaluationNoise == 0)
+        #expect(strong.mistakeChance == 0)
     }
 }
 

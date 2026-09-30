@@ -1,0 +1,53 @@
+{
+	"haptics": {
+		"move": {
+			"pulses": [
+				{ "time": 0, "duration": 0, "intensity": 0.5, "sharpness": 0.4 }
+			]
+		},
+		"capture": {
+			"pulses": [
+				{ "time": 0, "duration": 0, "intensity": 0.8, "sharpness": 0.6 },
+				{ "time": 0.07, "duration": 0, "intensity": 0.6, "sharpness": 0.5 }
+			]
+		},
+		"check": {
+			"pulses": [
+				{ "time": 0, "duration": 0, "intensity": 0.7, "sharpness": 0.5 },
+				{ "time": 0.05, "duration": 0.15, "intensity": 0.4, "sharpness": 0.8 }
+			]
+		},
+		"illegalMove": {
+			"pulses": [
+				{ "time": 0, "duration": 0.16, "intensity": 0.5, "sharpness": 0.1 }
+			]
+		},
+		"gameOver": {
+			"pulses": [
+				{ "time": 0, "duration": 0, "intensity": 0.8, "sharpness": 0.3 },
+				{ "time": 0.14, "duration": 0, "intensity": 0.6, "sharpness": 0.3 },
+				{ "time": 0.28, "duration": 0, "intensity": 0.4, "sharpness": 0.3 }
+			]
+		}
+	},
+	"events": {
+		"gameStarted": { "sound": "gameStart" },
+		"illegalMove": { "sound": "illegal", "haptic": "illegalMove" },
+		"gameOver": { "sound": "gameEnd", "haptic": "gameOver" },
+		"lowTime": { "sound": "lowTime" },
+		"puzzleCorrect": { "sound": "puzzleCorrect", "haptic": "move" },
+		"puzzleWrong": { "sound": "puzzleWrong", "haptic": "illegalMove" }
+	},
+	"moveHaptics": {
+		"move": "move",
+		"capture": "capture",
+		"castle": "move",
+		"check": "check",
+		"promote": "move"
+	},
+	"controller": {
+		"repeatDelay": 0.4,
+		"repeatInterval": 0.12,
+		"axisThreshold": 0.7
+	}
+}

@@ -1,0 +1,560 @@
+/* OpenChess source English. Every other locale starts as a full copy of this file.
+   Keys are dotted identifiers. Values use ASCII "..." and "'" and no ASCII double quotes. */
+
+"app.name" = "OpenChess";
+
+"common.back" = "Back";
+"common.cancel" = "Cancel";
+"common.close" = "Close";
+"common.done" = "Done";
+"common.retry" = "Try Again";
+
+/* App sections */
+"section.play.title" = "Play";
+"section.puzzles.title" = "Puzzles";
+"section.games.title" = "Games";
+"section.account.title" = "Account";
+"section.settings.title" = "Settings";
+
+"play.continue.title" = "Continue Game";
+"play.bots.title" = "Play Bots";
+"play.passAndPlay.title" = "Pass and Play";
+"play.bots.detail" = "%1$@, Elo %2$d";
+"play.passAndPlay.detail" = "Two players on one device";
+
+/* Board themes */
+"boardTheme.harbor.name" = "Harbor";
+"boardTheme.cedar.name" = "Cedar";
+"boardTheme.heather.name" = "Heather";
+"boardTheme.terracotta.name" = "Terracotta";
+"boardTheme.graphite.name" = "Graphite";
+
+/* Board squares for VoiceOver: "e4, white knight, selected" */
+"board.square.label" = "%1$@, %2$@";
+"board.square.state" = "%1$@, %2$@";
+"board.square.empty" = "empty";
+"board.square.selected" = "selected";
+"board.square.legalTarget" = "legal move";
+"board.square.check" = "in check";
+"board.square.badge.correct" = "correct move";
+"board.square.badge.incorrect" = "incorrect move";
+"board.piece.white.king" = "white king";
+"board.piece.white.queen" = "white queen";
+"board.piece.white.rook" = "white rook";
+"board.piece.white.bishop" = "white bishop";
+"board.piece.white.knight" = "white knight";
+"board.piece.white.pawn" = "white pawn";
+"board.piece.black.king" = "black king";
+"board.piece.black.queen" = "black queen";
+"board.piece.black.rook" = "black rook";
+"board.piece.black.bishop" = "black bishop";
+"board.piece.black.knight" = "black knight";
+"board.piece.black.pawn" = "black pawn";
+
+/* Bots */
+"bot.pip.name" = "Pip";
+"bot.maisie.name" = "Maisie";
+"bot.bramble.name" = "Bramble";
+"bot.rosa.name" = "Rosa";
+"bot.gus.name" = "Gus";
+"bot.nadia.name" = "Nadia";
+"bot.quill.name" = "Quill";
+"bot.priya.name" = "Priya";
+"bot.viktor.name" = "Viktor";
+"bot.odette.name" = "Odette";
+"bot.atlas.name" = "Atlas";
+"bot.orrin.name" = "Archmage Orrin";
+"bot.group.beginner.name" = "Beginner";
+"bot.group.intermediate.name" = "Intermediate";
+"bot.group.advanced.name" = "Advanced";
+"bot.group.master.name" = "Master";
+"bot.pip.bio" = "A cheerful tortoise who just learned how the knight hops.";
+"bot.pip.chat.greeting.1" = "Hi! I'm Pip. Let's take it slow and have fun!";
+"bot.pip.chat.greeting.2" = "Oh, a game? Yay! Be gentle.";
+"bot.pip.chat.playerCaptures.1" = "Hey, I was using that!";
+"bot.pip.chat.playerCaptures.2" = "Oopsie. Where did my piece go?";
+"bot.pip.chat.botCaptures.1" = "Ooh, I got one!";
+"bot.pip.chat.botCaptures.2" = "Munch munch!";
+"bot.pip.chat.playerBlunder.1" = "Um, I think you dropped something!";
+"bot.pip.chat.playerBlunder.2" = "Is that a present for me?";
+"bot.pip.chat.check.1" = "Check! Did I say that right?";
+"bot.pip.chat.check.2" = "Your king looks nervous!";
+"bot.pip.chat.botWins.1" = "I won?! Wow, I need a nap now.";
+"bot.pip.chat.botWins.2" = "Slow and steady!";
+"bot.pip.chat.botLoses.1" = "Good game! You were super speedy.";
+"bot.pip.chat.botLoses.2" = "Aw, you got me. Again sometime?";
+"bot.pip.chat.draw.1" = "A tie! Everybody wins!";
+"bot.pip.chat.draw.2" = "Nobody lost. I like that.";
+"bot.pip.chat.drawDeclined.1" = "No thanks, I'm having too much fun!";
+"bot.pip.chat.takeback.1" = "Sure, take it back. I make oopsies too!";
+"bot.maisie.bio" = "Plays chess between bakery shifts and brings cookies to every game.";
+"bot.maisie.chat.greeting.1" = "Fresh cookies and a fresh board. Let's play!";
+"bot.maisie.chat.greeting.2" = "Hello, dear! Ready for a friendly game?";
+"bot.maisie.chat.playerCaptures.1" = "Well, that one was half-baked anyway.";
+"bot.maisie.chat.playerCaptures.2" = "Ooh, you snatched that like the last cookie!";
+"bot.maisie.chat.botCaptures.1" = "I'll just take that, thank you!";
+"bot.maisie.chat.botCaptures.2" = "Into the oven it goes!";
+"bot.maisie.chat.playerBlunder.1" = "Oh dear, I think you left that out to cool.";
+"bot.maisie.chat.playerBlunder.2" = "Are you sure about that one, sweetie?";
+"bot.maisie.chat.check.1" = "Check! Mind the hot tray!";
+"bot.maisie.chat.check.2" = "Your king is in a bit of a jam!";
+"bot.maisie.chat.botWins.1" = "Well, that rose nicely! Good game.";
+"bot.maisie.chat.botWins.2" = "A win! I'll celebrate with a muffin.";
+"bot.maisie.chat.botLoses.1" = "You beat me fair and square. Cookie?";
+"bot.maisie.chat.botLoses.2" = "Lovely game, you earned the biggest slice.";
+"bot.maisie.chat.draw.1" = "Split it down the middle, like a good pie.";
+"bot.maisie.chat.draw.2" = "A draw! Shall we share the cookies?";
+"bot.maisie.chat.drawDeclined.1" = "Not yet, dear, it's still in the oven.";
+"bot.maisie.chat.takeback.1" = "Of course! Everyone deserves a second batch.";
+"bot.bramble.bio" = "A gardener who thinks pawns are seedlings that grow into queens.";
+"bot.bramble.chat.greeting.1" = "Let's see what grows on this board today.";
+"bot.bramble.chat.greeting.2" = "Pull up a chair, the garden is lovely.";
+"bot.bramble.chat.playerCaptures.1" = "You pruned my piece. Rude, but tidy.";
+"bot.bramble.chat.playerCaptures.2" = "Snip! There goes one of my sprouts.";
+"bot.bramble.chat.botCaptures.1" = "Weeded that one right out.";
+"bot.bramble.chat.botCaptures.2" = "A little pruning never hurt.";
+"bot.bramble.chat.playerBlunder.1" = "Hmm, that square looks a bit overwatered.";
+"bot.bramble.chat.playerBlunder.2" = "I spy an unguarded flowerbed.";
+"bot.bramble.chat.check.1" = "Check! Watch out for thorns.";
+"bot.bramble.chat.check.2" = "Your king is in the brambles now!";
+"bot.bramble.chat.botWins.1" = "The garden grew my way today.";
+"bot.bramble.chat.botWins.2" = "What a harvest! Thanks for the game.";
+"bot.bramble.chat.botLoses.1" = "You've got a green thumb for chess.";
+"bot.bramble.chat.botLoses.2" = "Well played. My plans wilted.";
+"bot.bramble.chat.draw.1" = "Even soil on both sides. A draw!";
+"bot.bramble.chat.draw.2" = "We'll call this one a tidy hedge.";
+"bot.bramble.chat.drawDeclined.1" = "No, no, my pawns are still sprouting.";
+"bot.bramble.chat.takeback.1" = "Replant it, I don't mind.";
+"bot.rosa.bio" = "Bike courier who plays fast, turns hard and never brakes for pawns.";
+"bot.rosa.chat.greeting.1" = "Helmet on. Let's ride!";
+"bot.rosa.chat.greeting.2" = "Ready? I don't do slow.";
+"bot.rosa.chat.playerCaptures.1" = "Flat tire! You got me.";
+"bot.rosa.chat.playerCaptures.2" = "Okay, that one stung.";
+"bot.rosa.chat.botCaptures.1" = "Delivered!";
+"bot.rosa.chat.botCaptures.2" = "Special delivery: your piece is mine.";
+"bot.rosa.chat.playerBlunder.1" = "You just ran a red light.";
+"bot.rosa.chat.playerBlunder.2" = "Whoa, big pothole there!";
+"bot.rosa.chat.check.1" = "Check! Coming through!";
+"bot.rosa.chat.check.2" = "Ding ding! Check!";
+"bot.rosa.chat.botWins.1" = "First across the line!";
+"bot.rosa.chat.botWins.2" = "That was a fun sprint. Rematch?";
+"bot.rosa.chat.botLoses.1" = "You out-pedaled me. Nice!";
+"bot.rosa.chat.botLoses.2" = "I'll get you on the next lap.";
+"bot.rosa.chat.draw.1" = "Photo finish! Draw.";
+"bot.rosa.chat.draw.2" = "Neck and neck. Fair enough.";
+"bot.rosa.chat.drawDeclined.1" = "Nope, still pedaling!";
+"bot.rosa.chat.takeback.1" = "Fine, back it up. Once!";
+"bot.gus.bio" = "Retired ferry captain who plays over a very large mug of tea.";
+"bot.gus.chat.greeting.1" = "Ahoy! Kettle's on. Your move, sailor.";
+"bot.gus.chat.greeting.2" = "Calm seas today. Let's play.";
+"bot.gus.chat.playerCaptures.1" = "Man overboard!";
+"bot.gus.chat.playerCaptures.2" = "Blast, I needed that one.";
+"bot.gus.chat.botCaptures.1" = "Hauled aboard!";
+"bot.gus.chat.botCaptures.2" = "That one's going in the cargo hold.";
+"bot.gus.chat.playerBlunder.1" = "You've sprung a leak, friend.";
+"bot.gus.chat.playerBlunder.2" = "Rough waters ahead for you.";
+"bot.gus.chat.check.1" = "Check! Iceberg dead ahead!";
+"bot.gus.chat.check.2" = "All hands, your king's in trouble!";
+"bot.gus.chat.botWins.1" = "Safe in harbor. Good game!";
+"bot.gus.chat.botWins.2" = "The old captain still has it.";
+"bot.gus.chat.botLoses.1" = "You sank my ship. Well steered!";
+"bot.gus.chat.botLoses.2" = "I'll drink my tea in defeat.";
+"bot.gus.chat.draw.1" = "We'll share the dock tonight.";
+"bot.gus.chat.draw.2" = "A draw. The sea is kind today.";
+"bot.gus.chat.drawDeclined.1" = "Not yet! The voyage isn't over.";
+"bot.gus.chat.takeback.1" = "Turn her around, then. One time.";
+"bot.nadia.bio" = "Librarian who has read every opening book and remembers half of them.";
+"bot.nadia.chat.greeting.1" = "Shh... it's game time. Good luck!";
+"bot.nadia.chat.greeting.2" = "I checked out a new opening for you.";
+"bot.nadia.chat.playerCaptures.1" = "That piece was overdue anyway.";
+"bot.nadia.chat.playerCaptures.2" = "Hm. Didn't see that chapter coming.";
+"bot.nadia.chat.botCaptures.1" = "Returned to the shelf.";
+"bot.nadia.chat.botCaptures.2" = "Page 42 said I could take that.";
+"bot.nadia.chat.playerBlunder.1" = "That move isn't in any book I know.";
+"bot.nadia.chat.playerBlunder.2" = "You may want to re-read that line.";
+"bot.nadia.chat.check.1" = "Check. Please keep your voice down.";
+"bot.nadia.chat.check.2" = "Check, as the book suggests.";
+"bot.nadia.chat.botWins.1" = "The end. Thanks for a lovely read.";
+"bot.nadia.chat.botWins.2" = "A tidy conclusion, I think.";
+"bot.nadia.chat.botLoses.1" = "What a plot twist! Well played.";
+"bot.nadia.chat.botLoses.2" = "You wrote a better ending than I did.";
+"bot.nadia.chat.draw.1" = "An open ending. A draw it is.";
+"bot.nadia.chat.draw.2" = "Some stories end in a tie.";
+"bot.nadia.chat.drawDeclined.1" = "I'd like to read a few more pages first.";
+"bot.nadia.chat.takeback.1" = "Let's turn back a page, then.";
+"bot.quill.bio" = "Grad student writing a thesis on knight outposts. Ask about it. Please.";
+"bot.quill.chat.greeting.1" = "Excellent, a test subject! I mean, opponent.";
+"bot.quill.chat.greeting.2" = "Let's gather some data.";
+"bot.quill.chat.playerCaptures.1" = "Noted. Adjusting my hypothesis.";
+"bot.quill.chat.playerCaptures.2" = "Interesting. Very interesting.";
+"bot.quill.chat.botCaptures.1" = "As my research predicted.";
+"bot.quill.chat.botCaptures.2" = "Peer-reviewed capture.";
+"bot.quill.chat.playerBlunder.1" = "That move would not survive peer review.";
+"bot.quill.chat.playerBlunder.2" = "Statistically, that was a mistake.";
+"bot.quill.chat.check.1" = "Check. Please cite that in your notes.";
+"bot.quill.chat.check.2" = "Check! Footnote one.";
+"bot.quill.chat.botWins.1" = "Thesis confirmed! Thanks for your help.";
+"bot.quill.chat.botWins.2" = "Great data. Good game!";
+"bot.quill.chat.botLoses.1" = "Back to the lab for me. Well played.";
+"bot.quill.chat.botLoses.2" = "My thesis needs a new chapter.";
+"bot.quill.chat.draw.1" = "Inconclusive results. A draw.";
+"bot.quill.chat.draw.2" = "Further research is needed.";
+"bot.quill.chat.drawDeclined.1" = "My sample size is too small to stop now.";
+"bot.quill.chat.takeback.1" = "We'll exclude that from the dataset.";
+"bot.priya.bio" = "Club champion and speed puzzler. Loves sharp positions and loud tactics.";
+"bot.priya.chat.greeting.1" = "Let's make this one sharp!";
+"bot.priya.chat.greeting.2" = "Hope you like tactics.";
+"bot.priya.chat.playerCaptures.1" = "Nice shot! I'll remember that.";
+"bot.priya.chat.playerCaptures.2" = "Okay, you're warming up.";
+"bot.priya.chat.botCaptures.1" = "Zap! Mine now.";
+"bot.priya.chat.botCaptures.2" = "Tactics flow like electricity.";
+"bot.priya.chat.playerBlunder.1" = "Ooh, I think I felt a spark there.";
+"bot.priya.chat.playerBlunder.2" = "That one's going to cost you!";
+"bot.priya.chat.check.1" = "Check! Feel the voltage.";
+"bot.priya.chat.check.2" = "Zap! Check.";
+"bot.priya.chat.botWins.1" = "Charged up and done. Good game!";
+"bot.priya.chat.botWins.2" = "Full power finish!";
+"bot.priya.chat.botLoses.1" = "You short-circuited me. Great game!";
+"bot.priya.chat.botLoses.2" = "Wow, you were electric.";
+"bot.priya.chat.draw.1" = "Balanced current. A draw.";
+"bot.priya.chat.draw.2" = "No sparks left. Draw it is.";
+"bot.priya.chat.drawDeclined.1" = "There's still plenty of charge in this position.";
+"bot.priya.chat.takeback.1" = "Alright, rewind. I want a fair fight.";
+"bot.viktor.bio" = "Stern chess coach with a soft spot for students who fight to the end.";
+"bot.viktor.chat.greeting.1" = "Sit up straight. Let's begin.";
+"bot.viktor.chat.greeting.2" = "Show me what you've learned.";
+"bot.viktor.chat.playerCaptures.1" = "Good. You saw that.";
+"bot.viktor.chat.playerCaptures.2" = "Acceptable technique.";
+"bot.viktor.chat.botCaptures.1" = "You left that for me.";
+"bot.viktor.chat.botCaptures.2" = "Always check what's hanging.";
+"bot.viktor.chat.playerBlunder.1" = "We'll discuss that move in the lesson.";
+"bot.viktor.chat.playerBlunder.2" = "Look at the whole board, please.";
+"bot.viktor.chat.check.1" = "Check. Calculate carefully.";
+"bot.viktor.chat.check.2" = "Check. Now think.";
+"bot.viktor.chat.botWins.1" = "Good effort. Review this game tonight.";
+"bot.viktor.chat.botWins.2" = "A lesson learned is a win too.";
+"bot.viktor.chat.botLoses.1" = "Excellent. I'm proud of you.";
+"bot.viktor.chat.botLoses.2" = "Well played. That was real chess.";
+"bot.viktor.chat.draw.1" = "A fair result. Well defended.";
+"bot.viktor.chat.draw.2" = "A draw. You held firm.";
+"bot.viktor.chat.drawDeclined.1" = "No. Play on and prove it.";
+"bot.viktor.chat.takeback.1" = "Once. Then think before you move.";
+"bot.odette.bio" = "Night-shift astronomer who calculates variations like orbits.";
+"bot.odette.chat.greeting.1" = "The stars are aligned for a good game.";
+"bot.odette.chat.greeting.2" = "Good evening. Shall we begin?";
+"bot.odette.chat.playerCaptures.1" = "A comet I didn't chart.";
+"bot.odette.chat.playerCaptures.2" = "Hm. A small eclipse for me.";
+"bot.odette.chat.botCaptures.1" = "Pulled into my orbit.";
+"bot.odette.chat.botCaptures.2" = "Gravity always wins.";
+"bot.odette.chat.playerBlunder.1" = "That piece has drifted out of orbit.";
+"bot.odette.chat.playerBlunder.2" = "A falling star, I'm afraid.";
+"bot.odette.chat.check.1" = "Check. Your king is in my orbit.";
+"bot.odette.chat.check.2" = "Check. The sky is closing in.";
+"bot.odette.chat.botWins.1" = "The stars were on my side tonight.";
+"bot.odette.chat.botWins.2" = "A clear night and a clean win.";
+"bot.odette.chat.botLoses.1" = "A brilliant constellation of moves.";
+"bot.odette.chat.botLoses.2" = "You outshone me. Well played.";
+"bot.odette.chat.draw.1" = "Two stars in balance. A draw.";
+"bot.odette.chat.draw.2" = "Perfect equilibrium.";
+"bot.odette.chat.drawDeclined.1" = "The night is still young.";
+"bot.odette.chat.takeback.1" = "Very well, let's rewind the sky.";
+"bot.atlas.bio" = "A polite robot who carries the whole opening tree on its shoulders.";
+"bot.atlas.chat.greeting.1" = "Greetings. Initiating game protocol.";
+"bot.atlas.chat.greeting.2" = "Hello, human. Good luck.";
+"bot.atlas.chat.playerCaptures.1" = "Material loss logged.";
+"bot.atlas.chat.playerCaptures.2" = "Unexpected. Recalculating.";
+"bot.atlas.chat.botCaptures.1" = "Piece acquired.";
+"bot.atlas.chat.botCaptures.2" = "Capture executed.";
+"bot.atlas.chat.playerBlunder.1" = "Evaluation shifted in my favor.";
+"bot.atlas.chat.playerBlunder.2" = "Error detected in your last move.";
+"bot.atlas.chat.check.1" = "Check. Your move is required.";
+"bot.atlas.chat.check.2" = "Check detected.";
+"bot.atlas.chat.botWins.1" = "Game complete. Thank you for playing.";
+"bot.atlas.chat.botWins.2" = "Victory logged. Well fought.";
+"bot.atlas.chat.botLoses.1" = "Impressive. Updating my database.";
+"bot.atlas.chat.botLoses.2" = "Defeat logged. You played well.";
+"bot.atlas.chat.draw.1" = "Result: balanced. Draw accepted.";
+"bot.atlas.chat.draw.2" = "Equal outcome computed.";
+"bot.atlas.chat.drawDeclined.1" = "Negative. The position still has play.";
+"bot.atlas.chat.takeback.1" = "Reverting to previous state.";
+"bot.orrin.bio" = "An ancient wizard who swears he doesn't use magic. Mostly.";
+"bot.orrin.chat.greeting.1" = "Welcome, brave one. Let the duel begin!";
+"bot.orrin.chat.greeting.2" = "Ah, a challenger approaches.";
+"bot.orrin.chat.playerCaptures.1" = "A clever spell, young one.";
+"bot.orrin.chat.playerCaptures.2" = "You dispelled my piece!";
+"bot.orrin.chat.botCaptures.1" = "Poof! Vanished.";
+"bot.orrin.chat.botCaptures.2" = "A simple conjuring trick.";
+"bot.orrin.chat.playerBlunder.1" = "I sense a disturbance in your position.";
+"bot.orrin.chat.playerBlunder.2" = "My crystal ball foresaw that.";
+"bot.orrin.chat.check.1" = "Check! Feel the arcane pressure.";
+"bot.orrin.chat.check.2" = "Check. The runes glow brightly.";
+"bot.orrin.chat.botWins.1" = "The ancient arts prevail. Good duel!";
+"bot.orrin.chat.botWins.2" = "Magic, or just good chess?";
+"bot.orrin.chat.botLoses.1" = "Remarkable! You'd make a fine apprentice.";
+"bot.orrin.chat.botLoses.2" = "Your magic is stronger today.";
+"bot.orrin.chat.draw.1" = "Our powers are evenly matched.";
+"bot.orrin.chat.draw.2" = "A stalemate of sorcerers.";
+"bot.orrin.chat.drawDeclined.1" = "My spellbook still has pages left.";
+"bot.orrin.chat.takeback.1" = "I shall turn back time. Just this once.";
+
+/* Time controls */
+"timeControl.category.bullet.name" = "Bullet";
+"timeControl.category.blitz.name" = "Blitz";
+"timeControl.category.rapid.name" = "Rapid";
+"timeControl.category.untimed.name" = "Untimed";
+"timeControl.1+0.label" = "1 min";
+"timeControl.1+1.label" = "1 | 1";
+"timeControl.2+1.label" = "2 | 1";
+"timeControl.3+0.label" = "3 min";
+"timeControl.3+2.label" = "3 | 2";
+"timeControl.5+0.label" = "5 min";
+"timeControl.10+0.label" = "10 min";
+"timeControl.15+10.label" = "15 | 10";
+"timeControl.30+0.label" = "30 min";
+"timeControl.untimed.label" = "No timer";
+
+/* Piece sets */
+"pieceSet.cburnett.name" = "Cburnett";
+
+/* Sound packs */
+"soundPack.synth.name" = "Synthesized";
+
+/* Attributions */
+"attribution.cburnett.title" = "Cburnett chess pieces";
+"attribution.openchess-synth.title" = "OpenChess synthesized sounds";
+"attribution.lichess-puzzles.title" = "Lichess puzzle database";
+
+/* Players */
+"player.you.name" = "You";
+"player.white.name" = "White";
+"player.black.name" = "Black";
+
+/* Game-over reasons */
+"game.termination.checkmate.reason" = "by checkmate";
+"game.termination.timeout.reason" = "on time";
+"game.termination.resignation.reason" = "by resignation";
+"game.termination.stalemate.reason" = "by stalemate";
+"game.termination.repetition.reason" = "by repetition";
+"game.termination.insufficientMaterial.reason" = "by insufficient material";
+"game.termination.agreement.reason" = "by agreement";
+"game.termination.fiftyMoveRule.reason" = "by 50-move rule";
+"game.termination.timeoutVsInsufficientMaterial.reason" = "timeout vs insufficient material";
+
+/* Game results */
+"game.result.youWon.title" = "You Won!";
+"game.result.youLost.title" = "You Lost";
+"game.result.whiteWon.title" = "White Won";
+"game.result.blackWon.title" = "Black Won";
+"game.result.draw.title" = "Draw";
+
+/* Game status line */
+"game.turn.yours" = "Your move";
+"game.turn.opponent" = "Opponent to move";
+"game.turn.white" = "White to move";
+"game.turn.black" = "Black to move";
+/* %@: the turn line, such as "Your move". */
+"game.turn.check" = "%@ · Check";
+/* %@: the bot's name. */
+"game.status.botThinking" = "%@ is thinking…";
+/* %1$@: the result title, such as "You Won!"; %2$@: the reason, such as "by checkmate". */
+"game.status.over" = "%1$@ %2$@";
+
+/* Game screen */
+"game.title" = "Game";
+"game.action.hint" = "Hint";
+"game.action.takeback" = "Take Back";
+"game.action.offerDraw" = "Offer Draw";
+"game.action.resign" = "Resign";
+"game.action.flipBoard" = "Flip Board";
+"game.action.rematch" = "Rematch";
+"game.action.newGame" = "New Game";
+"game.action.menu" = "Game Actions";
+"game.resign.title" = "Resign this game?";
+/* %@: the name of the side that offers the draw. */
+"game.drawOffer.title" = "%@ offers a draw";
+"game.drawOffer.accept" = "Accept";
+"game.drawOffer.decline" = "Decline";
+"game.moves.empty" = "No moves yet";
+/* %@: the move number, at the start of a row of the move list. */
+"game.moves.number" = "%@.";
+/* %1$@: the move number; %2$@: White's move; %3$@: Black's move, empty when it has not moved. */
+"game.moves.row" = "%1$@. %2$@ %3$@";
+/* %@: the name of the player whose clock this is. */
+"game.clock.label" = "%@'s clock";
+/* %d: the material lead in points. */
+"game.material.lead" = "+%d";
+"game.botMessage.dismiss" = "Dismiss Message";
+
+/* Play setup */
+"playBots.color.title" = "Play as";
+"playBots.start" = "Start Game";
+/* %d: the bot's Elo rating. */
+"playBots.elo" = "Elo %d";
+"passAndPlay.autoFlip.title" = "Turn the board after each move";
+"passAndPlay.start" = "Start Game";
+
+/* Puzzle Rush modes */
+"puzzleRush.mode.threeMinutes.name" = "3 Minutes";
+"puzzleRush.mode.fiveMinutes.name" = "5 Minutes";
+"puzzleRush.mode.survival.name" = "Survival";
+
+/* Puzzles */
+"puzzles.rated.title" = "Rated Puzzles";
+/* %d: the player's puzzle rating. */
+"puzzles.rating.detail" = "Rating %d";
+"puzzles.stat.rating" = "Rating";
+"puzzles.stat.change" = "Rating Change";
+"puzzles.stat.streak" = "Streak";
+"puzzles.stat.date" = "Date";
+"puzzles.stat.status" = "Status";
+"puzzles.status.solved" = "Solved!";
+"puzzles.status.failed" = "Not the move. Try again.";
+"puzzles.status.revealing" = "Showing the solution...";
+"puzzles.status.revealed" = "Solution shown";
+"puzzles.action.showSolution" = "Show Solution";
+"puzzles.action.next" = "Next Puzzle";
+"puzzles.action.startOver" = "Start Over";
+
+/* Puzzle Rush */
+"puzzleRush.title" = "Puzzle Rush";
+/* %d: the best score. */
+"puzzleRush.best" = "Best: %d";
+"puzzleRush.detail" = "Solve as many as you can";
+"puzzleRush.start" = "Start Run";
+"puzzleRush.stat.score" = "Score";
+"puzzleRush.stat.best" = "Best";
+"puzzleRush.clock.label" = "Time left";
+"puzzleRush.action.end" = "End Run";
+"puzzleRush.action.playAgain" = "Play Again";
+"puzzleRush.action.changeMode" = "Change Mode";
+"puzzleRush.result.title" = "Run Over";
+"puzzleRush.result.newBest" = "New Best!";
+
+/* Daily Puzzle */
+"puzzleDaily.title" = "Daily Puzzle";
+"puzzleDaily.solved" = "Solved";
+"puzzleDaily.notSolved" = "Not solved";
+
+/* Settings */
+"settings.board.title" = "Board";
+"settings.boardTheme" = "Board Theme";
+"settings.orientation.title" = "Orientation";
+"settings.coordinates" = "Coordinates";
+"settings.legalMoves" = "Legal Moves";
+"settings.lastMove" = "Highlight Last Move";
+"settings.pieces.title" = "Pieces";
+"settings.pieceSet" = "Piece Set";
+"settings.gameplay.title" = "Gameplay";
+"settings.moveAnimation" = "Animate Moves";
+"settings.autoQueen" = "Always Promote to Queen";
+"settings.soundHaptics.title" = "Sound and Haptics";
+"settings.soundEffects" = "Sound Effects";
+"settings.haptics" = "Haptics";
+"settings.about.title" = "About";
+"settings.licenses" = "Licenses";
+"licenses.title" = "Licenses";
+"licenses.kind.pieces" = "Pieces";
+"licenses.kind.sounds" = "Sounds";
+"licenses.kind.other" = "Other";
+"licenses.author" = "Author";
+"licenses.license" = "License";
+"licenses.notice" = "License Text";
+"settings.orientation.white.name" = "White";
+"settings.orientation.black.name" = "Black";
+"settings.orientation.automatic.name" = "Automatic";
+
+/* Play Bots color choice */
+"playBots.color.white.name" = "White";
+"playBots.color.random.name" = "Random";
+"playBots.color.black.name" = "Black";
+
+/* Game Review grades */
+"review.classification.brilliant.name" = "Brilliant";
+"review.classification.great.name" = "Great";
+"review.classification.best.name" = "Best";
+"review.classification.excellent.name" = "Excellent";
+"review.classification.good.name" = "Good";
+"review.classification.book.name" = "Book";
+"review.classification.inaccuracy.name" = "Inaccuracy";
+"review.classification.mistake.name" = "Mistake";
+"review.classification.miss.name" = "Miss";
+"review.classification.blunder.name" = "Blunder";
+
+/* Game Review coach lines; %@ is the move in SAN */
+"review.coach.brilliant" = "%@ is brilliant! A strong sacrifice.";
+"review.coach.great" = "%@ is a great move. Nothing else keeps the position.";
+"review.coach.best" = "%@ is best.";
+"review.coach.excellent" = "%@ is excellent.";
+"review.coach.good" = "%@ is good.";
+"review.coach.book" = "%@ is a book move.";
+"review.coach.inaccuracy" = "%@ is an inaccuracy.";
+"review.coach.mistake" = "%@ is a mistake.";
+"review.coach.miss" = "%@ misses the chance to punish the last move.";
+"review.coach.blunder" = "%@ is a blunder.";
+"review.coach.bestMove" = "The best move was %@.";
+
+/* Game Review screen */
+"review.title" = "Review";
+/* %1$d: positions analysed so far; %2$d: positions in the game. */
+"review.progress" = "Analyzing... %1$d of %2$d";
+/* %d: the player's accuracy in percent. */
+"review.accuracy" = "Accuracy %d%%";
+/* %@: the engine evaluation, such as "+0.35". */
+"review.evaluation" = "Evaluation %@";
+"review.position.start" = "Starting position";
+/* %d: the move number in the move list. */
+"review.moves.number" = "%d.";
+"review.nav.first" = "First Move";
+"review.nav.previous" = "Previous Move";
+"review.nav.next" = "Next Move";
+"review.nav.last" = "Last Move";
+
+/* Games archive */
+"games.empty.title" = "No Games Yet";
+"games.empty.detail" = "Games you play show up here.";
+/* %1$@: the white player; %2$@: the black player. */
+"games.row.versus" = "%1$@ vs %2$@";
+/* %1$@: the result or state; %2$@: the move count; %3$@: the date. */
+"games.row.detail" = "%1$@ · %2$@ · %3$@";
+"games.status.inProgress" = "In Progress";
+"games.action.continue" = "Continue";
+"games.action.review" = "Review";
+"games.action.delete" = "Delete";
+"games.action.sharePGN" = "Share PGN";
+/* Account */
+"account.gameCenter.title" = "Game Center";
+"account.gameCenter.signedOut.detail" = "Game Center is your sign-in for OpenChess.";
+"account.gameCenter.signingIn.detail" = "Signing in...";
+/* %@: the player's Game Center name. */
+"account.gameCenter.signedIn.detail" = "Signed in as %@";
+"account.gameCenter.unavailable.title" = "Game Center Is Not Available";
+"account.gameCenter.unavailable.detail" = "Game Center is turned off or restricted on this device. You can change this in the system settings.";
+"account.gameCenter.signIn" = "Sign In";
+"account.gameCenter.open" = "Open Game Center";
+"account.chessCom.title" = "Chess.com";
+"account.chessCom.notLinked.detail" = "Link a Chess.com account to see your ratings and import your games.";
+"account.chessCom.privacy" = "OpenChess reads public Chess.com data only. It never asks for your password.";
+"account.chessCom.link" = "Link Chess.com Account";
+"account.chessCom.link.confirm" = "Link";
+"account.chessCom.username" = "Chess.com Username";
+"account.chessCom.unlink" = "Unlink";
+"account.chessCom.ratings" = "Ratings";
+"account.chessCom.timeClass.rapid" = "Rapid";
+"account.chessCom.timeClass.blitz" = "Blitz";
+"account.chessCom.timeClass.bullet" = "Bullet";
+"account.chessCom.timeClass.daily" = "Daily";
+/* %1$d: games won; %2$d: games lost; %3$d: games drawn. */
+"account.chessCom.record" = "%1$d W · %2$d L · %3$d D";
+"account.chessCom.recentGames" = "Recent Games";
+"account.chessCom.recentGames.empty" = "No games in the latest archive.";
+/* %1$@: the result; %2$@: the time class; %3$@: the date. */
+"account.chessCom.game.detail" = "%1$@ · %2$@ · %3$@";
+"account.chessCom.import" = "Import";
+"account.chessCom.importAll" = "Import All";
+"account.chessCom.error.invalidUsername" = "That is not a valid Chess.com username.";
+"account.chessCom.error.notFound" = "No Chess.com player has that username.";
+"account.chessCom.error.rateLimited" = "Chess.com is busy. Try again in a moment.";
+"account.chessCom.error.network" = "Could not reach Chess.com. Check your connection and try again.";
+"account.welcome.pitch" = "Play bots, solve puzzles, and review every game.";
+"account.welcome.signIn" = "Sign in with Game Center";
+"account.welcome.notNow" = "Not now";

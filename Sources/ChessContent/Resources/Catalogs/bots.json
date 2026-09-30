@@ -1,0 +1,430 @@
+{
+	"groups": [
+		{
+			"id": "beginner",
+			"nameKey": "bot.group.beginner.name"
+		},
+		{
+			"id": "intermediate",
+			"nameKey": "bot.group.intermediate.name"
+		},
+		{
+			"id": "advanced",
+			"nameKey": "bot.group.advanced.name"
+		},
+		{
+			"id": "master",
+			"nameKey": "bot.group.master.name"
+		}
+	],
+	"bots": [
+		{
+			"id": "pip",
+			"nameKey": "bot.pip.name",
+			"bioKey": "bot.pip.bio",
+			"elo": 250,
+			"groupID": "beginner",
+			"avatar": {
+				"symbol": "tortoise.fill",
+				"color": "#6FA35A"
+			},
+			"chat": {
+				"greeting": ["bot.pip.chat.greeting.1", "bot.pip.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.pip.chat.playerCaptures.1",
+					"bot.pip.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.pip.chat.botCaptures.1",
+					"bot.pip.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.pip.chat.playerBlunder.1",
+					"bot.pip.chat.playerBlunder.2"
+				],
+				"check": ["bot.pip.chat.check.1", "bot.pip.chat.check.2"],
+				"botWins": ["bot.pip.chat.botWins.1", "bot.pip.chat.botWins.2"],
+				"botLoses": ["bot.pip.chat.botLoses.1", "bot.pip.chat.botLoses.2"],
+				"draw": ["bot.pip.chat.draw.1", "bot.pip.chat.draw.2"],
+				"drawDeclined": ["bot.pip.chat.drawDeclined.1"],
+				"takeback": ["bot.pip.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "maisie",
+			"nameKey": "bot.maisie.name",
+			"bioKey": "bot.maisie.bio",
+			"elo": 450,
+			"groupID": "beginner",
+			"avatar": {
+				"symbol": null,
+				"color": "#C7773A"
+			},
+			"chat": {
+				"greeting": [
+					"bot.maisie.chat.greeting.1",
+					"bot.maisie.chat.greeting.2"
+				],
+				"playerCaptures": [
+					"bot.maisie.chat.playerCaptures.1",
+					"bot.maisie.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.maisie.chat.botCaptures.1",
+					"bot.maisie.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.maisie.chat.playerBlunder.1",
+					"bot.maisie.chat.playerBlunder.2"
+				],
+				"check": ["bot.maisie.chat.check.1", "bot.maisie.chat.check.2"],
+				"botWins": ["bot.maisie.chat.botWins.1", "bot.maisie.chat.botWins.2"],
+				"botLoses": [
+					"bot.maisie.chat.botLoses.1",
+					"bot.maisie.chat.botLoses.2"
+				],
+				"draw": ["bot.maisie.chat.draw.1", "bot.maisie.chat.draw.2"],
+				"drawDeclined": ["bot.maisie.chat.drawDeclined.1"],
+				"takeback": ["bot.maisie.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "bramble",
+			"nameKey": "bot.bramble.name",
+			"bioKey": "bot.bramble.bio",
+			"elo": 650,
+			"groupID": "beginner",
+			"avatar": {
+				"symbol": "leaf.fill",
+				"color": "#4E8C87"
+			},
+			"chat": {
+				"greeting": [
+					"bot.bramble.chat.greeting.1",
+					"bot.bramble.chat.greeting.2"
+				],
+				"playerCaptures": [
+					"bot.bramble.chat.playerCaptures.1",
+					"bot.bramble.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.bramble.chat.botCaptures.1",
+					"bot.bramble.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.bramble.chat.playerBlunder.1",
+					"bot.bramble.chat.playerBlunder.2"
+				],
+				"check": ["bot.bramble.chat.check.1", "bot.bramble.chat.check.2"],
+				"botWins": ["bot.bramble.chat.botWins.1", "bot.bramble.chat.botWins.2"],
+				"botLoses": [
+					"bot.bramble.chat.botLoses.1",
+					"bot.bramble.chat.botLoses.2"
+				],
+				"draw": ["bot.bramble.chat.draw.1", "bot.bramble.chat.draw.2"],
+				"drawDeclined": ["bot.bramble.chat.drawDeclined.1"],
+				"takeback": ["bot.bramble.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "rosa",
+			"nameKey": "bot.rosa.name",
+			"bioKey": "bot.rosa.bio",
+			"elo": 850,
+			"groupID": "intermediate",
+			"avatar": {
+				"symbol": "bicycle",
+				"color": "#B5485A"
+			},
+			"chat": {
+				"greeting": ["bot.rosa.chat.greeting.1", "bot.rosa.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.rosa.chat.playerCaptures.1",
+					"bot.rosa.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.rosa.chat.botCaptures.1",
+					"bot.rosa.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.rosa.chat.playerBlunder.1",
+					"bot.rosa.chat.playerBlunder.2"
+				],
+				"check": ["bot.rosa.chat.check.1", "bot.rosa.chat.check.2"],
+				"botWins": ["bot.rosa.chat.botWins.1", "bot.rosa.chat.botWins.2"],
+				"botLoses": ["bot.rosa.chat.botLoses.1", "bot.rosa.chat.botLoses.2"],
+				"draw": ["bot.rosa.chat.draw.1", "bot.rosa.chat.draw.2"],
+				"drawDeclined": ["bot.rosa.chat.drawDeclined.1"],
+				"takeback": ["bot.rosa.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "gus",
+			"nameKey": "bot.gus.name",
+			"bioKey": "bot.gus.bio",
+			"elo": 1050,
+			"groupID": "intermediate",
+			"avatar": {
+				"symbol": "cup.and.saucer.fill",
+				"color": "#7A6A55"
+			},
+			"chat": {
+				"greeting": ["bot.gus.chat.greeting.1", "bot.gus.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.gus.chat.playerCaptures.1",
+					"bot.gus.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.gus.chat.botCaptures.1",
+					"bot.gus.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.gus.chat.playerBlunder.1",
+					"bot.gus.chat.playerBlunder.2"
+				],
+				"check": ["bot.gus.chat.check.1", "bot.gus.chat.check.2"],
+				"botWins": ["bot.gus.chat.botWins.1", "bot.gus.chat.botWins.2"],
+				"botLoses": ["bot.gus.chat.botLoses.1", "bot.gus.chat.botLoses.2"],
+				"draw": ["bot.gus.chat.draw.1", "bot.gus.chat.draw.2"],
+				"drawDeclined": ["bot.gus.chat.drawDeclined.1"],
+				"takeback": ["bot.gus.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "nadia",
+			"nameKey": "bot.nadia.name",
+			"bioKey": "bot.nadia.bio",
+			"elo": 1250,
+			"groupID": "intermediate",
+			"avatar": {
+				"symbol": "book.fill",
+				"color": "#3D7EA6"
+			},
+			"chat": {
+				"greeting": ["bot.nadia.chat.greeting.1", "bot.nadia.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.nadia.chat.playerCaptures.1",
+					"bot.nadia.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.nadia.chat.botCaptures.1",
+					"bot.nadia.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.nadia.chat.playerBlunder.1",
+					"bot.nadia.chat.playerBlunder.2"
+				],
+				"check": ["bot.nadia.chat.check.1", "bot.nadia.chat.check.2"],
+				"botWins": ["bot.nadia.chat.botWins.1", "bot.nadia.chat.botWins.2"],
+				"botLoses": ["bot.nadia.chat.botLoses.1", "bot.nadia.chat.botLoses.2"],
+				"draw": ["bot.nadia.chat.draw.1", "bot.nadia.chat.draw.2"],
+				"drawDeclined": ["bot.nadia.chat.drawDeclined.1"],
+				"takeback": ["bot.nadia.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "quill",
+			"nameKey": "bot.quill.name",
+			"bioKey": "bot.quill.bio",
+			"elo": 1450,
+			"groupID": "advanced",
+			"avatar": {
+				"symbol": "graduationcap.fill",
+				"color": "#9C5DB5"
+			},
+			"chat": {
+				"greeting": ["bot.quill.chat.greeting.1", "bot.quill.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.quill.chat.playerCaptures.1",
+					"bot.quill.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.quill.chat.botCaptures.1",
+					"bot.quill.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.quill.chat.playerBlunder.1",
+					"bot.quill.chat.playerBlunder.2"
+				],
+				"check": ["bot.quill.chat.check.1", "bot.quill.chat.check.2"],
+				"botWins": ["bot.quill.chat.botWins.1", "bot.quill.chat.botWins.2"],
+				"botLoses": ["bot.quill.chat.botLoses.1", "bot.quill.chat.botLoses.2"],
+				"draw": ["bot.quill.chat.draw.1", "bot.quill.chat.draw.2"],
+				"drawDeclined": ["bot.quill.chat.drawDeclined.1"],
+				"takeback": ["bot.quill.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "priya",
+			"nameKey": "bot.priya.name",
+			"bioKey": "bot.priya.bio",
+			"elo": 1650,
+			"groupID": "advanced",
+			"avatar": {
+				"symbol": "bolt.fill",
+				"color": "#C99A2E"
+			},
+			"chat": {
+				"greeting": ["bot.priya.chat.greeting.1", "bot.priya.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.priya.chat.playerCaptures.1",
+					"bot.priya.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.priya.chat.botCaptures.1",
+					"bot.priya.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.priya.chat.playerBlunder.1",
+					"bot.priya.chat.playerBlunder.2"
+				],
+				"check": ["bot.priya.chat.check.1", "bot.priya.chat.check.2"],
+				"botWins": ["bot.priya.chat.botWins.1", "bot.priya.chat.botWins.2"],
+				"botLoses": ["bot.priya.chat.botLoses.1", "bot.priya.chat.botLoses.2"],
+				"draw": ["bot.priya.chat.draw.1", "bot.priya.chat.draw.2"],
+				"drawDeclined": ["bot.priya.chat.drawDeclined.1"],
+				"takeback": ["bot.priya.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "viktor",
+			"nameKey": "bot.viktor.name",
+			"bioKey": "bot.viktor.bio",
+			"elo": 1800,
+			"groupID": "advanced",
+			"avatar": {
+				"symbol": null,
+				"color": "#5D6B8C"
+			},
+			"chat": {
+				"greeting": [
+					"bot.viktor.chat.greeting.1",
+					"bot.viktor.chat.greeting.2"
+				],
+				"playerCaptures": [
+					"bot.viktor.chat.playerCaptures.1",
+					"bot.viktor.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.viktor.chat.botCaptures.1",
+					"bot.viktor.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.viktor.chat.playerBlunder.1",
+					"bot.viktor.chat.playerBlunder.2"
+				],
+				"check": ["bot.viktor.chat.check.1", "bot.viktor.chat.check.2"],
+				"botWins": ["bot.viktor.chat.botWins.1", "bot.viktor.chat.botWins.2"],
+				"botLoses": [
+					"bot.viktor.chat.botLoses.1",
+					"bot.viktor.chat.botLoses.2"
+				],
+				"draw": ["bot.viktor.chat.draw.1", "bot.viktor.chat.draw.2"],
+				"drawDeclined": ["bot.viktor.chat.drawDeclined.1"],
+				"takeback": ["bot.viktor.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "odette",
+			"nameKey": "bot.odette.name",
+			"bioKey": "bot.odette.bio",
+			"elo": 1950,
+			"groupID": "master",
+			"avatar": {
+				"symbol": "moon.stars.fill",
+				"color": "#3F4A8A"
+			},
+			"chat": {
+				"greeting": [
+					"bot.odette.chat.greeting.1",
+					"bot.odette.chat.greeting.2"
+				],
+				"playerCaptures": [
+					"bot.odette.chat.playerCaptures.1",
+					"bot.odette.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.odette.chat.botCaptures.1",
+					"bot.odette.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.odette.chat.playerBlunder.1",
+					"bot.odette.chat.playerBlunder.2"
+				],
+				"check": ["bot.odette.chat.check.1", "bot.odette.chat.check.2"],
+				"botWins": ["bot.odette.chat.botWins.1", "bot.odette.chat.botWins.2"],
+				"botLoses": [
+					"bot.odette.chat.botLoses.1",
+					"bot.odette.chat.botLoses.2"
+				],
+				"draw": ["bot.odette.chat.draw.1", "bot.odette.chat.draw.2"],
+				"drawDeclined": ["bot.odette.chat.drawDeclined.1"],
+				"takeback": ["bot.odette.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "atlas",
+			"nameKey": "bot.atlas.name",
+			"bioKey": "bot.atlas.bio",
+			"elo": 2100,
+			"groupID": "master",
+			"avatar": {
+				"symbol": "cpu",
+				"color": "#4B4845"
+			},
+			"chat": {
+				"greeting": ["bot.atlas.chat.greeting.1", "bot.atlas.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.atlas.chat.playerCaptures.1",
+					"bot.atlas.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.atlas.chat.botCaptures.1",
+					"bot.atlas.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.atlas.chat.playerBlunder.1",
+					"bot.atlas.chat.playerBlunder.2"
+				],
+				"check": ["bot.atlas.chat.check.1", "bot.atlas.chat.check.2"],
+				"botWins": ["bot.atlas.chat.botWins.1", "bot.atlas.chat.botWins.2"],
+				"botLoses": ["bot.atlas.chat.botLoses.1", "bot.atlas.chat.botLoses.2"],
+				"draw": ["bot.atlas.chat.draw.1", "bot.atlas.chat.draw.2"],
+				"drawDeclined": ["bot.atlas.chat.drawDeclined.1"],
+				"takeback": ["bot.atlas.chat.takeback.1"]
+			}
+		},
+		{
+			"id": "orrin",
+			"nameKey": "bot.orrin.name",
+			"bioKey": "bot.orrin.bio",
+			"elo": 2200,
+			"groupID": "master",
+			"avatar": {
+				"symbol": "sparkles",
+				"color": "#6B3FA0"
+			},
+			"chat": {
+				"greeting": ["bot.orrin.chat.greeting.1", "bot.orrin.chat.greeting.2"],
+				"playerCaptures": [
+					"bot.orrin.chat.playerCaptures.1",
+					"bot.orrin.chat.playerCaptures.2"
+				],
+				"botCaptures": [
+					"bot.orrin.chat.botCaptures.1",
+					"bot.orrin.chat.botCaptures.2"
+				],
+				"playerBlunder": [
+					"bot.orrin.chat.playerBlunder.1",
+					"bot.orrin.chat.playerBlunder.2"
+				],
+				"check": ["bot.orrin.chat.check.1", "bot.orrin.chat.check.2"],
+				"botWins": ["bot.orrin.chat.botWins.1", "bot.orrin.chat.botWins.2"],
+				"botLoses": ["bot.orrin.chat.botLoses.1", "bot.orrin.chat.botLoses.2"],
+				"draw": ["bot.orrin.chat.draw.1", "bot.orrin.chat.draw.2"],
+				"drawDeclined": ["bot.orrin.chat.drawDeclined.1"],
+				"takeback": ["bot.orrin.chat.takeback.1"]
+			}
+		}
+	]
+}

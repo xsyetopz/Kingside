@@ -1,0 +1,7 @@
+{
+    "chessCom": {
+        "baseURL": "https://api.chess.com/pub/",
+        "profileURLTemplate": "https://www.chess.com/member/{username}",
+        "contactURL": "https://github.com/xsyetopz/OpenChess"
+    }
+}

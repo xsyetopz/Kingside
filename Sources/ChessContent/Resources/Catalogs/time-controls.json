@@ -1,0 +1,95 @@
+{
+	"estimatedMoves": 40,
+	"categories": [
+		{
+			"id": "bullet",
+			"nameKey": "timeControl.category.bullet.name",
+			"symbol": "bolt.fill",
+			"isTimed": true,
+			"belowEstimatedSeconds": 180
+		},
+		{
+			"id": "blitz",
+			"nameKey": "timeControl.category.blitz.name",
+			"symbol": "flame.fill",
+			"isTimed": true,
+			"belowEstimatedSeconds": 600
+		},
+		{
+			"id": "rapid",
+			"nameKey": "timeControl.category.rapid.name",
+			"symbol": "timer",
+			"isTimed": true,
+			"belowEstimatedSeconds": null
+		},
+		{
+			"id": "untimed",
+			"nameKey": "timeControl.category.untimed.name",
+			"symbol": "infinity",
+			"isTimed": false,
+			"belowEstimatedSeconds": null
+		}
+	],
+	"presets": [
+		{
+			"id": "1+0",
+			"initialSeconds": 60,
+			"incrementSeconds": 0,
+			"labelKey": "timeControl.1+0.label"
+		},
+		{
+			"id": "1+1",
+			"initialSeconds": 60,
+			"incrementSeconds": 1,
+			"labelKey": "timeControl.1+1.label"
+		},
+		{
+			"id": "2+1",
+			"initialSeconds": 120,
+			"incrementSeconds": 1,
+			"labelKey": "timeControl.2+1.label"
+		},
+		{
+			"id": "3+0",
+			"initialSeconds": 180,
+			"incrementSeconds": 0,
+			"labelKey": "timeControl.3+0.label"
+		},
+		{
+			"id": "3+2",
+			"initialSeconds": 180,
+			"incrementSeconds": 2,
+			"labelKey": "timeControl.3+2.label"
+		},
+		{
+			"id": "5+0",
+			"initialSeconds": 300,
+			"incrementSeconds": 0,
+			"labelKey": "timeControl.5+0.label"
+		},
+		{
+			"id": "10+0",
+			"initialSeconds": 600,
+			"incrementSeconds": 0,
+			"labelKey": "timeControl.10+0.label"
+		},
+		{
+			"id": "15+10",
+			"initialSeconds": 900,
+			"incrementSeconds": 10,
+			"labelKey": "timeControl.15+10.label"
+		},
+		{
+			"id": "30+0",
+			"initialSeconds": 1800,
+			"incrementSeconds": 0,
+			"labelKey": "timeControl.30+0.label"
+		},
+		{
+			"id": "untimed",
+			"initialSeconds": 0,
+			"incrementSeconds": 0,
+			"labelKey": "timeControl.untimed.label"
+		}
+	]
+}
