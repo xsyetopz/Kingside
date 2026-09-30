@@ -18,3 +18,6 @@ timeControl.2+1.label
 timeControl.3+2.label
 timeControl.15+10.label
 pieceSet.cburnett.name
+account.chessCom.title
+account.gameCenter.title
+account.lichess.title

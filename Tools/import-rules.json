@@ -1,5 +1,5 @@
 {
-	"comment": "Modules each SwiftPM target may import. Target-to-target edges are also checked by `swift build --explicit-target-dependency-import-check error`; this file adds the system frameworks, which SwiftPM does not check. Planned targets are listed in docs/architecture/0001-swiftpm-first-multiplatform.md and get an entry when they are created.",
+	"comment": "Modules each SwiftPM target may import. Target-to-target edges are also checked by `swift build --explicit-target-dependency-import-check error`; this file adds the system frameworks, which SwiftPM does not check. A new target needs an entry here.",
 	"targets": {
 		"ChessCore": {
 			"path": "Sources/ChessCore",

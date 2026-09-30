@@ -14,6 +14,8 @@ are offered by their author under a choice of GFDL, BSD, or GPL
 CC BY-SA 3.0). This app takes the BSD option, whose `Template:BSD` defaults to the
 3-clause version. Author attribution: Cburnett.
 
+<!-- markdownlint-disable MD029 -- the license clauses keep their original numbering. -->
+
 > Copyright (c) Colin M.L. Burnett (Cburnett). All rights reserved.
 >
 > Redistribution and use in source and binary forms, with or without modification,
@@ -39,22 +41,24 @@ CC BY-SA 3.0). This app takes the BSD option, whose `Template:BSD` defaults to t
 > ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 > POSSIBILITY OF SUCH DAMAGE.
 
+<!-- markdownlint-enable MD029 -->
+
 Sources (Wikimedia Commons):
 
 | Piece | File page | Original file |
 | --- | --- | --- |
-| Chess_bdt45.svg | https://commons.wikimedia.org/wiki/File:Chess_bdt45.svg | https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg |
-| Chess_blt45.svg | https://commons.wikimedia.org/wiki/File:Chess_blt45.svg | https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg |
-| Chess_kdt45.svg | https://commons.wikimedia.org/wiki/File:Chess_kdt45.svg | https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg |
-| Chess_klt45.svg | https://commons.wikimedia.org/wiki/File:Chess_klt45.svg | https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg |
-| Chess_ndt45.svg | https://commons.wikimedia.org/wiki/File:Chess_ndt45.svg | https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg |
-| Chess_nlt45.svg | https://commons.wikimedia.org/wiki/File:Chess_nlt45.svg | https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg |
-| Chess_pdt45.svg | https://commons.wikimedia.org/wiki/File:Chess_pdt45.svg | https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg |
-| Chess_plt45.svg | https://commons.wikimedia.org/wiki/File:Chess_plt45.svg | https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg |
-| Chess_qdt45.svg | https://commons.wikimedia.org/wiki/File:Chess_qdt45.svg | https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg |
-| Chess_qlt45.svg | https://commons.wikimedia.org/wiki/File:Chess_qlt45.svg | https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg |
-| Chess_rdt45.svg | https://commons.wikimedia.org/wiki/File:Chess_rdt45.svg | https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg |
-| Chess_rlt45.svg | https://commons.wikimedia.org/wiki/File:Chess_rlt45.svg | https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg |
+| Chess_bdt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_bdt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg> |
+| Chess_blt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_blt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg> |
+| Chess_kdt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_kdt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg> |
+| Chess_klt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_klt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg> |
+| Chess_ndt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_ndt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg> |
+| Chess_nlt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_nlt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg> |
+| Chess_pdt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_pdt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg> |
+| Chess_plt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_plt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg> |
+| Chess_qdt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_qdt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg> |
+| Chess_qlt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_qlt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg> |
+| Chess_rdt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_rdt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg> |
+| Chess_rlt45.svg | <https://commons.wikimedia.org/wiki/File:Chess_rlt45.svg> | <https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg> |
 
 ## Sound effects
 
@@ -63,9 +67,10 @@ All sound effects are synthesized in code at launch from the `synth` pack in
 
 ## Puzzles (Lichess puzzle database)
 
-`Sources/ChessContent/Resources/Catalogs/puzzles.json` contains puzzles selected from the Lichess puzzle database
-(<https://database.lichess.org/#puzzles>, file `lichess_db_puzzle.csv.zst`), keeping the
-puzzle id, FEN, UCI moves, rating and themes. Thanks to lichess.org and its contributors.
+`Sources/ChessContent/Resources/Catalogs/puzzles.json` contains puzzles selected from the Lichess
+puzzle database (<https://database.lichess.org/#puzzles>, file
+`lichess_db_puzzle.csv.zst`), keeping the puzzle id, FEN, UCI moves, rating and themes. Thanks to
+lichess.org and its contributors.
 
 License: Creative Commons CC0 1.0 Universal (public domain dedication,
 <https://creativecommons.org/publicdomain/zero/1.0/>).
