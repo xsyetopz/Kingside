@@ -173,7 +173,7 @@ private struct PuzzleRushRunView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(style.gap)
-    .surface(style)
+    .contentPanel(style)
   }
 }
 

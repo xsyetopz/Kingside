@@ -118,7 +118,7 @@ struct GameStatus<Game: PlayableGame>: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(style.gap)
-    .surface(style)
+    .contentPanel(style)
   }
 }
 

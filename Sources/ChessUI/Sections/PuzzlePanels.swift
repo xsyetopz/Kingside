@@ -105,7 +105,7 @@ struct PuzzleScreenLayout<Header: View>: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(style.gap)
-    .surface(style)
+    .contentPanel(style)
   }
 
   /// The buttons under the primary one, in order.

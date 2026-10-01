@@ -113,7 +113,7 @@ private struct ReviewView: View {
             coach
             moves(.vertical)
               .frame(maxHeight: .infinity)
-              .surface(style)
+              .contentPanel(style)
             controls
           }
         }

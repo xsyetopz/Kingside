@@ -55,7 +55,7 @@ struct GameBoardLayout<Game: PlayableGame, Board: View, Extra: View>: View {
         extra
         MoveList(rows: moveRows, axis: .vertical)
           .frame(maxHeight: .infinity)
-          .surface(style)
+          .contentPanel(style)
         #if os(tvOS)
           GameActions(session: session, newGame: leave, confirmResign: confirmResign, inGrid: true)
             .buttonStyle(.bordered)

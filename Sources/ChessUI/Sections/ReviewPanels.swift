@@ -72,7 +72,7 @@ struct ReviewSummary: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(style.gap)
-    .surface(style)
+    .contentPanel(style)
   }
 }
 
@@ -109,7 +109,7 @@ struct ReviewCoach: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(style.gap)
-    .surface(style)
+    .contentPanel(style)
   }
 }
 
