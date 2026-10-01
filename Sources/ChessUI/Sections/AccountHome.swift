@@ -10,10 +10,8 @@ struct AccountHome: View {
   private var model
   @Environment(\.localization)
   private var localization
-  @State
-  private var chessCom: ChessComAccountModel?
 
-  private var linkedUsername: String? { model.settings.value.chessComUsername }
+  private var linkedUsername: String? { model.chessComAccount.username }
 
   var body: some View {
     WidthAdaptive {
@@ -31,17 +29,7 @@ struct AccountHome: View {
     }
     .screenTitle(localization("section.account.title"))
     .task(id: linkedUsername) {
-      guard let name = linkedUsername else {
-        chessCom = nil
-        return
-      }
-      let account = ChessComAccountModel(
-        username: name,
-        client: model.chessCom,
-        gameLimit: model.catalog.interface.account.recentGamesLimit
-      )
-      chessCom = account
-      await account.load()
+      await model.chessComAccount.load()
     }
   }
 
@@ -49,9 +37,9 @@ struct AccountHome: View {
     List {
       GameCenterSection()
       LichessAccountSection()
-      if let linkedUsername, let chessCom, chessCom.username == linkedUsername {
-        ChessComLinkedSections(account: chessCom)
-      } else if linkedUsername == nil {
+      if let linkedUsername {
+        ChessComLinkedSections(account: model.chessComAccount, username: linkedUsername)
+      } else {
         ChessComNotLinkedSection()
       }
     }
@@ -139,6 +127,7 @@ private struct ChessComNotLinkedSection: View {
 /// The linked account: profile, ratings, and the recent games with Import.
 private struct ChessComLinkedSections: View {
   let account: ChessComAccountModel
+  let username: String
   @Environment(AppModel.self)
   private var model
   @Environment(\.localization)
@@ -161,7 +150,7 @@ private struct ChessComLinkedSections: View {
         EmptyView()
       }
       Button(localization("account.chessCom.unlink"), role: .destructive) {
-        model.settings.value.chessComUsername = nil
+        account.unlink()
       }
     } header: {
       Text(localization("account.chessCom.title"))
@@ -204,7 +193,7 @@ private struct ChessComLinkedSections: View {
       .clipShape(Circle())
       .accessibilityHidden(true)
       VStack(alignment: .leading) {
-        Text(account.profile?.username ?? account.username).font(.headline)
+        Text(account.profile?.username ?? username).font(.headline)
         if let name = account.profile?.name {
           Text(name).foregroundStyle(.secondary)
         }
@@ -231,12 +220,12 @@ private struct ChessComLinkedSections: View {
             HStack {
               VStack(alignment: .leading) {
                 Text(
-                  AccountLayout.title(game, username: account.username, localization: localization)
+                  AccountLayout.title(game, username: username, localization: localization)
                 )
                 Text(
                   AccountLayout.detail(
                     game,
-                    username: account.username,
+                    username: username,
                     localization: localization,
                     locale: locale
                   )

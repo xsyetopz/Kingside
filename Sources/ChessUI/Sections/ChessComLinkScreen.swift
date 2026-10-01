@@ -56,14 +56,9 @@ struct ChessComLinkScreen: View {
     isChecking = true
     failure = nil
     Task {
-      switch await ChessComAccountModel.verify(username: trimmed, client: model.chessCom) {
-      case .success(let profile):
-        model.settings.value.chessComUsername = profile.username
-        dismiss()
-      case .failure(let error):
-        failure = error
-      }
+      failure = await model.chessComAccount.link(username: trimmed)
       isChecking = false
+      if failure == nil { dismiss() }
     }
   }
 }

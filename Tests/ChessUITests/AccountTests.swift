@@ -29,19 +29,66 @@ private func decodeGame(_ json: String) throws -> ChessComGame {
   return try decoder.decode(ChessComGame.self, from: Data(json.utf8))
 }
 
-private func makeClient(_ handler: @escaping @Sendable (URL) -> (Int, Data)) -> ChessComClient {
+private func makeTransport(_ handler: @escaping @Sendable (URL) -> (Int, Data)) -> FakeTransport {
+  FakeTransport { request in
+    let (status, body) = handler(request.url!)
+    return (status, [:], body)
+  }
+}
+
+private func makeClient(_ transport: FakeTransport) -> ChessComClient {
   ChessComClient(
     configuration: ChessComConfiguration(baseURL: baseURL, userAgent: "KingsideTests/1.0"),
-    transport: FakeTransport { request in
-      let (status, body) = handler(request.url!)
-      return (status, [:], body)
-    }
+    transport: transport
   )
+}
+
+private func makeClient(_ handler: @escaping @Sendable (URL) -> (Int, Data)) -> ChessComClient {
+  makeClient(makeTransport(handler))
+}
+
+/// Ann's account: a profile, rapid stats, and two archives. The latest holds game 1, then game 2.
+@Sendable
+private func annAccount(_ url: URL) -> (Int, Data) {
+  switch url.path {
+  case "/pub/player/ann": (200, Data(#"{"username":"Ann","joined":1,"last_online":2}"#.utf8))
+  case "/pub/player/ann/stats": (200, Data(#"{"chess_rapid":{"last":{"rating":1300}}}"#.utf8))
+  case "/pub/player/ann/games/archives":
+    (
+      200,
+      Data(
+        #"{"archives":["https://pub.example.test/pub/player/ann/games/2025/12","\#(archiveURL)"]}"#
+          .utf8
+      )
+    )
+  case "/pub/player/ann/games/2026/01":
+    (
+      200,
+      Data(
+        #"{"games":[\#(gameJSON(id: 1, endTime: 1_000)),\#(gameJSON(id: 2, endTime: 2_000))]}"#
+          .utf8
+      )
+    )
+  default: (404, Data())
+  }
 }
 
 @MainActor
 struct AccountTests {
   private let localization = Localization()
+  private let suiteName = "ChessUITests.\(UUID().uuidString)"
+
+  /// An account model over fresh settings in which `linked` is the linked username.
+  private func makeAccount(
+    client: ChessComClient,
+    gameLimit: Int = 5,
+    linked: String? = "ann"
+  ) throws -> (ChessComAccountModel, SettingsStore) {
+    let settings = SettingsStore(defaults: try #require(UserDefaults(suiteName: suiteName)))
+    settings.value.chessComUsername = linked
+    let account = ChessComAccountModel(settings: settings, client: client, gameLimit: gameLimit)
+    return (account, settings)
+  }
 
   @Test
   func everyGameCenterReasonHasItsOwnEnglishText() {
@@ -112,25 +159,8 @@ struct AccountTests {
 
   @Test
   func loadReadsProfileStatsAndTheNewestGamesOfTheLatestArchive() async throws {
-    let older = gameJSON(id: 1, endTime: 1_000)
-    let newer = gameJSON(id: 2, endTime: 2_000)
-    let client = makeClient { url in
-      switch url.path {
-      case "/pub/player/ann": (200, Data(#"{"username":"Ann","joined":1,"last_online":2}"#.utf8))
-      case "/pub/player/ann/stats": (200, Data(#"{"chess_rapid":{"last":{"rating":1300}}}"#.utf8))
-      case "/pub/player/ann/games/archives":
-        (
-          200,
-          Data(
-            #"{"archives":["https://pub.example.test/pub/player/ann/games/2025/12","\#(archiveURL)"]}"#
-              .utf8
-          )
-        )
-      case "/pub/player/ann/games/2026/01": (200, Data(#"{"games":[\#(older),\#(newer)]}"#.utf8))
-      default: (404, Data())
-      }
-    }
-    let account = ChessComAccountModel(username: "ann", client: client, gameLimit: 1)
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let (account, _) = try makeAccount(client: makeClient(annAccount), gameLimit: 1)
     await account.load()
     #expect(account.phase == .loaded)
     #expect(account.profile?.username == "Ann")
@@ -139,7 +169,8 @@ struct AccountTests {
   }
 
   @Test
-  func loadFailingOnStatsFailsButKeepsTheProfileAndShowsNoGames() async {
+  func loadFailingOnStatsFailsButKeepsTheProfileAndShowsNoGames() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
     let client = makeClient { url in
       switch url.path {
       case "/pub/player/ann": (200, Data(#"{"username":"Ann","joined":1,"last_online":2}"#.utf8))
@@ -148,7 +179,7 @@ struct AccountTests {
       default: (500, Data())
       }
     }
-    let account = ChessComAccountModel(username: "ann", client: client, gameLimit: 5)
+    let (account, _) = try makeAccount(client: client)
     await account.load()
     #expect(account.phase == .failed(.network))
     #expect(account.profile?.username == "Ann")
@@ -157,7 +188,8 @@ struct AccountTests {
   }
 
   @Test
-  func loadFailingOnTheLatestArchiveFailsButKeepsProfileAndStats() async {
+  func loadFailingOnTheLatestArchiveFailsButKeepsProfileAndStats() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
     let client = makeClient { url in
       switch url.path {
       case "/pub/player/ann": (200, Data(#"{"username":"Ann","joined":1,"last_online":2}"#.utf8))
@@ -166,7 +198,7 @@ struct AccountTests {
       default: (429, Data())
       }
     }
-    let account = ChessComAccountModel(username: "ann", client: client, gameLimit: 5)
+    let (account, _) = try makeAccount(client: client)
     await account.load()
     #expect(account.phase == .failed(.rateLimited))
     #expect(account.profile?.username == "Ann")
@@ -175,25 +207,129 @@ struct AccountTests {
   }
 
   @Test
-  func linkingReportsNotFoundInvalidAndNetworkFailures() async {
+  func linkWritesTheCanonicalUsernameAndForgetsThePreviousAccount() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let transport = makeTransport(annAccount)
+    let (account, settings) = try makeAccount(client: makeClient(transport))
+    await account.load()
+    #expect(await account.link(username: "ann") == nil)
+    #expect(settings.value.chessComUsername == "Ann")
+    // Only the profile check: the Account screen loads the newly linked account.
+    #expect(await transport.requests.count == 5)
+    #expect(account.phase == .loading)
+    #expect(account.profile == nil)
+    #expect(account.games.isEmpty)
+  }
+
+  @Test(.timeLimit(.minutes(1)))
+  func unlinkWhileALinkIsCheckingKeepsTheAccountUnlinked() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let transport = makeTransport(annAccount)
+    await transport.holdRequests()
+    let (account, settings) = try makeAccount(client: makeClient(transport), linked: nil)
+    let linking = Task { await account.link(username: "ann") }
+    try await transport.waitForRequests(count: 1)
+    account.unlink()
+    await transport.releaseHeldRequest()
+    #expect(await linking.value == nil)
+    #expect(settings.value.chessComUsername == nil)
+  }
+
+  @Test
+  func failedLinkReportsNotFoundInvalidAndNetworkFailuresAndLinksNothing() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
     let missing = makeClient { _ in (404, Data()) }
     let down = makeClient { _ in (500, Data()) }
     let busy = makeClient { _ in (429, Data()) }
-    #expect(
-      await ChessComAccountModel.verify(username: "nobody", client: missing) == .failure(.notFound)
-    )
-    #expect(
-      await ChessComAccountModel.verify(username: "no", client: missing)
-        == .failure(.invalidUsername)
-    )
-    #expect(await ChessComAccountModel.verify(username: "ann", client: down) == .failure(.network))
-    #expect(
-      await ChessComAccountModel.verify(username: "ann", client: busy) == .failure(.rateLimited)
-    )
-    let found = makeClient { _ in
-      (200, Data(#"{"username":"Ann","joined":1,"last_online":2}"#.utf8))
+    let cases: [(ChessComClient, String, ChessComFailure)] = [
+      (missing, "nobody", .notFound), (missing, "no", .invalidUsername),
+      (down, "ann", .network), (busy, "ann", .rateLimited),
+    ]
+    for (client, username, failure) in cases {
+      let (account, settings) = try makeAccount(client: client, linked: nil)
+      #expect(await account.link(username: username) == failure)
+      #expect(settings.value.chessComUsername == nil)
     }
-    let result = await ChessComAccountModel.verify(username: "ann", client: found)
-    #expect((try? result.get())?.username == "Ann")
+  }
+
+  @Test
+  func unlinkClearsTheSettingAndTheLoadedAccount() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let (account, settings) = try makeAccount(client: makeClient(annAccount))
+    await account.load()
+    let unwritable = GamePersistenceStore(
+      fileURL: URL(filePath: "/nonexistent-\(UUID().uuidString)/games.json")
+    )
+    await account.importGames(account.games, into: unwritable)
+    #expect(account.importSummary != nil)
+    account.unlink()
+    #expect(settings.value.chessComUsername == nil)
+    #expect(account.phase == .loading)
+    #expect(account.profile == nil)
+    #expect(account.stats == nil)
+    #expect(account.games.isEmpty)
+    #expect(account.importSummary == nil)
+  }
+
+  @Test
+  func loadOfAnAccountUnlinkedWhileItRunsAppliesNothing() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let transport = makeTransport(annAccount)
+    await transport.holdRequests()
+    let (account, _) = try makeAccount(client: makeClient(transport))
+    let loading = Task { await account.load() }
+    try await transport.waitForRequests(count: 1)
+    account.unlink()
+    for _ in 0..<4 { await transport.releaseHeldRequest() }
+    await loading.value
+    #expect(await transport.requests.count == 4)
+    #expect(account.phase == .loading)
+    #expect(account.profile == nil)
+    #expect(account.stats == nil)
+    #expect(account.games.isEmpty)
+  }
+
+  @Test(.timeLimit(.minutes(1)))
+  func loadOfAnAccountUnlinkedAndLinkedAgainWhileItRunsAppliesNothing() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let transport = makeTransport(annAccount)
+    await transport.holdRequests()
+    let (account, settings) = try makeAccount(client: makeClient(transport), linked: "Ann")
+    let loading = Task { await account.load() }
+    try await transport.waitForRequests(count: 1)
+    account.unlink()
+    let linking = Task { await account.link(username: "ann") }
+    // The client sends one request at a time: the load's four and the link's one, in any order.
+    for _ in 0..<5 { await transport.releaseHeldRequest() }
+    #expect(await linking.value == nil)
+    await loading.value
+    #expect(settings.value.chessComUsername == "Ann")
+    #expect(account.phase == .loading)
+    #expect(account.profile == nil)
+    #expect(account.games.isEmpty)
+  }
+
+  @Test(.timeLimit(.minutes(1)))
+  func cancelledLoadAppliesNothing() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let transport = makeTransport(annAccount)
+    await transport.holdRequests()
+    let (account, _) = try makeAccount(client: makeClient(transport))
+    let loading = Task { await account.load() }
+    try await transport.waitForRequests(count: 1)
+    loading.cancel()
+    await loading.value
+    #expect(account.phase == .loading)
+    #expect(account.profile == nil)
+  }
+
+  @Test
+  func loadWithoutALinkedAccountMakesNoRequest() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let transport = makeTransport(annAccount)
+    let (account, _) = try makeAccount(client: makeClient(transport), linked: nil)
+    await account.load()
+    #expect(await transport.requests.isEmpty)
+    #expect(account.profile == nil)
   }
 }

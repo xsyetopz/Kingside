@@ -1,4 +1,3 @@
-import ChessComLink
 import ChessContent
 import ChessCore
 import ChessOnline
@@ -21,7 +20,8 @@ public final class AppModel {
   public let engine: ChessEngine
   /// Shared by every review this model opens, so a game is analysed once per launch.
   let reviewAnalyses = ReviewAnalysisCache()
-  public let chessCom: ChessComClient
+  /// The linked Chess.com account, shared by the Account tab and the link screen.
+  let chessComAccount: ChessComAccountModel
   public let lichess: LichessAccountModel
   /// The OAuth calls of the Lichess browser sign-in.
   let lichessOAuth: LichessOAuth
@@ -57,7 +57,11 @@ public final class AppModel {
     puzzleProgress = dependencies.puzzleProgress
     gameStore = dependencies.gameStore
     engine = dependencies.engine
-    chessCom = dependencies.chessCom
+    chessComAccount = ChessComAccountModel(
+      settings: dependencies.settings,
+      client: dependencies.chessCom,
+      gameLimit: dependencies.catalog.interface.account.recentGamesLimit
+    )
     lichess = dependencies.lichess
     lichessOAuth = dependencies.lichessOAuth
     gameCenter = dependencies.gameCenter
