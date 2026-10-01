@@ -1,37 +1,8 @@
 import Foundation
 import HTTPSupport
+import HTTPSupportTests
 import Testing
 @testable import ChessComLink
-
-/// Records every request, answers through `handler`, and tracks how many requests overlap.
-actor FakeTransport: HTTPTransport {
-  typealias Handler = @Sendable (URLRequest) -> (Int, [String: String], Data)
-
-  private(set) var requests: [URLRequest] = []
-  private(set) var maxConcurrency = 0
-  private var inFlight = 0
-  private let handler: Handler
-
-  init(handler: @escaping Handler) {
-    self.handler = handler
-  }
-
-  func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-    requests.append(request)
-    inFlight += 1
-    maxConcurrency = max(maxConcurrency, inFlight)
-    try await Task.sleep(for: .milliseconds(20))
-    inFlight -= 1
-    let (status, headers, body) = handler(request)
-    let response = HTTPURLResponse(
-      url: request.url!,
-      statusCode: status,
-      httpVersion: nil,
-      headerFields: headers
-    )!
-    return (body, response)
-  }
-}
 
 let testConfiguration = ChessComConfiguration(
   baseURL: URL(string: "https://pub.example.test/pub/")!,
@@ -194,24 +165,26 @@ struct ChessComClientTests {
 
   @Test
   func nonHTTPResponseIsInvalidResponse() async {
-    struct NonHTTPTransport: HTTPTransport {
-      func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
-        throw HTTPTransportError.invalidResponse
-      }
-    }
-    let client = ChessComClient(configuration: testConfiguration, transport: NonHTTPTransport())
+    let (client, _) = makeClient { _ in throw HTTPTransportError.invalidResponse }
     await #expect(throws: ChessComError.invalidResponse) {
       try await client.profile(username: "hikaru")
     }
   }
 
-  @Test
+  @Test(.timeLimit(.minutes(1)))
   func requestsAreSerial() async throws {
     let profile = try fixture("profile")
     let (client, transport) = makeClient { _ in (200, [:], profile) }
+    await transport.holdRequests()
     try await withThrowingTaskGroup(of: Void.self) { group in
       for _ in 0..<5 {
         group.addTask { _ = try await client.profile(username: "hikaru") }
+      }
+      for arrived in 1...5 {
+        try await transport.waitForRequests(count: arrived)
+        // While this request is held, no later one may reach the transport.
+        #expect(await transport.requests.count == arrived)
+        await transport.releaseHeldRequest()
       }
       try await group.waitForAll()
     }

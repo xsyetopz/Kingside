@@ -3,25 +3,9 @@ import ChessContent
 import ChessOnline
 import ChessPlay
 import Foundation
-import HTTPSupport
+import HTTPSupportTests
 import Testing
 @testable import ChessUI
-
-/// Answers each request from `handler`, like the transport double of `ChessComLinkTests`.
-private struct StubTransport: HTTPTransport {
-  let handler: @Sendable (URL) -> (Int, Data)
-
-  func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
-    let url = try #require(request.url)
-    let (status, body) = handler(url)
-    return (
-      body,
-      try #require(
-        HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
-      )
-    )
-  }
-}
 
 private let baseURL = URL(string: "https://pub.example.test/pub/")!
 private let archiveURL = "https://pub.example.test/pub/player/ann/games/2026/01"
@@ -53,7 +37,10 @@ private func decodeGame(_ json: String) throws -> ChessComGame {
 private func makeClient(_ handler: @escaping @Sendable (URL) -> (Int, Data)) -> ChessComClient {
   ChessComClient(
     configuration: ChessComConfiguration(baseURL: baseURL, userAgent: "KingsideTests/1.0"),
-    transport: StubTransport(handler: handler)
+    transport: FakeTransport { request in
+      let (status, body) = handler(request.url!)
+      return (status, [:], body)
+    }
   )
 }
 

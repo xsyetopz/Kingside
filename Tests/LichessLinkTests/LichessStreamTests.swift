@@ -232,7 +232,7 @@ struct LichessStreamTests {
     #expect(await transport.requests.count == 1)
   }
 
-  @Test
+  @Test(.timeLimit(.minutes(1)))
   func cancellingSeekTerminatesTheConnection() async throws {
     let (client, transport) = makeClient(streamLines: ["", ""], keepStreamOpen: true) { _ in
       (200, [:], Data())
@@ -240,11 +240,8 @@ struct LichessStreamTests {
     let consumer = Task {
       for try await _ in await client.seek(rated: true, minutes: 5, increment: 3) {}
     }
-    while await transport.requests.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+    try await transport.waitForRequest("POST /api/board/seek")
     consumer.cancel()
-    for _ in 0..<200 where !(await transport.streamTerminated) {
-      try await Task.sleep(for: .milliseconds(5))
-    }
-    #expect(await transport.streamTerminated)
+    try await transport.waitForStreamTermination("/api/board/seek")
   }
 }

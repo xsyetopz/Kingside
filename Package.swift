@@ -44,12 +44,12 @@ let package = Package(
     .testTarget(name: "HTTPSupportTests", dependencies: ["HTTPSupport"]),
     .testTarget(
       name: "ChessComLinkTests",
-      dependencies: ["ChessComLink", "ChessCore", "HTTPSupport"],
+      dependencies: ["ChessComLink", "ChessCore", "HTTPSupport", "HTTPSupportTests"],
       resources: [.copy("Fixtures")]
     ),
     .testTarget(
       name: "LichessLinkTests",
-      dependencies: ["LichessLink", "ChessCore", "HTTPSupport"],
+      dependencies: ["LichessLink", "ChessCore", "HTTPSupport", "HTTPSupportTests"],
       resources: [.copy("Fixtures")]
     ),
     .testTarget(name: "ChessOnlineTests", dependencies: ["ChessOnline"]),
@@ -69,7 +69,7 @@ let package = Package(
     .testTarget(
       name: "ChessUITests",
       dependencies: [
-        "ChessUI", "ChessPlay", "ChessCore", "ChessContent", "HTTPSupport", "ChessComLink",
+        "ChessUI", "ChessPlay", "ChessCore", "ChessContent", "HTTPSupportTests", "ChessComLink",
         "LichessLink", "ChessOnline",
       ]
     ),

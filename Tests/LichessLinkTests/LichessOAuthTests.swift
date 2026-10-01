@@ -1,4 +1,5 @@
 import Foundation
+import HTTPSupportTests
 import Testing
 @testable import LichessLink
 
@@ -25,7 +26,7 @@ struct LichessOAuthTests {
   func authorizeURLQuery() throws {
     let oauth = LichessOAuth(
       configuration: testConfiguration,
-      transport: FakeLichessTransport { _ in (200, [:], Data()) }
+      transport: FakeTransport { _ in (200, [:], Data()) }
     )
     let url = oauth.authorizeURL(state: "st4te", challenge: "chal")
     let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
@@ -46,7 +47,7 @@ struct LichessOAuthTests {
 
   @Test
   func exchangePostsFormAndReturnsToken() async throws {
-    let transport = FakeLichessTransport { _ in
+    let transport = FakeTransport { _ in
       (
         200, [:],
         Data(#"{"token_type":"Bearer","access_token":"lio_abc","expires_in":31536000}"#.utf8)
@@ -70,7 +71,7 @@ struct LichessOAuthTests {
 
   @Test
   func exchangeMapsFailure() async throws {
-    let transport = FakeLichessTransport { _ in (400, [:], Data(#"{"error":"invalid_grant"}"#.utf8))
+    let transport = FakeTransport { _ in (400, [:], Data(#"{"error":"invalid_grant"}"#.utf8))
     }
     let oauth = LichessOAuth(configuration: testConfiguration, transport: transport)
     await #expect(throws: LichessError.http(status: 400)) {
@@ -80,7 +81,7 @@ struct LichessOAuthTests {
 
   @Test
   func exchangeMapsTooManyRequestsToRateLimited() async throws {
-    let transport = FakeLichessTransport { _ in (429, [:], Data()) }
+    let transport = FakeTransport { _ in (429, [:], Data()) }
     let oauth = LichessOAuth(configuration: testConfiguration, transport: transport)
     await #expect(throws: LichessError.rateLimited) {
       try await oauth.exchange(code: "c", verifier: "v")
@@ -89,7 +90,7 @@ struct LichessOAuthTests {
 
   @Test
   func exchangeNonHTTPResponseThrowsInvalidResponse() async {
-    let oauth = LichessOAuth(configuration: testConfiguration, transport: NonHTTPTransport())
+    let oauth = LichessOAuth(configuration: testConfiguration, transport: nonHTTPTransport())
     await #expect(throws: LichessError.invalidResponse) {
       try await oauth.exchange(code: "c", verifier: "v")
     }

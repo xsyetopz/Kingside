@@ -118,11 +118,18 @@ struct LichessClientTests {
     #expect(request.url?.path == "/api/token")
   }
 
-  @Test
+  @Test(.timeLimit(.minutes(1)))
   func requestsAreSerialized() async throws {
     let (client, transport) = makeClient()
+    await transport.holdRequests()
     try await withThrowingTaskGroup(of: Void.self) { group in
       for _ in 0..<5 { group.addTask { try await client.resign(gameID: "abc12345") } }
+      for arrived in 1...5 {
+        try await transport.waitForRequests(count: arrived)
+        // While this request is held, no later one may reach the transport.
+        #expect(await transport.requests.count == arrived)
+        await transport.releaseHeldRequest()
+      }
       try await group.waitForAll()
     }
     #expect(await transport.requests.count == 5)
@@ -221,7 +228,7 @@ struct LichessClientTests {
 
   @Test
   func nonHTTPResponseThrowsInvalidResponse() async {
-    let client = LichessClient(configuration: testConfiguration, transport: NonHTTPTransport()) {
+    let client = LichessClient(configuration: testConfiguration, transport: nonHTTPTransport()) {
       "tok"
     }
     await #expect(throws: LichessError.invalidResponse) {
@@ -231,7 +238,7 @@ struct LichessClientTests {
 
   @Test
   func nonHTTPStreamResponseThrowsInvalidResponse() async {
-    let client = LichessClient(configuration: testConfiguration, transport: NonHTTPTransport()) {
+    let client = LichessClient(configuration: testConfiguration, transport: nonHTTPTransport()) {
       "tok"
     }
     await #expect(throws: LichessError.invalidResponse) {

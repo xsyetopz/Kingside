@@ -1,79 +1,12 @@
 import Foundation
 import HTTPSupport
+import HTTPSupportTests
 import Testing
 @testable import LichessLink
 
-/// Records every request, answers through `handler`, and tracks how many requests overlap.
-actor FakeLichessTransport: HTTPStreamingTransport {
-  typealias Handler = @Sendable (URLRequest) -> (Int, [String: String], Data)
-
-  private(set) var requests: [URLRequest] = []
-  private(set) var maxConcurrency = 0
-  private(set) var streamTerminated = false
-  private var inFlight = 0
-  private let handler: Handler
-  private let streamLines: [String]
-  private let keepStreamOpen: Bool
-
-  init(streamLines: [String] = [], keepStreamOpen: Bool = false, handler: @escaping Handler) {
-    self.handler = handler
-    self.streamLines = streamLines
-    self.keepStreamOpen = keepStreamOpen
-  }
-
-  func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-    requests.append(request)
-    inFlight += 1
-    maxConcurrency = max(maxConcurrency, inFlight)
-    try await Task.sleep(for: .milliseconds(20))
-    inFlight -= 1
-    let (status, headers, body) = handler(request)
-    return (
-      body,
-      HTTPURLResponse(
-        url: request.url!,
-        statusCode: status,
-        httpVersion: nil,
-        headerFields: headers
-      )!
-    )
-  }
-
-  func lines(
-    for request: URLRequest
-  ) throws -> (HTTPURLResponse, AsyncThrowingStream<String, Error>) {
-    requests.append(request)
-    let (status, headers, _) = handler(request)
-    let response = HTTPURLResponse(
-      url: request.url!,
-      statusCode: status,
-      httpVersion: nil,
-      headerFields: headers
-    )!
-    let lines = streamLines
-    let keepOpen = keepStreamOpen
-    let stream = AsyncThrowingStream<String, Error> { continuation in
-      for line in lines { continuation.yield(line) }
-      if !keepOpen { continuation.finish() }
-      continuation.onTermination = { _ in Task { await self.markTerminated() } }
-    }
-    return (response, stream)
-  }
-
-  private func markTerminated() { streamTerminated = true }
-}
-
 /// Fails every request the way `URLSessionTransport` does when the response is not HTTP.
-struct NonHTTPTransport: HTTPStreamingTransport {
-  func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
-    throw HTTPTransportError.invalidResponse
-  }
-
-  func lines(
-    for request: URLRequest
-  ) throws -> (HTTPURLResponse, AsyncThrowingStream<String, Error>) {
-    throw HTTPTransportError.invalidResponse
-  }
+func nonHTTPTransport() -> FakeTransport {
+  FakeTransport { _ in throw HTTPTransportError.invalidResponse }
 }
 
 /// A mutable clock for the rate-limit back-off.
@@ -111,12 +44,12 @@ func makeClient(
   clock: TestClock = TestClock(),
   streamLines: [String] = [],
   keepStreamOpen: Bool = false,
-  _ handler: @escaping FakeLichessTransport.Handler = { _ in (200, [:], Data("{\"ok\":true}".utf8))
+  _ handler: @escaping FakeTransport.Handler = { _ in (200, [:], Data("{\"ok\":true}".utf8))
   }
-) -> (LichessClient, FakeLichessTransport) {
-  let transport = FakeLichessTransport(
+) -> (LichessClient, FakeTransport) {
+  let transport = FakeTransport(
     streamLines: streamLines,
-    keepStreamOpen: keepStreamOpen,
+    keepStreamsOpen: keepStreamOpen,
     handler: handler
   )
   let client = LichessClient(

@@ -1,65 +1,8 @@
 import Foundation
-import HTTPSupport
+import HTTPSupportTests
 import LichessLink
 import Testing
 @testable import ChessUI
-
-/// Answers by path, records every request, and lets a test push lines into the open event stream.
-private actor FakeTransport: HTTPStreamingTransport {
-  typealias Handler = @Sendable (URLRequest) -> (Int, Data)
-
-  private(set) var requests: [URLRequest] = []
-  private var continuations: [String: AsyncThrowingStream<String, Error>.Continuation] = [:]
-  private var terminatedPaths: [String] = []
-  private let handler: Handler
-
-  init(handler: @escaping Handler) { self.handler = handler }
-
-  var paths: [String] { requests.map { $0.httpMethod! + " " + $0.url!.path() } }
-  var authorizations: [String?] { requests.map { $0.value(forHTTPHeaderField: "Authorization") } }
-
-  func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
-    requests.append(request)
-    let (status, body) = handler(request)
-    return (
-      body,
-      HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
-    )
-  }
-
-  func lines(
-    for request: URLRequest
-  ) throws -> (HTTPURLResponse, AsyncThrowingStream<String, Error>) {
-    requests.append(request)
-    let (status, _) = handler(request)
-    let response = HTTPURLResponse(
-      url: request.url!,
-      statusCode: status,
-      httpVersion: nil,
-      headerFields: nil
-    )!
-    let path = request.url!.path()
-    return (
-      response,
-      AsyncThrowingStream { continuation in
-        continuations[path] = continuation
-        continuation.onTermination = { _ in Task { await self.markTerminated(path) } }
-      }
-    )
-  }
-
-  private func markTerminated(_ path: String) { terminatedPaths.append(path) }
-
-  /// Whether the consumer of the stream at `path` has gone away or the stream has finished.
-  func didTerminate(_ path: String) -> Bool { terminatedPaths.contains(path) }
-
-  func push(_ line: String, to path: String = "/api/stream/event") {
-    continuations[path]?.yield(line)
-  }
-
-  /// Ends the stream at `path`, as the server does when a seek is matched.
-  func finish(_ path: String) { continuations[path]?.finish() }
-}
 
 private let accountJSON = Data(#"{"id":"georges","username":"Georges"}"#.utf8)
 private let playingJSON = Data(
@@ -102,6 +45,22 @@ private func challengeAPI(_ request: URLRequest) -> (Int, Data) {
     ? (200, outgoingChallengeJSON) : lichessAPI(request)
 }
 
+/// A transport that answers through `handler` and keeps every stream open for `push(_:to:)`.
+private func makeTransport(
+  _ handler: @escaping @Sendable (URLRequest) -> (Int, Data)
+) -> FakeTransport {
+  FakeTransport(keepStreamsOpen: true) { request in
+    let (status, body) = handler(request)
+    return (status, [:], body)
+  }
+}
+
+extension FakeTransport {
+  func pushEvent(_ line: String) {
+    push(line, to: "/api/stream/event")
+  }
+}
+
 @MainActor
 struct LichessAccountModelTests {
   private let configuration = LichessConfiguration(
@@ -116,7 +75,7 @@ struct LichessAccountModelTests {
     handler: @escaping @Sendable (URLRequest) -> (Int, Data) = lichessAPI
   ) -> (LichessAccountModel, InMemoryTokenStore, FakeTransport) {
     let store = InMemoryTokenStore(token: token)
-    let transport = FakeTransport(handler: handler)
+    let transport = makeTransport(handler)
     let configuration = configuration
     // No real pause between reconnects.
     let model = LichessAccountModel(
@@ -143,7 +102,7 @@ struct LichessAccountModelTests {
     await model.signIn(token: " good\n")
     #expect(model.phase == .signedIn(username: "Georges"))
     #expect(store.token() == "good")
-    try await wait { await transport.paths.contains("GET /api/stream/event") }
+    try await transport.waitForRequest("GET /api/stream/event")
     await model.signOut()
   }
 
@@ -162,7 +121,7 @@ struct LichessAccountModelTests {
     #expect(model.phase == .signedIn(username: "Georges"))
     try await wait { model.ongoingGames.count == 1 }
     #expect(model.ongoingGames.first?.gameId == "rCRw1Auv")
-    try await wait { await transport.paths.contains("GET /api/stream/event") }
+    try await transport.waitForRequest("GET /api/stream/event")
     await model.signOut()
   }
 
@@ -186,13 +145,14 @@ struct LichessAccountModelTests {
   func signOutRevokesThenDeletesTheToken() async throws {
     let (model, store, transport) = makeModel(token: "good")
     await model.start()
-    try await wait { await transport.paths.contains("GET /api/stream/event") }
+    try await transport.waitForRequest("GET /api/stream/event")
     await model.signOut()
     #expect(model.phase == .signedOut)
     #expect(store.token() == nil)
     #expect(await transport.paths.contains("DELETE /api/token"))
     // The revoke request still carried the token.
-    #expect(await transport.authorizations.last == "Bearer good")
+    let revoke = try #require(await transport.requests.last)
+    #expect(revoke.value(forHTTPHeaderField: "Authorization") == "Bearer good")
   }
 
   @Test(.timeLimit(.minutes(1)))
@@ -210,27 +170,24 @@ struct LichessAccountModelTests {
   func eventsAddAndRemoveChallengesAndReportStartedGames() async throws {
     let (model, _, transport) = makeModel(token: "good")
     await model.start()
-    try await wait { await transport.paths.contains("GET /api/stream/event") }
-    // The stream opens after the request is recorded; give the continuation a moment to exist.
-    try await wait {
-      await transport.push(challengeLine(id: "c1"))
-      return model.incomingChallenges.count == 1
-    }
-    await transport.push(challengeLine(id: "c2"))
-    await transport.push(challengeLine(id: "c3", direction: "out"))
+    try await transport.waitForRequest("GET /api/stream/event")
+    await transport.pushEvent(challengeLine(id: "c1"))
+    try await wait { model.incomingChallenges.count == 1 }
+    await transport.pushEvent(challengeLine(id: "c2"))
+    await transport.pushEvent(challengeLine(id: "c3", direction: "out"))
     // The user's own challenge without `direction` is outgoing too; events arrive in order,
     // so the empty list below also shows that it was dropped.
-    await transport.push(
+    await transport.pushEvent(
       challengeLine(id: "c4", direction: "out")
         .replacing(#""direction":"out""#, with: #""x":0"#)
         .replacing(#""id":"philippe","name":"Philippe""#, with: #""id":"georges","name":"Georges""#)
     )
     try await wait { model.incomingChallenges.count == 2 }
-    await transport.push(challengeLine(type: "challengeCanceled", id: "c1"))
-    await transport.push(challengeLine(type: "challengeDeclined", id: "c2"))
+    await transport.pushEvent(challengeLine(type: "challengeCanceled", id: "c1"))
+    await transport.pushEvent(challengeLine(type: "challengeDeclined", id: "c2"))
     try await wait { model.incomingChallenges.isEmpty }
 
-    await transport.push(
+    await transport.pushEvent(
       #"{"type":"gameStart","game":{"gameId":"abcd1234","#
         + #""color":"white","fen":"x","isMyTurn":true}}"#
     )
@@ -252,7 +209,7 @@ struct LichessAccountModelTests {
   func streamReconnectsAfterADisconnectAndWaitsAMinuteAfterRateLimit() async throws {
     let waits = Waits()
     let store = InMemoryTokenStore(token: "good")
-    let transport = FakeTransport { request in
+    let transport = makeTransport { request in
       request.url!.path() == "/api/stream/event" ? (429, Data()) : lichessAPI(request)
     }
     let configuration = configuration
@@ -280,7 +237,7 @@ struct LichessAccountModelTests {
   ) async throws -> (LichessAccountModel, FakeTransport) {
     let (model, _, transport) = makeModel(token: "good", handler: handler)
     await model.start()
-    try await wait { await transport.paths.contains("GET /api/stream/event") }
+    try await transport.waitForRequest("GET /api/stream/event")
     return (model, transport)
   }
 
@@ -289,7 +246,7 @@ struct LichessAccountModelTests {
     let (model, transport) = try await signedInModel()
     model.seek(rated: true, minutes: 10, increment: 5)
     #expect(model.isSeeking)
-    try await wait { await transport.paths.contains("POST /api/board/seek") }
+    try await transport.waitForRequest("POST /api/board/seek")
     let request = try #require(
       await transport.requests.first { $0.url!.path() == "/api/board/seek" }
     )
@@ -305,10 +262,10 @@ struct LichessAccountModelTests {
   func cancellingTheSeekClosesTheStream() async throws {
     let (model, transport) = try await signedInModel()
     model.seek(rated: false, minutes: 10, increment: 0)
-    try await wait { await transport.paths.contains("POST /api/board/seek") }
+    try await transport.waitForRequest("POST /api/board/seek")
     model.cancelSeek()
     #expect(!model.isSeeking)
-    try await wait { await transport.didTerminate("/api/board/seek") }
+    try await transport.waitForStreamTermination("/api/board/seek")
     await model.signOut()
   }
 
@@ -316,11 +273,9 @@ struct LichessAccountModelTests {
   func theSeekStreamEndingEndsTheWaitingState() async throws {
     let (model, transport) = try await signedInModel()
     model.seek(rated: false, minutes: 15, increment: 10)
-    try await wait { await transport.paths.contains("POST /api/board/seek") }
-    try await wait {
-      await transport.finish("/api/board/seek")
-      return !model.isSeeking
-    }
+    try await transport.waitForRequest("POST /api/board/seek")
+    await transport.finishStream("/api/board/seek")
+    try await wait { !model.isSeeking }
     #expect(model.lobbyFailure == nil)
     await model.signOut()
   }
@@ -340,15 +295,13 @@ struct LichessAccountModelTests {
   func aGameStartEndsTheSeekAndRefreshesTheGames() async throws {
     let (model, transport) = try await signedInModel()
     model.seek(rated: false, minutes: 10, increment: 0)
-    try await wait { await transport.paths.contains("POST /api/board/seek") }
+    try await transport.waitForRequest("POST /api/board/seek")
     let before = await transport.paths.count { $0 == "GET /api/account/playing" }
-    try await wait {
-      await transport.push(
-        #"{"type":"gameStart","game":{"gameId":"abcd1234","#
-          + #""color":"white","fen":"x","isMyTurn":true}}"#
-      )
-      return model.startedGameID == "abcd1234"
-    }
+    await transport.pushEvent(
+      #"{"type":"gameStart","game":{"gameId":"abcd1234","#
+        + #""color":"white","fen":"x","isMyTurn":true}}"#
+    )
+    try await wait { model.startedGameID == "abcd1234" }
     #expect(!model.isSeeking)
     try await wait { await transport.paths.count { $0 == "GET /api/account/playing" } > before }
     await model.signOut()
@@ -390,13 +343,13 @@ struct LichessAccountModelTests {
       increment: 2,
       color: .random
     )
-    try await wait {
-      await transport.push(challengeLine(type: "challengeDeclined", id: "other", direction: "out"))
-      await transport.push(
-        challengeLine(type: "challengeDeclined", id: "chal1234", direction: "out")
-      )
-      return model.challengeWasDeclined
-    }
+    await transport.pushEvent(
+      challengeLine(type: "challengeDeclined", id: "other", direction: "out")
+    )
+    await transport.pushEvent(
+      challengeLine(type: "challengeDeclined", id: "chal1234", direction: "out")
+    )
+    try await wait { model.challengeWasDeclined }
     #expect(model.outgoingChallengeID == nil)
     await model.signOut()
   }
@@ -411,13 +364,11 @@ struct LichessAccountModelTests {
       increment: 2,
       color: .random
     )
-    try await wait {
-      await transport.push(
-        #"{"type":"gameStart","game":{"gameId":"chal1234","#
-          + #""color":"white","fen":"x","isMyTurn":true}}"#
-      )
-      return model.startedGameID == "chal1234"
-    }
+    await transport.pushEvent(
+      #"{"type":"gameStart","game":{"gameId":"chal1234","#
+        + #""color":"white","fen":"x","isMyTurn":true}}"#
+    )
+    try await wait { model.startedGameID == "chal1234" }
     #expect(model.outgoingChallengeID == nil)
     #expect(!model.challengeWasDeclined)
     await model.signOut()
@@ -426,11 +377,9 @@ struct LichessAccountModelTests {
   @Test(.timeLimit(.minutes(1)))
   func acceptAndDeclineHitTheirPathsAndDropTheChallenge() async throws {
     let (model, transport) = try await signedInModel()
-    try await wait {
-      await transport.push(challengeLine(id: "c1"))
-      await transport.push(challengeLine(id: "c2"))
-      return model.incomingChallenges.count == 2
-    }
+    await transport.pushEvent(challengeLine(id: "c1"))
+    await transport.pushEvent(challengeLine(id: "c2"))
+    try await wait { model.incomingChallenges.count == 2 }
     await model.accept(challengeID: "c1")
     await model.decline(challengeID: "c2")
     #expect(await transport.paths.contains("POST /api/challenge/c1/accept"))
@@ -444,10 +393,8 @@ struct LichessAccountModelTests {
     let (model, transport) = try await signedInModel { request in
       request.url!.path() == "/api/challenge/c1/accept" ? (429, Data()) : lichessAPI(request)
     }
-    try await wait {
-      await transport.push(challengeLine(id: "c1"))
-      return model.incomingChallenges.count == 1
-    }
+    await transport.pushEvent(challengeLine(id: "c1"))
+    try await wait { model.incomingChallenges.count == 1 }
     await model.accept(challengeID: "c1")
     #expect(model.lobbyFailure == .rateLimited)
     #expect(model.incomingChallenges.count == 1)
@@ -459,10 +406,8 @@ struct LichessAccountModelTests {
     let (model, transport) = try await signedInModel()
     try await wait { model.ongoingGames.count == 1 }
     let before = await transport.paths.count { $0 == "GET /api/account/playing" }
-    try await wait {
-      await transport.push(#"{"type":"gameFinish","game":{"gameId":"rCRw1Auv"}}"#)
-      return await transport.paths.count { $0 == "GET /api/account/playing" } > before
-    }
+    await transport.pushEvent(#"{"type":"gameFinish","game":{"gameId":"rCRw1Auv"}}"#)
+    try await wait { await transport.paths.count { $0 == "GET /api/account/playing" } > before }
     await model.signOut()
   }
 

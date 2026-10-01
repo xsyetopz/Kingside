@@ -2,53 +2,19 @@ import ChessContent
 import ChessCore
 import ChessPlay
 import Foundation
-import HTTPSupport
+import HTTPSupportTests
 import LichessLink
 import Testing
 @testable import ChessUI
 
-/// Answers by path, records every request, and lets a test push lines into the open game stream.
-private actor FakeTransport: HTTPStreamingTransport {
-  private(set) var requests: [URLRequest] = []
-  private var continuation: AsyncThrowingStream<String, Error>.Continuation?
-
-  var paths: [String] { requests.map { $0.httpMethod! + " " + $0.url!.path() } }
-
-  /// Returns once a request `path` ("GET /api/…") has arrived; a cancelled test throws.
-  func waitForRequest(_ path: String) async throws {
-    while !paths.contains(path) {
-      try Task.checkCancellation()
-      await Task.yield()
-    }
-  }
-
-  private func record(_ request: URLRequest) { requests.append(request) }
-
-  func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
-    record(request)
+/// Signs in as Georges, answers every other request with `{}`, and keeps streams open.
+private func makeTransport() -> FakeTransport {
+  FakeTransport(keepStreamsOpen: true) { request in
     let body =
       request.url!.path() == "/api/account"
       ? Data(#"{"id":"georges","username":"Georges"}"#.utf8) : Data("{}".utf8)
-    return (
-      body,
-      HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-    )
+    return (200, [:], body)
   }
-
-  func lines(
-    for request: URLRequest
-  ) throws -> (HTTPURLResponse, AsyncThrowingStream<String, Error>) {
-    record(request)
-    let response = HTTPURLResponse(
-      url: request.url!,
-      statusCode: 200,
-      httpVersion: nil,
-      headerFields: nil
-    )!
-    return (response, AsyncThrowingStream { continuation = $0 })
-  }
-
-  func push(_ line: String) { continuation?.yield(line) }
 }
 
 private let gameFullLine =
@@ -223,7 +189,7 @@ struct LichessGameConnectionTests {
   private func makeConnection(
     id: String = "rCRw1Auv"
   ) async throws -> (LichessGameConnection, FakeTransport) {
-    let transport = FakeTransport()
+    let transport = makeTransport()
     let configuration = LichessConfiguration(
       baseURL: URL(string: "https://lichess.example.test")!,
       userAgent: "KingsideTests/1.0 (+tests)",
@@ -238,7 +204,6 @@ struct LichessGameConnectionTests {
       sleep: { _ in await Task.yield() }
     )
     await model.signIn(token: "good")
-    // The account's event stream opens first, so the game stream is the one the fake pushes into.
     try await transport.waitForRequest("GET /api/stream/event")
     return (model.gameConnection(id: id), transport)
   }
@@ -248,11 +213,13 @@ struct LichessGameConnectionTests {
     let (connection, transport) = try await makeConnection()
     #expect(connection.userID == "georges")
     var iterator = connection.events().makeAsyncIterator()
-    try await transport.waitForRequest("GET /api/board/game/stream/rCRw1Auv")
-    await transport.push(gameFullLine)
+    let stream = "/api/board/game/stream/rCRw1Auv"
+    try await transport.waitForRequest("GET \(stream)")
+    await transport.push(gameFullLine, to: stream)
     await transport.push(
       #"{"type":"gameState","moves":"e2e4 e7e5 g1f3","#
-        + #""wtime":1,"btime":2,"winc":0,"binc":0,"status":"started"}"#
+        + #""wtime":1,"btime":2,"winc":0,"binc":0,"status":"started"}"#,
+      to: stream
     )
     guard case .started(let start)? = try await iterator.next() else {
       Issue.record("no start"); return
@@ -296,7 +263,7 @@ struct LichessGameConnectionTests {
           clientID: "kingside-tests",
           redirectURI: URL(string: "kingside://oauth")!
         ),
-        transport: FakeTransport(),
+        transport: makeTransport(),
         tokenProvider: $0
       )
     }
