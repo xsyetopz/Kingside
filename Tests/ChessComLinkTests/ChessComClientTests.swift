@@ -1,4 +1,5 @@
 import Foundation
+import HTTPSupport
 import Testing
 @testable import ChessComLink
 
@@ -188,6 +189,19 @@ struct ChessComClientTests {
       try await client.profile(username: "garbage")
     } throws: { error in
       if case .decoding = error as? ChessComError { true } else { false }
+    }
+  }
+
+  @Test
+  func nonHTTPResponseIsInvalidResponse() async {
+    struct NonHTTPTransport: HTTPTransport {
+      func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
+        throw HTTPTransportError.invalidResponse
+      }
+    }
+    let client = ChessComClient(configuration: testConfiguration, transport: NonHTTPTransport())
+    await #expect(throws: ChessComError.invalidResponse) {
+      try await client.profile(username: "hikaru")
     }
   }
 

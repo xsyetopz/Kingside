@@ -11,6 +11,7 @@ let package = Package(
   products: [
     .library(name: "ChessCore", targets: ["ChessCore"]),
     .library(name: "ChessContent", targets: ["ChessContent"]),
+    .library(name: "HTTPSupport", targets: ["HTTPSupport"]),
     .library(name: "ChessComLink", targets: ["ChessComLink"]),
     .library(name: "LichessLink", targets: ["LichessLink"]),
     .library(name: "ChessOnline", targets: ["ChessOnline"]),
@@ -23,7 +24,8 @@ let package = Package(
   targets: [
     .target(name: "ChessCore"),
     .target(name: "ChessContent", dependencies: ["ChessCore"], resources: [.process("Resources")]),
-    .target(name: "ChessComLink", dependencies: ["ChessCore"]),
+    .target(name: "HTTPSupport"),
+    .target(name: "ChessComLink", dependencies: ["ChessCore", "HTTPSupport"]),
     .target(name: "LichessLink", dependencies: ["ChessCore"]),
     .target(name: "ChessOnline"),
     .target(name: "ChessPlay", dependencies: ["ChessCore", "ChessContent"]),
@@ -33,15 +35,16 @@ let package = Package(
       name: "ChessUI",
       dependencies: [
         "ChessCore", "ChessContent", "ChessPlay", "ChessBoardScene", "ChessFeedback",
-        "ChessComLink", "LichessLink", "ChessOnline",
+        "HTTPSupport", "ChessComLink", "LichessLink", "ChessOnline",
       ]
     ),
     .executableTarget(name: "ChessBench", dependencies: ["ChessCore"], path: "Tools/ChessBench"),
     .testTarget(name: "ChessCoreTests", dependencies: ["ChessCore"]),
     .testTarget(name: "ChessContentTests", dependencies: ["ChessContent"]),
+    .testTarget(name: "HTTPSupportTests", dependencies: ["HTTPSupport"]),
     .testTarget(
       name: "ChessComLinkTests",
-      dependencies: ["ChessComLink", "ChessCore"],
+      dependencies: ["ChessComLink", "ChessCore", "HTTPSupport"],
       resources: [.copy("Fixtures")]
     ),
     .testTarget(
@@ -66,8 +69,8 @@ let package = Package(
     .testTarget(
       name: "ChessUITests",
       dependencies: [
-        "ChessUI", "ChessPlay", "ChessCore", "ChessContent", "ChessComLink", "LichessLink",
-        "ChessOnline",
+        "ChessUI", "ChessPlay", "ChessCore", "ChessContent", "HTTPSupport", "ChessComLink",
+        "LichessLink", "ChessOnline",
       ]
     ),
   ]

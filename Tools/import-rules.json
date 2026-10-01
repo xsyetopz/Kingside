@@ -17,13 +17,21 @@
 			"path": "Sources/ChessContent",
 			"allow": ["Foundation", "ChessCore"]
 		},
+		"HTTPSupport": {
+			"path": "Sources/HTTPSupport",
+			"allow": ["Foundation"]
+		},
+		"HTTPSupportTests": {
+			"path": "Tests/HTTPSupportTests",
+			"allow": ["Foundation", "Testing", "HTTPSupport"]
+		},
 		"ChessComLink": {
 			"path": "Sources/ChessComLink",
-			"allow": ["Foundation", "ChessCore"]
+			"allow": ["Foundation", "ChessCore", "HTTPSupport"]
 		},
 		"ChessComLinkTests": {
 			"path": "Tests/ChessComLinkTests",
-			"allow": ["Foundation", "Testing", "ChessCore", "ChessComLink"]
+			"allow": ["Foundation", "Testing", "ChessCore", "ChessComLink", "HTTPSupport"]
 		},
 		"LichessLink": {
 			"path": "Sources/LichessLink",
@@ -120,6 +128,7 @@
 				"ChessPlay",
 				"ChessBoardScene",
 				"ChessFeedback",
+				"HTTPSupport",
 				"ChessComLink",
 				"LichessLink",
 				"ChessOnline"
@@ -134,6 +143,7 @@
 				"ChessCore",
 				"ChessContent",
 				"ChessPlay",
+				"HTTPSupport",
 				"ChessComLink",
 				"LichessLink",
 				"ChessOnline"

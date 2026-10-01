@@ -3,6 +3,7 @@ import ChessContent
 import ChessOnline
 import ChessPlay
 import Foundation
+import HTTPSupport
 import Testing
 @testable import ChessUI
 

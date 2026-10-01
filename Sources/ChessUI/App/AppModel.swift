@@ -5,6 +5,7 @@ import ChessFeedback
 import ChessOnline
 import ChessPlay
 import Foundation
+import HTTPSupport
 import LichessLink
 import Observation
 
