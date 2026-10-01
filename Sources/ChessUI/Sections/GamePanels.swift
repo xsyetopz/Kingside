@@ -224,14 +224,28 @@ struct GameResultSheet<Game: PlayableGame>: View {
   private var localization
   @Environment(\.dismiss)
   private var dismiss
+  @Environment(\.dynamicTypeSize)
+  private var dynamicTypeSize
 
   var body: some View {
+    // Accessibility text sizes outgrow a half-height sheet; scroll only when it does not fit.
+    ViewThatFits(in: .vertical) {
+      card
+      ScrollView { card }
+    }
+    #if os(iOS)
+      .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium])
+    #endif
+  }
+
+  private var card: some View {
     let style = model.catalog.interface
-    VStack(spacing: style.sectionGap) {
+    return VStack(spacing: style.sectionGap) {
       VStack(spacing: style.gap / 2) {
         Text(session.resultTitle).font(.largeTitle.bold())
         Text(session.resultReason).font(.title3).foregroundStyle(.secondary)
       }
+      .multilineTextAlignment(.center)
       VStack(spacing: style.gap) {
         if session.supportsRematch {
           Button {
@@ -251,13 +265,11 @@ struct GameResultSheet<Game: PlayableGame>: View {
         Button(localization("common.close")) { dismiss() }
           .buttonStyle(.borderless)
       }
-      // The column takes its widest button's width, so the two main buttons match.
-      .fixedSize(horizontal: true, vertical: false)
+      // The column takes its widest button's width, so the two main buttons match. At
+      // accessibility sizes that width can pass the screen's, so the column fills it instead.
+      .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
       .controlSize(.large)
     }
     .padding(style.sectionGap)
-    #if os(iOS)
-      .presentationDetents([.medium])
-    #endif
   }
 }

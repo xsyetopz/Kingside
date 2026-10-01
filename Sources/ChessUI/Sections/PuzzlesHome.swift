@@ -127,19 +127,24 @@ private struct PuzzleHomeRow: View {
   let systemImage: String
   let subtitle: String
   var detail: String?
+  @Environment(\.dynamicTypeSize)
+  private var dynamicTypeSize
 
   var body: some View {
+    // At accessibility sizes a trailing detail squeezes the title until words break.
+    let stacksDetail = dynamicTypeSize.isAccessibilitySize
     HStack {
       Label {
         VStack(alignment: .leading) {
           Text(title)
           Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+          if stacksDetail, let detail { Text(detail).foregroundStyle(.secondary) }
         }
       } icon: {
         Image(systemName: systemImage)
       }
       Spacer(minLength: 0)
-      if let detail { Text(detail).foregroundStyle(.secondary) }
+      if !stacksDetail, let detail { Text(detail).foregroundStyle(.secondary) }
     }
   }
 }

@@ -12,6 +12,8 @@ struct SetupRow<Leading: View>: View {
   let leading: Leading
   @Environment(AppModel.self)
   private var model
+  @Environment(\.dynamicTypeSize)
+  private var dynamicTypeSize
 
   init(
     title: String,
@@ -30,15 +32,18 @@ struct SetupRow<Leading: View>: View {
   }
 
   var body: some View {
+    // At accessibility sizes a trailing detail squeezes the title until words break.
+    let stacksDetail = dynamicTypeSize.isAccessibilitySize
     Button(action: action) {
       HStack(spacing: model.catalog.interface.gap) {
         leading
         VStack(alignment: .leading) {
           Text(title).font(.headline)
           if let subtitle { Text(subtitle).font(.subheadline).foregroundStyle(.secondary) }
+          if stacksDetail, let detail { Text(detail).foregroundStyle(.secondary) }
         }
         Spacer(minLength: 0)
-        if let detail { Text(detail).foregroundStyle(.secondary) }
+        if !stacksDetail, let detail { Text(detail).foregroundStyle(.secondary) }
         if isSelected { Image(systemName: "checkmark").foregroundStyle(.tint) }
       }
       .contentShape(Rectangle())
