@@ -28,6 +28,12 @@ final class FakeOnlineConnection: OnlineGameConnection, @unchecked Sendable {
     return stream
   }
 
+  /// Ends the newest stream with an error.
+  func fail() {
+    let continuation = lock.withLock { self.continuation }
+    continuation?.finish(throwing: URLError(.networkConnectionLost))
+  }
+
   /// Sends `event` on the newest stream.
   func push(_ event: OnlineGameEvent) {
     let continuation = lock.withLock { self.continuation }
@@ -247,7 +253,7 @@ final class OnlineGameSessionTests {
     await clock.waitForSleeper()
     clock.advance(by: tick)
     try await until { session.clock.remaining(.white) < 170 }
-    #expect(session.clock.remaining(.white) == 170 - GameSession.seconds(tick))
+    #expect(session.clock.remaining(.white) == 169.9)
     #expect(session.clock.remaining(.black) == 175)
   }
 
@@ -277,7 +283,7 @@ final class OnlineGameSessionTests {
     try await until { session.isGameOver }
     connection.push(.state(final))
     try await until { session.game.moves.count == moves.count }
-    await session.saveTask?.value
+    await session.flushPendingSave()
 
     #expect(session.result == result)
     #expect(session.termination == termination)
@@ -306,7 +312,7 @@ final class OnlineGameSessionTests {
 
     connection.push(.state(OnlineGameState(status: .aborted)))
     try await until { session.isGameOver }
-    await session.saveTask?.value
+    await session.flushPendingSave()
     #expect(session.result == .ongoing)
     #expect(!session.canAbort)
     #expect(try await store.allGames().isEmpty)
@@ -317,7 +323,7 @@ final class OnlineGameSessionTests {
     let session = try makeSession()
     connection.push(.started(start(["e2e4"], status: .resign)))
     try await until { session.start != nil }
-    await session.saveTask?.value
+    await session.flushPendingSave()
     #expect(sink.events.isEmpty)
     #expect(try await store.allGames().count == 1)
   }
@@ -343,6 +349,40 @@ final class OnlineGameSessionTests {
   }
 
   @Test
+  func opponentDeclineClearsOurDrawOffer() async throws {
+    let session = try makeSession()
+    connection.push(.started(start(["e2e4", "e7e5"])))
+    try await until { session.start != nil }
+
+    session.apply(.offerDraw)
+    #expect(session.myDrawOfferPending)
+    try await until { connection.sent == [.offerDraw] }
+    connection.push(.state(OnlineGameState(uciMoves: ["e2e4", "e7e5"], whiteOffersDraw: true)))
+    // Events arrive in order, so the chat line proves the offer state was handled.
+    connection.push(.chat(OnlineChatLine(username: "lichess", text: "Draw offer sent")))
+    try await until { !session.chat.isEmpty }
+    #expect(session.myDrawOfferPending)
+
+    connection.push(.state(OnlineGameState(uciMoves: ["e2e4", "e7e5"])))
+    try await until { !session.myDrawOfferPending }
+    #expect(!session.isGameOver)
+    #expect(session.pendingDrawOffer == nil)
+  }
+
+  @Test
+  func failedDrawOfferIsReverted() async throws {
+    let session = try makeSession()
+    connection.push(.started(start(["e2e4", "e7e5"])))
+    try await until { session.start != nil }
+    connection.setFailsSends(true)
+
+    session.apply(.offerDraw)
+    #expect(session.myDrawOfferPending)
+    try await until { !session.myDrawOfferPending }
+    #expect(connection.sent == [.offerDraw])
+  }
+
+  @Test
   func claimVictoryAfterOpponentLeaves() async throws {
     let session = try makeSession()
     connection.push(.started(start(["e2e4", "e7e5"])))
@@ -357,9 +397,112 @@ final class OnlineGameSessionTests {
     session.claimVictory()
     try await until { connection.sent == [.claimVictory] }
 
+  }
+
+  @Test
+  func opponentBackWithdrawsTheClaim() async throws {
+    let session = try makeSession()
+    connection.push(.started(start(["e2e4", "e7e5"])))
+    try await until { session.start != nil }
+    connection.push(.opponentGone(claimWinIn: .zero))
+    try await until { session.canClaimVictory }
+
     connection.push(.opponentBack)
     try await until { !session.opponentGone }
     #expect(!session.canClaimVictory)
+  }
+
+  // MARK: Chat
+
+  private func pushChat(_ lines: [(String, String)], to session: OnlineGameSession) async throws {
+    let before = session.chat.count
+    for (name, text) in lines {
+      connection.push(.chat(OnlineChatLine(username: name, text: text)))
+    }
+    try await until { session.chat.count == before + lines.count }
+  }
+
+  @Test
+  func unreadChatCountsLinesFromOthersOnly() async throws {
+    let session = try makeSession()
+    connection.push(.started(start()))
+    try await until { session.start != nil }
+
+    try await pushChat(
+      [("Bob", "hi"), ("Alice", "hello"), ("lichess", "Draw offer sent")],
+      to: session
+    )
+    #expect(session.unreadChatCount == 2)
+  }
+
+  @Test
+  func markChatReadCountsOnlyLaterLines() async throws {
+    let session = try makeSession()
+    connection.push(.started(start()))
+    try await until { session.start != nil }
+    try await pushChat([("Bob", "hi"), ("Bob", "there")], to: session)
+
+    session.markChatRead()
+    #expect(session.unreadChatCount == 0)
+    try await pushChat([("Bob", "again")], to: session)
+    #expect(session.unreadChatCount == 1)
+  }
+
+  @Test
+  func mutingHidesOpponentLinesAndTheirUnreadCount() async throws {
+    let session = try makeSession()
+    connection.push(.started(start()))
+    try await until { session.start != nil }
+    try await pushChat([("Bob", "hi"), ("Alice", "hello")], to: session)
+
+    session.setOpponentMuted(true)
+    #expect(session.chatMessages.map(\.text) == ["hello"])
+    #expect(session.unreadChatCount == 0)
+    session.setOpponentMuted(false)
+    #expect(session.chatMessages.map(\.text) == ["hi", "hello"])
+    #expect(session.unreadChatCount == 1)
+  }
+
+  // MARK: Connection errors
+
+  @Test
+  func failedStreamSetsConnectionError() async throws {
+    let session = try makeSession()
+    connection.push(.started(start()))
+    try await until { session.start != nil }
+    #expect(!session.connectionError)
+
+    connection.fail()
+    try await until { session.connectionError }
+  }
+
+  @Test
+  func reactivatingAfterAnErrorClearsConnectionError() async throws {
+    let session = try makeSession()
+    connection.fail()
+    try await until { session.connectionError }
+
+    session.activate()
+    #expect(!session.connectionError)
+    #expect(connection.streams == 2)
+  }
+
+  @Test
+  func startWithUnreadableFENSetsConnectionError() async throws {
+    let session = try makeSession()
+    let broken = OnlineGameStart(
+      gameID: "abcd1234",
+      initialFEN: "not a fen",
+      white: OnlinePlayer(name: "Alice", rating: 1500),
+      black: OnlinePlayer(name: "Bob", rating: 1600),
+      myColor: .white,
+      timeControl: nil,
+      rated: true,
+      state: OnlineGameState()
+    )
+    connection.push(.started(broken))
+    try await until { session.connectionError }
+    #expect(session.start == nil)
   }
 
   // MARK: Persistence types
@@ -381,8 +524,7 @@ final class OnlineGameSessionTests {
   @Test
   func savedGameIDIsStable() {
     let first = OnlineGameSession.savedGameID(service: "lichess", gameID: "abcd1234")
-    #expect(first == OnlineGameSession.savedGameID(service: "lichess", gameID: "abcd1234"))
+    #expect(first.uuidString == "2D1C127E-7629-8DBA-89F0-B5A88C81CE29")
     #expect(first != OnlineGameSession.savedGameID(service: "lichess", gameID: "abcd1235"))
-    #expect(first.uuidString.dropFirst(14).first == "8")
   }
 }

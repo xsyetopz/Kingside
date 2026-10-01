@@ -169,6 +169,7 @@ public final class GameSession {
     bottomPlayer = PlayerSlot(color: .white, info: launchWhite)
     board.lastMove = game.moves.last?.move
     board.isFlipped = initialFlip
+    refreshPlayers()
     board.resetFocus(for: humanColor ?? game.position.sideToMove)
     refreshDerived()
   }
@@ -670,6 +671,12 @@ public final class GameSession {
         self?.reportSaveFailure()
       }
     }
+  }
+
+  /// Returns once the bot's pending reply and every queued save have finished.
+  func flushPendingSave() async {
+    await botTask?.value
+    await saveTask?.value
   }
 
   private func reportSaveFailure() {

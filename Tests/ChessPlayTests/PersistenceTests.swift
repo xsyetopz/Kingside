@@ -91,6 +91,43 @@ struct PersistenceTests {
   }
 
   @Test
+  func archiveKeepsOnlyTheNewest200FinishedGames() async throws {
+    try await withTemporaryDirectory { directory in
+      let store = makeStore(in: directory)
+      for second in 1...201 {
+        let game = try makeGame(
+          result: .draw,
+          updatedAt: Date(timeIntervalSince1970: TimeInterval(second))
+        )
+        try await store.save(game)
+      }
+      let all = try await store.allGames()
+      #expect(all.count == 200)
+      #expect(all.first?.updatedAt == Date(timeIntervalSince1970: 201))
+      #expect(all.last?.updatedAt == Date(timeIntervalSince1970: 2))
+    }
+  }
+
+  @Test
+  func unfinishedGameDoesNotCountAgainstTheArchiveLimit() async throws {
+    try await withTemporaryDirectory { directory in
+      let store = makeStore(in: directory)
+      let unfinished = try makeGame(updatedAt: Date(timeIntervalSince1970: 1))
+      try await store.save(unfinished)
+      for second in 2...202 {
+        let game = try makeGame(
+          result: .draw,
+          updatedAt: Date(timeIntervalSince1970: TimeInterval(second))
+        )
+        try await store.save(game)
+      }
+      let all = try await store.allGames()
+      #expect(all.count == 201)
+      #expect(try await store.unfinishedGame()?.id == unfinished.id)
+    }
+  }
+
+  @Test
   func delete() async throws {
     try await withTemporaryDirectory { directory in
       let store = makeStore(in: directory)

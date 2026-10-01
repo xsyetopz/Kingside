@@ -94,7 +94,7 @@ public final class OnlineGameSession {
   private var claimTask: Task<Void, Never>?
   /// The latest save; each save waits for the previous one.
   @ObservationIgnored
-  private(set) var saveTask: Task<Void, Never>?
+  private var saveTask: Task<Void, Never>?
   @ObservationIgnored
   private var hasReportedSaveFailure = false
 
@@ -254,6 +254,9 @@ public final class OnlineGameSession {
     }
     startClock()
   }
+
+  /// Waits until every save started so far has finished.
+  func flushPendingSave() async { await saveTask?.value }
 
   /// Stops reading events, the clock and the claim-victory timer.
   public func deactivate() {

@@ -187,6 +187,20 @@ final class PuzzleBoardSessionTests {
   }
 
   @Test
+  func promotionIsNeverAutoQueened() async throws {
+    let session = try makeSession()
+    try await loadAndPlayIntro(try promotion(), in: session)
+
+    try play("a7a8", in: session)
+
+    #expect(session.snapshot.pendingPromotion != nil)
+    #expect(session.phase == .solverToMove)
+    #expect(session.snapshot.pieces[try square("a8")] == nil)
+    #expect(session.snapshot.pieces[try square("a7")] == Piece(type: .pawn, color: .white))
+    #expect(outcomes.isEmpty)
+  }
+
+  @Test
   func promotionAsksForThePieceThenSolves() async throws {
     let session = try makeSession()
     try await loadAndPlayIntro(try promotion(), in: session)

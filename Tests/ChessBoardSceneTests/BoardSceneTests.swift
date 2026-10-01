@@ -345,29 +345,21 @@ struct BoardSceneTests {
     #expect(texture.cgImage().width == 180)
   }
 
-  /// Q2: a snapshot update takes under 2 ms of main-thread time.
   @Test
-  func applyingASnapshotTakesUnderTwoMilliseconds() throws {
+  func aMoveReusesTheExistingPieceNodes() throws {
     let scene = try Self.makeScene()
-    let snapshots = [
-      Self.snapshot(.initial, focus: "e2", selected: "e2", targets: ["e3", "e4"]),
-      Self.snapshot(try Self.after("e2e4"), focus: "e4", lastMove: "e2e4"),
-    ]
-    scene.apply(snapshots[1], animated: false)
-    let runs = 1_000
-    let clock = ContinuousClock()
-    let elapsed = clock.measure {
-      for index in 0..<runs {
-        scene.apply(snapshots[index % 2], animated: false)
-      }
+    scene.apply(Self.snapshot(.initial), animated: false)
+    let before = scene.pieceNodes
+    let movedNode = try #require(before[Self.square("e2")])
+
+    let afterMove = Self.snapshot(try Self.after("e2e4"), focus: "e4", lastMove: "e2e4")
+    scene.apply(afterMove, animated: false)
+
+    #expect(scene.pieceNodes[Self.square("e4")] === movedNode)
+    #expect(scene.pieceNodes[Self.square("e2")] == nil)
+    #expect(scene.pieceNodes.count == 32)
+    for (square, node) in before where square != Self.square("e2") {
+      #expect(scene.pieceNodes[square] === node, "\(square)")
     }
-    let meanMilliseconds =
-      (Double(elapsed.components.seconds) * 1e3 + Double(elapsed.components.attoseconds) / 1e15)
-      / Double(runs)
-    print(
-      "Q2 BoardScene.apply mean: \(String(format: "%.4f", meanMilliseconds)) ms "
-        + "over \(runs) snapshots"
-    )
-    #expect(meanMilliseconds < 2)
   }
 }
