@@ -88,9 +88,14 @@ public struct PGNParser: Sendable {
   }
 
   private func stripCommentsAndVariations(_ text: String) -> String {
+    stripVariations(stripComments(text))
+  }
+
+  /// Removes `;` comments up to the line break and `{}` comments. A `;` starts a line comment
+  /// even inside braces, and a `}` inside that line comment does not close the brace.
+  private func stripComments(_ text: String) -> String {
     var result = ""
     var braceDepth = 0
-    var variationDepth = 0
     var inLineComment = false
     for character in text {
       if character == "\n" { inLineComment = false }
@@ -98,7 +103,16 @@ public struct PGNParser: Sendable {
       if character == ";" { inLineComment = true; continue }
       if character == "{" { braceDepth += 1; continue }
       if character == "}" { braceDepth = max(0, braceDepth - 1); continue }
-      if braceDepth > 0 { continue }
+      if braceDepth == 0 { result.append(character) }
+    }
+    return result
+  }
+
+  /// Removes `()` variations, nested to any depth.
+  private func stripVariations(_ text: String) -> String {
+    var result = ""
+    var variationDepth = 0
+    for character in text {
       if character == "(" { variationDepth += 1; continue }
       if character == ")" { variationDepth = max(0, variationDepth - 1); continue }
       if variationDepth == 0 { result.append(character) }
@@ -154,24 +168,4 @@ public struct PGNExporter: Sendable {
     case .ongoing: "*"
     }
   }
-}
-
-public struct GameReplay: Sendable {
-  public let positions: [ChessPosition]
-  public private(set) var index: Int
-
-  public init(game: ChessGame) {
-    var positions = game.moves.map(\.positionBefore)
-    positions.append(game.position)
-    self.positions = positions.isEmpty ? [game.position] : positions
-    self.index = self.positions.count - 1
-  }
-
-  public var position: ChessPosition { positions[index] }
-  public var canGoBack: Bool { index > 0 }
-  public var canGoForward: Bool { index + 1 < positions.count }
-  public mutating func previous() { if canGoBack { index -= 1 } }
-  public mutating func next() { if canGoForward { index += 1 } }
-  public mutating func goToStart() { index = 0 }
-  public mutating func goToEnd() { index = positions.count - 1 }
 }

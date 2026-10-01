@@ -25,33 +25,53 @@ public enum ChessNotation {
     guard let piece = position[move.from], legalMoves.contains(move) else {
       throw ChessRuleError.illegalMove
     }
-    if piece.type == .king && abs(move.to.file - move.from.file) == 2 {
-      return try suffix(move.to.file == 6 ? "O-O" : "O-O-O", after: move, in: position)
+    if let castling = castlingSAN(for: move, by: piece) {
+      return try suffix(castling, after: move, in: position)
     }
-    let isEnPassant =
-      piece.type == .pawn && position[move.to] == nil && move.from.file != move.to.file
-    let isCapture = position[move.to] != nil || isEnPassant
+    // A pawn changing file always captures; the target square is empty only en passant.
+    let isCapture =
+      position[move.to] != nil || (piece.type == .pawn && move.from.file != move.to.file)
     var result = piece.type.sanLetter
-    if piece.type == .pawn {
-      if isCapture { result += fileName(move.from.file) }
-    } else {
-      let competitors = legalMoves.filter {
-        $0.to == move.to && $0.from != move.from && position[$0.from]?.type == piece.type
-      }
-      if !competitors.isEmpty {
-        if competitors.allSatisfy({ $0.from.file != move.from.file }) {
-          result += fileName(move.from.file)
-        } else if competitors.allSatisfy({ $0.from.rank != move.from.rank }) {
-          result += String(move.from.rank + 1)
-        } else {
-          result += move.from.algebraic
-        }
-      }
-    }
+    result += disambiguation(
+      for: move,
+      by: piece,
+      isCapture: isCapture,
+      in: position,
+      legalMoves: legalMoves
+    )
     if isCapture { result += "x" }
     result += move.to.algebraic
     if let promotion = move.promotion { result += "=\(promotion.sanLetter)" }
     return try suffix(result, after: move, in: position)
+  }
+
+  /// `O-O` or `O-O-O` when the move is a castling king move, `nil` otherwise.
+  private static func castlingSAN(for move: ChessMove, by piece: Piece) -> String? {
+    guard piece.type == .king, abs(move.to.file - move.from.file) == 2 else { return nil }
+    return move.to.file == 6 ? "O-O" : "O-O-O"
+  }
+
+  /// The origin written before the target: a capturing pawn's file, or for another piece the
+  /// file, rank, or square that tells it apart from same-type pieces reaching the same target.
+  private static func disambiguation(
+    for move: ChessMove,
+    by piece: Piece,
+    isCapture: Bool,
+    in position: ChessPosition,
+    legalMoves: [ChessMove]
+  ) -> String {
+    if piece.type == .pawn { return isCapture ? fileName(move.from.file) : "" }
+    let competitors = legalMoves.filter {
+      $0.to == move.to && $0.from != move.from && position[$0.from] == piece
+    }
+    if competitors.isEmpty { return "" }
+    if competitors.allSatisfy({ $0.from.file != move.from.file }) {
+      return fileName(move.from.file)
+    }
+    if competitors.allSatisfy({ $0.from.rank != move.from.rank }) {
+      return String(move.from.rank + 1)
+    }
+    return move.from.algebraic
   }
 
   private static func suffix(

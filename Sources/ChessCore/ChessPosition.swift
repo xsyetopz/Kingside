@@ -22,12 +22,12 @@ public struct ChessPosition: Equatable, Sendable {
       self.fullmoveNumber = fullmoveNumber
     }
 
-    convenience init(copying other: Storage) {
-      self.init(
-        engine: other.engine.copy(plyCapacity: 1),
-        enPassantTarget: other.enPassantTarget,
-        halfmoveClock: other.halfmoveClock,
-        fullmoveNumber: other.fullmoveNumber
+    func copy() -> Storage {
+      Storage(
+        engine: engine.copy(plyCapacity: 1),
+        enPassantTarget: enPassantTarget,
+        halfmoveClock: halfmoveClock,
+        fullmoveNumber: fullmoveNumber
       )
     }
   }
@@ -120,7 +120,7 @@ public struct ChessPosition: Equatable, Sendable {
     guard let piece = self[move.from] else { throw ChessRuleError.illegalMove }
     let isCapture = self[move.to] != nil
     let movingColor = sideToMove
-    if !isKnownUniquelyReferenced(&storage) { storage = Storage(copying: storage) }
+    if !isKnownUniquelyReferenced(&storage) { storage = storage.copy() }
     guard storage.engine.play(move) else { throw ChessRuleError.illegalMove }
     let isPawn = piece.type == .pawn
     if isPawn && abs(move.to.rank - move.from.rank) == 2 {

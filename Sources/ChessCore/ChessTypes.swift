@@ -140,13 +140,11 @@ public enum GameOutcome: Codable, Equatable, Sendable {
 public enum ChessRuleError: Error, Equatable, LocalizedError {
   case invalidFEN
   case illegalMove
-  case noPiece
 
   public var errorDescription: String? {
     switch self {
     case .invalidFEN: "The chess position is invalid."
     case .illegalMove: "That move is not legal."
-    case .noPiece: "There is no piece on that square."
     }
   }
 }

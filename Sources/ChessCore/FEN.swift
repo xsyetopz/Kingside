@@ -4,60 +4,18 @@ public extension ChessPosition {
   init(fen: String) throws {
     let fields = fen.split(separator: " ")
     guard (4...6).contains(fields.count) else { throw ChessRuleError.invalidFEN }
-    let rows = fields[0].split(separator: "/")
-    guard rows.count == 8 else { throw ChessRuleError.invalidFEN }
-    var board: [Square: Piece] = [:]
-    for (rowIndex, row) in rows.enumerated() {
-      var file = 0
-      var previousWasDigit = false
-      for character in row {
-        if let empty = character.asciiValue.flatMap(Self.emptyRun(fromFEN:)) {
-          guard !previousWasDigit else { throw ChessRuleError.invalidFEN }
-          file += empty
-          previousWasDigit = true
-          continue
-        }
-        previousWasDigit = false
-        guard file < 8, let piece = Self.piece(fromFEN: character) else {
-          throw ChessRuleError.invalidFEN
-        }
-        board[Square(file: file, rank: 7 - rowIndex)] = piece
-        file += 1
-      }
-      guard file == 8 else { throw ChessRuleError.invalidFEN }
-    }
+    let board = try Self.board(fromFEN: fields[0])
     guard let side = PieceColor(fen: String(fields[1])) else { throw ChessRuleError.invalidFEN }
     guard let rights = Self.castlingRights(fromFEN: fields[2]) else {
       throw ChessRuleError.invalidFEN
-    }
-    let ep: Square?
-    if fields[3] == "-" {
-      ep = nil
-    } else {
-      guard let parsed = Square(algebraic: String(fields[3])),
-        Self.isEnPassantTarget(parsed, sideToMove: side, board: board)
-      else {
-        throw ChessRuleError.invalidFEN
-      }
-      ep = parsed
-    }
-    var halfmove = 0
-    if fields.count > 4 {
-      guard let clock = Self.clock(fromFEN: fields[4]) else { throw ChessRuleError.invalidFEN }
-      halfmove = clock
-    }
-    var fullmove = 1
-    if fields.count > 5 {
-      guard let number = Self.clock(fromFEN: fields[5]) else { throw ChessRuleError.invalidFEN }
-      fullmove = number
     }
     self.init(
       board: board,
       sideToMove: side,
       castlingRights: rights,
-      enPassantTarget: ep,
-      halfmoveClock: halfmove,
-      fullmoveNumber: fullmove
+      enPassantTarget: try Self.enPassantTarget(fromFEN: fields[3], sideToMove: side, board: board),
+      halfmoveClock: try Self.clock(fromFEN: fields, at: 4, absent: 0),
+      fullmoveNumber: try Self.clock(fromFEN: fields, at: 5, absent: 1)
     )
     guard isSupportedByEngine else { throw ChessRuleError.invalidFEN }
   }
@@ -95,6 +53,68 @@ public extension ChessPosition {
     let side = sideToMove == .white ? "w" : "b"
     let enPassant = enPassantTarget?.algebraic ?? "-"
     return "\(placement) \(side) \(castling) \(enPassant) \(halfmoveClock) \(fullmoveNumber)"
+  }
+
+  /// Eight `/`-separated ranks, the 8th rank first.
+  private static func board(fromFEN field: Substring) throws -> [Square: Piece] {
+    let rows = field.split(separator: "/")
+    guard rows.count == 8 else { throw ChessRuleError.invalidFEN }
+    var board: [Square: Piece] = [:]
+    for (rowIndex, row) in rows.enumerated() {
+      try placeRank(fromFEN: row, rank: 7 - rowIndex, on: &board)
+    }
+    return board
+  }
+
+  /// One rank of exactly eight files; two empty-run digits in a row are rejected.
+  private static func placeRank(
+    fromFEN row: Substring,
+    rank: Int,
+    on board: inout [Square: Piece]
+  ) throws {
+    var file = 0
+    var previousWasDigit = false
+    for character in row {
+      if let empty = character.asciiValue.flatMap(emptyRun(fromFEN:)) {
+        guard !previousWasDigit else { throw ChessRuleError.invalidFEN }
+        file += empty
+        previousWasDigit = true
+        continue
+      }
+      previousWasDigit = false
+      guard file < 8, let piece = piece(fromFEN: character) else {
+        throw ChessRuleError.invalidFEN
+      }
+      board[Square(file: file, rank: rank)] = piece
+      file += 1
+    }
+    guard file == 8 else { throw ChessRuleError.invalidFEN }
+  }
+
+  /// `-`, or a square that `isEnPassantTarget` accepts.
+  private static func enPassantTarget(
+    fromFEN field: Substring,
+    sideToMove: PieceColor,
+    board: [Square: Piece]
+  ) throws -> Square? {
+    if field == "-" { return nil }
+    guard let target = Square(algebraic: String(field)),
+      isEnPassantTarget(target, sideToMove: sideToMove, board: board)
+    else {
+      throw ChessRuleError.invalidFEN
+    }
+    return target
+  }
+
+  /// The clock field at `index`, or `absent` when the FEN ends before it.
+  private static func clock(
+    fromFEN fields: [Substring],
+    at index: Int,
+    absent: Int
+  ) throws -> Int {
+    guard index < fields.count else { return absent }
+    guard let value = clock(fromFEN: fields[index]) else { throw ChessRuleError.invalidFEN }
+    return value
   }
 
   /// `-`, or a non-empty subsequence of `KQkq` in that order.
