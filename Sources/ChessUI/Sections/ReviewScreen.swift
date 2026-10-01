@@ -41,6 +41,8 @@ private struct ReviewView: View {
   private var model
   @Environment(\.localization)
   private var localization
+  @Environment(\.dynamicTypeSize)
+  private var dynamicTypeSize
   @State
   private var ply = 0
 
@@ -100,12 +102,7 @@ private struct ReviewView: View {
       Group {
         if isShort {
           ScrollView {
-            VStack(spacing: style.gap) {
-              summary
-              coach
-              controls
-              moves(.horizontal)
-            }
+            VStack(spacing: style.gap) { panels }
           }
         } else {
           VStack(spacing: style.gap) {
@@ -122,13 +119,30 @@ private struct ReviewView: View {
     }
   }
 
+  /// At accessibility text sizes the panels take most of the height, so the column scrolls and
+  /// the board keeps the full width instead of shrinking to what is left.
+  @ViewBuilder
   private func narrowLayout(_ style: InterfaceStyle) -> some View {
-    VStack(spacing: style.gap) {
-      board.frame(maxWidth: .infinity, maxHeight: .infinity)
-      summary
-      coach
-      controls
-      moves(.horizontal)
+    if dynamicTypeSize.isAccessibilitySize {
+      ScrollView {
+        VStack(spacing: style.gap) {
+          board
+          panels
+        }
+      }
+    } else {
+      VStack(spacing: style.gap) {
+        board.frame(maxWidth: .infinity, maxHeight: .infinity)
+        panels
+      }
     }
+  }
+
+  @ViewBuilder
+  private var panels: some View {
+    summary
+    coach
+    controls
+    moves(.horizontal)
   }
 }

@@ -4,19 +4,27 @@ import ChessPlay
 import SwiftUI
 
 extension MoveClassification {
+  /// How a grade is drawn beside a move.
+  enum Mark: Equatable {
+    /// A chess annotation, such as "??" for a blunder.
+    case annotation(String)
+    /// An SF Symbol, for the grades that chess notation has no annotation for.
+    case symbol(String)
+  }
+
   /// The mark shown beside a move; the grade's name is its accessibility text.
-  var symbol: String {
+  var mark: Mark {
     switch self {
-    case .brilliant: "sparkles"
-    case .great: "exclamationmark"
-    case .best: "star.fill"
-    case .excellent: "hand.thumbsup.fill"
-    case .good: "checkmark"
-    case .book: "book.fill"
-    case .inaccuracy: "questionmark"
-    case .mistake: "exclamationmark.triangle.fill"
-    case .miss: "xmark"
-    case .blunder: "exclamationmark.2"
+    case .brilliant: .annotation("!!")
+    case .great: .annotation("!")
+    case .best: .symbol("star.fill")
+    case .excellent: .symbol("hand.thumbsup.fill")
+    case .good: .symbol("checkmark")
+    case .book: .symbol("book.fill")
+    case .inaccuracy: .annotation("?!")
+    case .mistake: .annotation("?")
+    case .miss: .symbol("xmark")
+    case .blunder: .annotation("??")
     }
   }
 
@@ -35,6 +43,31 @@ extension MoveClassification {
   }
 }
 
+private extension DynamicTypeSize {
+  /// A title and its value side by side, or stacked at accessibility sizes, where side by side
+  /// would cut both short.
+  var lineLayout: AnyLayout {
+    isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0)) : AnyLayout(HStackLayout())
+  }
+}
+
+/// A grade's mark in its color. VoiceOver skips it: the grade's name stands beside it.
+private struct ClassificationMark: View {
+  let classification: MoveClassification
+
+  var body: some View {
+    Group {
+      switch classification.mark {
+      case .annotation(let text): Text(verbatim: text).fontWeight(.bold).fontDesign(.rounded)
+      case .symbol(let name): Image(systemName: name)
+      }
+    }
+    .foregroundStyle(classification.color)
+    .accessibilityHidden(true)
+  }
+}
+
 /// Progress of the analysis while it runs, then each side's accuracy.
 struct ReviewSummary: View {
   let review: GameReviewModel
@@ -42,15 +75,17 @@ struct ReviewSummary: View {
   private var model
   @Environment(\.localization)
   private var localization
+  @Environment(\.dynamicTypeSize)
+  private var dynamicTypeSize
 
   var body: some View {
     let style = model.catalog.interface
     VStack(alignment: .leading, spacing: style.gap) {
       if review.isComplete {
         ForEach(PieceColor.allCases, id: \.self) { color in
-          HStack {
+          dynamicTypeSize.lineLayout {
             Text(review.game.player(color).name).font(.headline)
-            Spacer(minLength: 0)
+              .frame(maxWidth: .infinity, alignment: .leading)
             if let accuracy = review.accuracy(for: color) {
               Text(localization.string("review.accuracy", Int(accuracy.rounded())))
                 .monospacedDigit()
@@ -84,17 +119,23 @@ struct ReviewCoach: View {
   private var model
   @Environment(\.localization)
   private var localization
+  @Environment(\.dynamicTypeSize)
+  private var dynamicTypeSize
 
   var body: some View {
     let style = model.catalog.interface
     let move = review.moves.first { $0.ply == ply - 1 }
     VStack(alignment: .leading, spacing: style.gap / 2) {
       if let move {
-        HStack {
-          Label(localization(move.classification.titleKey), systemImage: move.classification.symbol)
-            .font(.headline)
-            .foregroundStyle(move.classification.color)
-          Spacer(minLength: 0)
+        dynamicTypeSize.lineLayout {
+          Label {
+            Text(localization(move.classification.titleKey))
+          } icon: {
+            ClassificationMark(classification: move.classification)
+          }
+          .font(.headline)
+          .foregroundStyle(move.classification.color)
+          .frame(maxWidth: .infinity, alignment: .leading)
           Text(EvaluationLabel.text(move.evaluationAfter))
             .monospacedDigit()
             .foregroundStyle(.secondary)
@@ -124,15 +165,34 @@ struct ReviewControls: View {
   private var localization
 
   var body: some View {
-    HStack(spacing: model.catalog.interface.gap) {
-      control("review.nav.first", "backward.end.fill", .first, key: .home)
-      control("review.nav.previous", "chevron.left", .previous, key: .leftArrow)
-      control("review.nav.next", "chevron.right", .next, key: .rightArrow)
-      control("review.nav.last", "forward.end.fill", .last, key: .end)
+    let gap = model.catalog.interface.gap
+    // At the largest text sizes four large buttons are wider than an iPhone, so they wrap
+    // into two rows instead of pushing the screen past its edges.
+    ViewThatFits(in: .horizontal) {
+      HStack(spacing: gap) {
+        backControls
+        forwardControls
+      }
+      VStack(spacing: gap) {
+        HStack(spacing: gap) { backControls }
+        HStack(spacing: gap) { forwardControls }
+      }
     }
     .buttonStyle(.bordered)
     .controlSize(.large)
     .frame(maxWidth: .infinity)
+  }
+
+  @ViewBuilder
+  private var backControls: some View {
+    control("review.nav.first", "backward.end.fill", .first, key: .home)
+    control("review.nav.previous", "chevron.left", .previous, key: .leftArrow)
+  }
+
+  @ViewBuilder
+  private var forwardControls: some View {
+    control("review.nav.next", "chevron.right", .next, key: .rightArrow)
+    control("review.nav.last", "forward.end.fill", .last, key: .end)
   }
 
   private func control(
@@ -220,7 +280,7 @@ struct ReviewMoveList: View {
     } label: {
       HStack(spacing: style.gap / 4) {
         Text(played.san).monospacedDigit()
-        if let grade { Image(systemName: grade.symbol).foregroundStyle(grade.color) }
+        if let grade { ClassificationMark(classification: grade) }
       }
       .padding(.horizontal, style.gap / 2)
       .padding(.vertical, style.gap / 4)

@@ -53,4 +53,13 @@ struct ReviewLayoutTests {
     #expect(checked.lastMove == last)
     #expect(checked.checkSquare == Square(algebraic: "e8"))
   }
+
+  @Test
+  func annotatedGradesUseChessNotation() {
+    #expect(MoveClassification.brilliant.mark == .annotation("!!"))
+    #expect(MoveClassification.great.mark == .annotation("!"))
+    #expect(MoveClassification.inaccuracy.mark == .annotation("?!"))
+    #expect(MoveClassification.mistake.mark == .annotation("?"))
+    #expect(MoveClassification.blunder.mark == .annotation("??"))
+  }
 }
