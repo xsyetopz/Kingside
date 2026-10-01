@@ -16,7 +16,7 @@ public struct Evaluation: Codable, Equatable, Sendable {
   }
 }
 
-public enum ChessEngineError: Error, Equatable {
+enum ChessEngineError: Error, Equatable {
   case noLegalMove
 }
 
@@ -26,7 +26,7 @@ public struct SearchLimit: Hashable, Sendable {
   public var depth: Int?
   public var time: Duration?
 
-  public init(depth: Int? = nil, time: Duration? = nil) {
+  init(depth: Int? = nil, time: Duration? = nil) {
     self.depth = depth
     self.time = time
   }

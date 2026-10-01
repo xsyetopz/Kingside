@@ -24,7 +24,7 @@ public final class PuzzleBoardSession {
   public private(set) var position = ChessPosition.initial
   /// Called once per puzzle, when the attempt is solved, failed or made unrated.
   @ObservationIgnored
-  public var onOutcome: ((PuzzleSession.RatedOutcome) -> Void)?
+  var onOutcome: ((PuzzleSession.RatedOutcome) -> Void)?
 
   private var input = MoveInput()
   private var badge: SquareBadge?

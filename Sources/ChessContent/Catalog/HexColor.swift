@@ -56,7 +56,7 @@ public struct HexColor: Codable, Hashable, Sendable, CustomStringConvertible {
   }
 
   /// WCAG 2 relative luminance of the color, ignoring alpha.
-  public var relativeLuminance: Double {
+  var relativeLuminance: Double {
     func linear(_ channel: UInt8) -> Double {
       let value = Double(channel) / 255
       return value <= 0.03928 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
@@ -65,7 +65,7 @@ public struct HexColor: Codable, Hashable, Sendable, CustomStringConvertible {
   }
 
   /// WCAG 2 contrast ratio between two opaque colors, from 1 to 21.
-  public func contrastRatio(with other: Self) -> Double {
+  func contrastRatio(with other: Self) -> Double {
     let luminances = [relativeLuminance, other.relativeLuminance].sorted()
     return (luminances[1] + 0.05) / (luminances[0] + 0.05)
   }

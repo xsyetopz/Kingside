@@ -17,8 +17,8 @@ public struct ReviewedMove: Identifiable, Sendable {
   public let evaluationAfter: Evaluation
   /// Engine best move and line in the position before the move.
   public let bestMove: ChessMove?
-  public let bestSAN: String?
-  public let bestLine: [ChessMove]
+  let bestSAN: String?
+  let bestLine: [ChessMove]
 
   public var id: Int { ply }
 

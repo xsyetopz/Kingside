@@ -1,4 +1,4 @@
-// swift-tools-version: 6.1
+// swift-tools-version: 6.2
 import PackageDescription
 
 // Layering rules for the targets are in `Tools/import-rules.json` and checked by

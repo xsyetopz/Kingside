@@ -5,15 +5,15 @@ import Foundation
 /// `ChessContent` owns the only catalog. Every UI string goes through a key here;
 /// `en-US` is the source language and the fallback for keys a locale lacks.
 public struct Localization: Sendable {
-  public static let sourceLocalization = "en-US"
+  static let sourceLocalization = "en-US"
 
   /// The SwiftPM resource bundle. Tests pin this instead of `Bundle.main`.
   public static var moduleBundle: Bundle { .module }
 
   /// The localization chosen for the injected preference order, if any.
-  public let resolvedLanguage: String?
+  let resolvedLanguage: String?
   /// All `.lproj` directories packaged in the bundle.
-  public let availableLocalizations: [String]
+  let availableLocalizations: [String]
 
   private let preferredBundle: Bundle?
   private let sourceBundle: Bundle?
@@ -66,7 +66,7 @@ public struct Localization: Sendable {
 
   /// Locale directories packaged in `bundle`, excluding `Base`. SwiftPM may lowercase
   /// the directory names (`en-us.lproj`), so compare them case-insensitively.
-  public static func availableLocalizations(
+  static func availableLocalizations(
     in bundle: Bundle = Self.moduleBundle
   ) -> [String] {
     let entries =
@@ -81,7 +81,7 @@ public struct Localization: Sendable {
   }
 
   /// The packaged directory name for `language`, matched case-insensitively.
-  public static func directoryName(
+  static func directoryName(
     for language: String,
     in bundle: Bundle = Self.moduleBundle
   ) -> String? {

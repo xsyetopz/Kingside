@@ -38,7 +38,7 @@ public final class BoardScene: SKScene {
   let badgeNode = SKShapeNode()
   let badgeGlyphNode = SKShapeNode()
   /// One per square, in `Square.all` order (a1, b1, …, h8).
-  public private(set) var squareAccessibilityNodes: [SKNode] = []
+  private(set) var squareAccessibilityNodes: [SKNode] = []
   /// Whether the cursor ring is drawn. Off for pointer and touch input, on for the remote,
   /// keyboard, and controllers.
   public var showsFocusRing = true {

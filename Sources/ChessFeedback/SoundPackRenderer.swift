@@ -5,9 +5,9 @@ import Foundation
 ///
 /// The formula is the one documented on `SoundPack`. Noise comes from a generator seeded by the
 /// effect id, so the same recipe always renders the same samples.
-public enum SoundPackRenderer {
+enum SoundPackRenderer {
   /// The samples of `effect` at `pack.sampleRate`; empty when the pack has no such effect.
-  public static func samples(for effect: SoundEffectID, in pack: SoundPack) -> [Float] {
+  static func samples(for effect: SoundEffectID, in pack: SoundPack) -> [Float] {
     guard let spec = pack.effects[effect] else { return [] }
     return render(
       spec,

@@ -28,12 +28,12 @@ public struct PuzzleSelector: Sendable {
   }
 
   /// Target rating of the `index`-th puzzle (0-based) in a Puzzle Rush run.
-  public func rushTargetRating(index: Int) -> Int {
+  func rushTargetRating(index: Int) -> Int {
     min(tuning.rushMaximumRating, tuning.rushStartRating + tuning.rushRatingStep * index)
   }
 
   /// A puzzle for position `index` of a rush run, escalating from `rushStartRating`.
-  public func rush<G: RandomNumberGenerator>(
+  func rush<G: RandomNumberGenerator>(
     from puzzles: [Puzzle],
     index: Int,
     excluding used: Set<String>,
@@ -49,7 +49,7 @@ public struct PuzzleSelector: Sendable {
   }
 
   /// Rating range the Daily Puzzle is drawn from.
-  public var dailyRatings: ClosedRange<Int> {
+  var dailyRatings: ClosedRange<Int> {
     tuning.dailyMinimumRating...tuning.dailyMaximumRating
   }
 
@@ -85,7 +85,7 @@ public struct PuzzleDay: Hashable, Sendable {
   public var key: String { String(format: "%04d-%02d-%02d", year, month, day) }
 
   /// Days since 1970-01-01 in the proleptic Gregorian calendar (Hinnant's days_from_civil).
-  public var dayNumber: Int {
+  var dayNumber: Int {
     let y = month <= 2 ? year - 1 : year
     let era = (y >= 0 ? y : y - 399) / 400
     let yearOfEra = y - era * 400

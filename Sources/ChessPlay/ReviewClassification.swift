@@ -20,7 +20,7 @@ public enum MoveClassification: String, CaseIterable, Sendable {
   public var titleKey: String { "review.classification.\(rawValue).name" }
 
   /// Moves that deserve a "best move was ..." hint and an engine arrow.
-  public var showsBestMove: Bool {
+  var showsBestMove: Bool {
     switch self {
     case .good, .inaccuracy, .mistake, .miss, .blunder: true
     default: false
@@ -28,10 +28,10 @@ public enum MoveClassification: String, CaseIterable, Sendable {
   }
 
   /// Marked on the evaluation graph.
-  public var isError: Bool { self == .mistake || self == .miss || self == .blunder }
+  var isError: Bool { self == .mistake || self == .miss || self == .blunder }
 
   /// Localisation key of the coach line, such as "%@ is a blunder."; the argument is the SAN.
-  public var coachKey: String { "review.coach.\(rawValue)" }
+  var coachKey: String { "review.coach.\(rawValue)" }
 
   /// Coach line for the move panel, e.g. "e5 is a blunder. The best move was d4."
   /// The best-move hint is added only to grades that `showsBestMove`.
@@ -42,40 +42,40 @@ public enum MoveClassification: String, CaseIterable, Sendable {
   }
 }
 
-public enum WinProbability {
+enum WinProbability {
   /// Logistic slope that maps centipawns to win probability; a model constant, not tuning.
-  public static let logisticSlope = 0.00368208
+  static let logisticSlope = 0.00368208
 
   /// White's expected points for `evaluation`; forced mates count as certain.
-  public static func white(_ evaluation: Evaluation) -> Double {
+  static func white(_ evaluation: Evaluation) -> Double {
     if let mate = evaluation.mateIn, mate != 0 { return mate > 0 ? 1 : 0 }
     if evaluation.mateIn == 0 { return evaluation.centipawns > 0 ? 1 : 0 }
     return 1 / (1 + exp(-logisticSlope * Double(evaluation.centipawns)))
   }
 
-  public static func forSide(_ color: PieceColor, _ evaluation: Evaluation) -> Double {
+  static func forSide(_ color: PieceColor, _ evaluation: Evaluation) -> Double {
     let white = white(evaluation)
     return color == .white ? white : 1 - white
   }
 }
 
 /// Everything the classifier needs about one ply. Evaluations are White's point of view.
-public struct MoveContext: Equatable, Sendable {
-  public var mover: PieceColor
+struct MoveContext: Equatable, Sendable {
+  var mover: PieceColor
   /// Best evaluation of the position before the move.
-  public var bestEvaluation: Evaluation
+  var bestEvaluation: Evaluation
   /// Evaluation of the position after the played move.
-  public var playedEvaluation: Evaluation
+  var playedEvaluation: Evaluation
   /// Evaluation of the runner-up move before the move; nil with a single legal move.
-  public var secondBestEvaluation: Evaluation?
-  public var playedBest: Bool
-  public var isBook: Bool = false
+  var secondBestEvaluation: Evaluation?
+  var playedBest: Bool
+  var isBook: Bool = false
   /// Material the move gives up, from `SacrificeDetector`.
-  public var materialGivenUp: Int = 0
+  var materialGivenUp: Int = 0
   /// Classification of the opponent's previous move.
-  public var previous: MoveClassification?
+  var previous: MoveClassification?
 
-  public init(
+  init(
     mover: PieceColor,
     bestEvaluation: Evaluation,
     playedEvaluation: Evaluation,
@@ -96,7 +96,7 @@ public struct MoveContext: Equatable, Sendable {
   }
 
   /// Expected points the move lost; 0 for book moves and when the engine's best move was played.
-  public var loss: Double {
+  var loss: Double {
     guard !playedBest, !isBook else { return 0 }
     let before = WinProbability.forSide(mover, bestEvaluation)
     let after = WinProbability.forSide(mover, playedEvaluation)
@@ -104,9 +104,9 @@ public struct MoveContext: Equatable, Sendable {
   }
 }
 
-public enum MoveClassifier {
+enum MoveClassifier {
   /// `thresholds` is `ContentCatalog.tuning.review`.
-  public static func classify(
+  static func classify(
     _ context: MoveContext,
     thresholds: ReviewThresholds
   ) -> MoveClassification {
@@ -140,9 +140,9 @@ public enum MoveClassifier {
   }
 }
 
-public enum AccuracyCalculator {
+enum AccuracyCalculator {
   /// Accuracy 0...100 from the per-move losses (0...1) of one player; nil without moves.
-  public static func accuracy(losses: [Double]) -> Double? {
+  static func accuracy(losses: [Double]) -> Double? {
     guard !losses.isEmpty else { return nil }
     let averagePercent = losses.reduce(0, +) / Double(losses.count) * 100
     let value = 103.1668 * exp(-0.04354 * averagePercent) - 3.1669
@@ -150,8 +150,8 @@ public enum AccuracyCalculator {
   }
 }
 
-public enum SacrificeDetector {
-  public static func value(_ type: PieceType) -> Int {
+enum SacrificeDetector {
+  static func value(_ type: PieceType) -> Int {
     switch type {
     case .pawn: 1
     case .knight, .bishop: 3
@@ -163,7 +163,7 @@ public enum SacrificeDetector {
 
   /// Net material the mover leaves en prise with `move`: the largest SEE-lite loss among the
   /// mover's pieces after the move, minus what the move captured. 0 when nothing is given up.
-  public static func materialGivenUp(
+  static func materialGivenUp(
     by move: ChessMove,
     before: ChessPosition,
     after: ChessPosition
@@ -204,7 +204,7 @@ public enum EvaluationLabel {
 /// Marks early moves as "Book"; the lines are `ContentCatalog.openingBook`.
 extension OpeningBook {
   /// Number of leading plies of `sans` that follow a book line. Check and mate marks are ignored.
-  public func bookPlyCount(for sans: [String]) -> Int {
+  func bookPlyCount(for sans: [String]) -> Int {
     let played = sans.map {
       $0.replacingOccurrences(of: "+", with: "").replacingOccurrences(of: "#", with: "")
     }

@@ -8,17 +8,17 @@ import Observation
 public struct PuzzleProgress: Codable, Equatable, Sendable {
   public var rating: Int
   /// Number of rated results recorded (drives the K-factor).
-  public var ratedPlayed = 0
+  var ratedPlayed = 0
   public var streak = 0
-  public var bestStreak = 0
+  var bestStreak = 0
   /// Best score per `PuzzleRushMode.rawValue`.
   public var rushBest: [String: Int] = [:]
-  public var seenIDs: Set<String> = []
+  var seenIDs: Set<String> = []
   /// `PuzzleDay.key` values of solved Daily Puzzles.
-  public var dailySolved: Set<String> = []
+  var dailySolved: Set<String> = []
 
   /// Fresh progress; `rating` is `ContentCatalog.tuning.puzzleRating.initial`.
-  public init(rating: Int) {
+  init(rating: Int) {
     self.rating = rating
   }
 }
@@ -28,7 +28,7 @@ public struct PuzzleProgress: Codable, Equatable, Sendable {
 @Observable
 @MainActor
 public final class PuzzleProgressStore {
-  public static let defaultsKey = "Kingside.puzzleProgress.v1"
+  static let defaultsKey = "Kingside.puzzleProgress.v1"
 
   public private(set) var progress: PuzzleProgress { didSet { save() } }
   private let defaults: UserDefaults
@@ -49,7 +49,7 @@ public final class PuzzleProgressStore {
 
   /// Applies a rated result and returns the rating change.
   @discardableResult
-  public func recordRated(puzzleRating: Int, solved: Bool) -> Int {
+  func recordRated(puzzleRating: Int, solved: Bool) -> Int {
     let delta = rating.change(
       rating: progress.rating,
       puzzleRating: puzzleRating,
@@ -63,20 +63,20 @@ public final class PuzzleProgressStore {
   }
 
   /// Updates the streak without a rating change (unrated attempts).
-  public func recordStreak(solved: Bool) {
+  func recordStreak(solved: Bool) {
     progress.streak = solved ? progress.streak + 1 : 0
     progress.bestStreak = max(progress.bestStreak, progress.streak)
   }
 
-  public func markSeen(_ id: String) { progress.seenIDs.insert(id) }
+  func markSeen(_ id: String) { progress.seenIDs.insert(id) }
 
-  public func resetSeen() { progress.seenIDs.removeAll() }
+  func resetSeen() { progress.seenIDs.removeAll() }
 
   public func rushBest(for mode: PuzzleRushMode) -> Int { progress.rushBest[mode.rawValue] ?? 0 }
 
   /// Saves `score` if it beats the stored best; returns true for a new best.
   @discardableResult
-  public func recordRush(mode: PuzzleRushMode, score: Int) -> Bool {
+  func recordRush(mode: PuzzleRushMode, score: Int) -> Bool {
     guard score > rushBest(for: mode) else { return false }
     progress.rushBest[mode.rawValue] = score
     return true
@@ -84,7 +84,7 @@ public final class PuzzleProgressStore {
 
   public func isDailySolved(_ day: PuzzleDay) -> Bool { progress.dailySolved.contains(day.key) }
 
-  public func markDailySolved(_ day: PuzzleDay) { progress.dailySolved.insert(day.key) }
+  func markDailySolved(_ day: PuzzleDay) { progress.dailySolved.insert(day.key) }
 
   private func save() {
     if let data = try? JSONEncoder().encode(progress) {

@@ -13,7 +13,7 @@ public enum GameCenterState: Equatable, Sendable {
   /// Maps what GameKit reported to a state. `needsUserInterface` is true when GameKit handed over
   /// a sign-in screen. A cancelled sign-in leaves the player signed out; any other error means
   /// Game Center is unavailable.
-  public static func resolve(
+  static func resolve(
     isAuthenticated: Bool,
     displayName: String,
     needsUserInterface: Bool,

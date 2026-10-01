@@ -76,7 +76,7 @@ public final class OnlineGameSession {
   /// True after the event stream ended with an error; `activate()` again reconnects.
   public private(set) var connectionError = false
   /// UCI of the player's move that the server has not confirmed yet.
-  public var pendingMove: String? { perGame.pendingMove }
+  var pendingMove: String? { perGame.pendingMove }
   /// True after a save failed; the screen sets it back to false. Raised once per game.
   public var showsSaveFailure: Bool {
     get { perGame.saveFailure == .reported }
@@ -90,7 +90,7 @@ public final class OnlineGameSession {
   }
   public private(set) var moveRows: [MoveRow] = []
   /// Opponent pieces captured by each color.
-  public private(set) var capturedPieces: [PieceColor: [PieceType]] = [.white: [], .black: []]
+  private(set) var capturedPieces: [PieceColor: [PieceType]] = [.white: [], .black: []]
   /// Material lead of each color in points; 0 for the side that is not ahead.
   public private(set) var materialAdvantage: [PieceColor: Int] = [.white: 0, .black: 0]
   public private(set) var topPlayer = PlayerSlot(color: .black, info: PlayerInfo(name: ""))

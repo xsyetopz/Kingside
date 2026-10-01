@@ -90,7 +90,7 @@ public struct BoardBadgeStyle: Codable, Hashable, Sendable {
   public let glyphLineRatio: Double
 
   /// Every ratio, for range checks.
-  public var ratios: [Double] { [diameterRatio, cornerInsetRatio, glyphRatio, glyphLineRatio] }
+  var ratios: [Double] { [diameterRatio, cornerInsetRatio, glyphRatio, glyphLineRatio] }
 }
 
 public struct FocusRingStyle: Codable, Hashable, Sendable {

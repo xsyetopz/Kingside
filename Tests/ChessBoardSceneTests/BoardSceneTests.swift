@@ -1,11 +1,11 @@
 import ChessContent
 import ChessCore
-import ChessPlay
 import Foundation
 import SpriteKit
 import Testing
 
 @testable import ChessBoardScene
+@testable import ChessPlay
 
 @MainActor
 @Suite

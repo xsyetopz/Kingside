@@ -120,7 +120,7 @@ public actor LichessClient {
   }
 
   /// Starts a game against Stockfish; returns the game id.
-  public func challengeAI(
+  func challengeAI(
     level: Int,
     limitSeconds: Int,
     increment: Int,

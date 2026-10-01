@@ -26,12 +26,12 @@ public enum OnlineChat {
   /// verified.
   public static let maxLength = 140
   /// The sender of the service's own lines.
-  public static let systemUsername = "lichess"
+  static let systemUsername = "lichess"
 
   /// The lines to show. Nothing shows while `isEnabled` is false. A muted opponent's lines are
   /// dropped, while system lines and the player's own lines stay. Other lines pass through
   /// `filter`.
-  public static func visibleMessages(
+  static func visibleMessages(
     _ lines: [OnlineChatLine],
     myName: String?,
     isEnabled: Bool,

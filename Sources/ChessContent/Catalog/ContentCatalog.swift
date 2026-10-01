@@ -88,7 +88,7 @@ public struct ContentDefaults: Codable, Hashable, Sendable {
   public let pieceSetID: String
   public let soundPackID: String
   public let botID: String
-  public let timeControlID: String
+  let timeControlID: String
 }
 
 /// `attributions.json` entry: credit and license for bundled third-party or original assets.
@@ -100,14 +100,14 @@ public struct Attribution: Codable, Hashable, Identifiable, Sendable {
   public let license: String
   public let source: URL
   /// Name of a bundled `.txt` license notice the license requires in the distribution.
-  public let noticeFile: String?
+  let noticeFile: String?
 }
 
-public enum ContentCatalogError: Error, Equatable, LocalizedError {
+enum ContentCatalogError: Error, Equatable, LocalizedError {
   case missingFile(String)
   case invalidFile(String, String)
 
-  public var errorDescription: String? {
+  var errorDescription: String? {
     switch self {
     case .missingFile(let name): "Content catalog \(name) is not in the bundle."
     case .invalidFile(let name, let reason): "Content catalog \(name) does not decode: \(reason)"

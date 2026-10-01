@@ -2,8 +2,8 @@ import Foundation
 
 /// Playing strength on an Elo-like scale from 250 to 2200. All search settings derive from `elo`.
 public struct EngineStrength: Codable, Hashable, Sendable {
-  public static let minimumElo = 250
-  public static let maximumElo = 2200
+  static let minimumElo = 250
+  static let maximumElo = 2200
 
   public let elo: Int
 
@@ -35,19 +35,19 @@ public struct EngineStrength: Codable, Hashable, Sendable {
   }
 
   /// Maximum nominal search depth in plies.
-  public var searchDepth: Int { Int(interpolate(Self.depths).rounded()) }
+  var searchDepth: Int { Int(interpolate(Self.depths).rounded()) }
   /// Time budget for one move; the search stops earlier when it reaches `searchDepth`.
-  public var thinkTime: Duration { .milliseconds(Int(interpolate(Self.thinkMilliseconds))) }
+  var thinkTime: Duration { .milliseconds(Int(interpolate(Self.thinkMilliseconds))) }
   /// Scale of the random centipawn noise added to candidate move scores.
-  public var evaluationNoise: Int { Int(interpolate(Self.noises).rounded()) }
+  var evaluationNoise: Int { Int(interpolate(Self.noises).rounded()) }
   /// Probability of choosing among candidates by a score-weighted draw instead of the best noisy
   /// score.
-  public var mistakeChance: Double { interpolate(Self.mistakes) }
+  var mistakeChance: Double { interpolate(Self.mistakes) }
   /// Softmax temperature, in centipawns, of that weighted draw; higher picks worse moves more
   /// often.
-  public var mistakeTemperature: Int { Int(interpolate(Self.temperatures).rounded()) }
+  var mistakeTemperature: Int { Int(interpolate(Self.temperatures).rounded()) }
   /// Root moves that receive exact scores and can be chosen (MultiPV width).
-  public var candidateMoves: Int {
+  var candidateMoves: Int {
     if elo < Self.allCandidatesBelowElo { return Self.allCandidates }
     return elo < Self.singleCandidateFromElo ? Self.fewCandidates : 1
   }

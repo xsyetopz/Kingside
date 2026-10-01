@@ -8,8 +8,8 @@ public protocol TokenStore: Sendable {
   func delete() throws
 }
 
-public struct KeychainError: Error, Equatable, Sendable {
-  public var status: OSStatus
+struct KeychainError: Error, Equatable, Sendable {
+  var status: OSStatus
 }
 
 /// A generic-password keychain item that syncs through iCloud Keychain, so a sign-in on iPhone

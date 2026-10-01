@@ -39,7 +39,7 @@ public struct PlayerInfo: Codable, Hashable, Sendable {
   /// `Bot.id` when this side is played by a bot, nil for a human.
   public var botID: String?
   /// Online games: true on the side the signed-in player played.
-  public var isLocalUser: Bool
+  var isLocalUser: Bool
 
   public init(name: String, rating: Int? = nil, botID: String? = nil, isLocalUser: Bool = false) {
     self.name = name
@@ -122,7 +122,7 @@ public enum GameTermination: String, CaseIterable, Codable, Sendable {
   case fiftyMoveRule, timeoutVsInsufficientMaterial
 
   /// Localisation key of the reason line on the game-over card, such as "by checkmate".
-  public var reasonKey: String { "game.termination.\(rawValue).reason" }
+  var reasonKey: String { "game.termination.\(rawValue).reason" }
 
   /// English reason for the PGN `Termination` tag, which is not localised.
   var pgnReason: String {

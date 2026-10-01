@@ -10,8 +10,8 @@ import Foundation
 /// - A side whose time reaches zero has flagged; see `GameAdjudication.timeout`.
 public struct GameClock: Codable, Equatable, Sendable {
   public let timeControl: TimeControl
-  public private(set) var whiteRemaining: TimeInterval
-  public private(set) var blackRemaining: TimeInterval
+  private(set) var whiteRemaining: TimeInterval
+  private(set) var blackRemaining: TimeInterval
 
   public init(timeControl: TimeControl) {
     self.timeControl = timeControl
@@ -37,15 +37,15 @@ public struct GameClock: Codable, Equatable, Sendable {
   public func runs(atPly plyCount: Int) -> Bool { isTimed && plyCount >= 2 }
 
   /// `tuning` is `ContentCatalog.tuning.clock`.
-  public func isLow(_ color: PieceColor, tuning: ClockTuning) -> Bool {
+  func isLow(_ color: PieceColor, tuning: ClockTuning) -> Bool {
     isTimed && remaining(color) <= tuning.lowTimeSeconds
   }
 
-  public func hasFlagged(_ color: PieceColor) -> Bool { isTimed && remaining(color) <= 0 }
+  func hasFlagged(_ color: PieceColor) -> Bool { isTimed && remaining(color) <= 0 }
 
   /// Charges `elapsed` seconds to `color`, never below zero. Returns true when it flags.
   @discardableResult
-  public mutating func consume(_ elapsed: TimeInterval, by color: PieceColor) -> Bool {
+  mutating func consume(_ elapsed: TimeInterval, by color: PieceColor) -> Bool {
     guard isTimed else { return false }
     if color == .white {
       whiteRemaining = max(0, whiteRemaining - elapsed)
@@ -56,7 +56,7 @@ public struct GameClock: Codable, Equatable, Sendable {
   }
 
   /// Call after `color` moved; `plyBeforeMove` is the number of moves played before it.
-  public mutating func recordMove(by color: PieceColor, plyBeforeMove: Int) {
+  mutating func recordMove(by color: PieceColor, plyBeforeMove: Int) {
     guard runs(atPly: plyBeforeMove) else { return }
     let increment = TimeInterval(timeControl.incrementSeconds)
     if color == .white { whiteRemaining += increment } else { blackRemaining += increment }

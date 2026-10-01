@@ -50,7 +50,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
   /// Shows the chat in online games; off hides the panel and every incoming line.
   public var chatEnabled = true
 
-  public init() {}
+  init() {}
 
   /// Missing keys and values this build does not know keep their defaults, so settings
   /// saved by a newer build never reset everything.
@@ -97,7 +97,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
 @Observable
 @MainActor
 public final class SettingsStore {
-  public static let defaultsKey = "Kingside.settings.v1"
+  static let defaultsKey = "Kingside.settings.v1"
 
   public var value: AppSettings { didSet { save() } }
   private let defaults: UserDefaults

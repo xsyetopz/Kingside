@@ -5,9 +5,9 @@ public struct ChessComProfile: Codable, Equatable, Sendable {
   public var name: String?
   public var avatar: URL?
   /// Country resource URL; its last path component is the ISO country code.
-  public var country: URL?
+  var country: URL?
   public var joined: Date
-  public var lastOnline: Date
+  var lastOnline: Date
 
   enum CodingKeys: String, CodingKey {
     case username, name, avatar, country, joined

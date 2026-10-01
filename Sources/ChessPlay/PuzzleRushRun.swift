@@ -26,25 +26,25 @@ public struct PuzzleRushRun: Equatable, Sendable {
   public private(set) var remaining: TimeInterval?
 
   /// `tuning` is `ContentCatalog.tuning.puzzleRush`.
-  public init(mode: PuzzleRushMode, tuning: PuzzleRushTuning) {
+  init(mode: PuzzleRushMode, tuning: PuzzleRushTuning) {
     self.mode = mode
     maxStrikes = tuning.maxStrikes
     remaining = mode.timeLimit(tuning: tuning)
   }
 
   /// Number of puzzles finished (solved or failed), which is the index of the next puzzle.
-  public var puzzlesPlayed: Int { score + strikes }
+  var puzzlesPlayed: Int { score + strikes }
 
   public var isOver: Bool {
     strikes >= maxStrikes || (remaining.map { $0 <= 0 } ?? false)
   }
 
-  public mutating func recordSolved() {
+  mutating func recordSolved() {
     guard !isOver else { return }
     score += 1
   }
 
-  public mutating func recordFailed() {
+  mutating func recordFailed() {
     guard !isOver else { return }
     strikes += 1
   }

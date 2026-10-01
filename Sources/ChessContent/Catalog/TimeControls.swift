@@ -3,7 +3,7 @@ import Foundation
 /// `time-controls.json`: the offered clock presets and how they are grouped.
 public struct TimeControlCatalog: Codable, Sendable {
   /// Moves assumed when estimating a game's length from its increment.
-  public let estimatedMoves: Int
+  let estimatedMoves: Int
   /// In display order. A timed preset belongs to the first timed category it fits.
   public let categories: [TimeControlCategory]
   public let presets: [TimeControlPreset]
@@ -28,7 +28,7 @@ public struct TimeControlCategory: Codable, Hashable, Identifiable, Sendable {
   public let symbol: String
   public let isTimed: Bool
   /// Upper bound (exclusive) of the estimated game length; nil for no bound.
-  public let belowEstimatedSeconds: Int?
+  let belowEstimatedSeconds: Int?
 }
 
 public struct TimeControlPreset: Codable, Hashable, Identifiable, Sendable {

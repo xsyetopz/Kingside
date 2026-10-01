@@ -50,18 +50,18 @@ public final class LichessAccountModel {
   static let rateLimitDelay: Duration = .seconds(60)
 
   public private(set) var phase = Phase.signedOut
-  public private(set) var incomingChallenges: [LichessChallenge] = []
+  private(set) var incomingChallenges: [LichessChallenge] = []
   public private(set) var ongoingGames: [LichessOngoingGame] = []
   /// The newest `gameStart` id. Changes on every start, so a screen can navigate on it.
-  public private(set) var startedGameID: String?
+  private(set) var startedGameID: String?
   /// The challenge the user sent and that nobody has answered yet.
-  public private(set) var outgoingChallengeID: String?
+  private(set) var outgoingChallengeID: String?
   /// The last challenge the user sent was declined. Cleared by the next send.
-  public private(set) var challengeWasDeclined = false
+  private(set) var challengeWasDeclined = false
   /// A quick seek is open.
-  public private(set) var isSeeking = false
+  private(set) var isSeeking = false
   /// Why the last seek, challenge, accept or decline failed. Cleared by the next one.
-  public private(set) var lobbyFailure: LichessFailure?
+  private(set) var lobbyFailure: LichessFailure?
 
   @ObservationIgnored
   private let client: LichessClient
@@ -78,8 +78,7 @@ public final class LichessAccountModel {
 
   /// - Parameter makeClient: builds the client around the token provider that the model hands it.
   /// - Parameter sleep: the pause between reconnects; tests replace it.
-  @preconcurrency
-  public init(
+  init(
     store: any TokenStore,
     makeClient: (@escaping @Sendable () async -> String?) -> LichessClient,
     sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
@@ -99,7 +98,7 @@ public final class LichessAccountModel {
   }
 
   /// Verifies `token`, saves it, and opens the event stream.
-  public func signIn(token: String) async {
+  func signIn(token: String) async {
     let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !token.isEmpty else {
       phase = .failed(.unauthorized)
@@ -121,14 +120,14 @@ public final class LichessAccountModel {
   }
 
   /// Revokes the token on a best-effort basis, and forgets it either way.
-  public func signOut() async {
+  func signOut() async {
     stopStream()
     try? await client.revokeToken()
     forgetAccount()
   }
 
   /// Reloads the ongoing games.
-  public func refresh() async {
+  func refresh() async {
     guard case .signedIn = phase else { return }
     do {
       let games = try await client.ongoingGames()
@@ -164,7 +163,7 @@ public final class LichessAccountModel {
   }
 
   /// Cancels the task that reads the seek stream, which closes the seek.
-  public func cancelSeek() {
+  func cancelSeek() {
     seekTask?.cancel()
     seekTask = nil
     isSeeking = false

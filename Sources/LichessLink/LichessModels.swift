@@ -8,9 +8,9 @@ public enum LichessChallengeColor: String, Decodable, Sendable, Equatable {
   case white, black, random
 }
 
-public struct LichessPerf: Decodable, Sendable, Equatable {
-  public var games: Int?
-  public var rating: Int?
+struct LichessPerf: Decodable, Sendable, Equatable {
+  var games: Int?
+  var rating: Int?
 }
 
 /// `GET /api/account`.
@@ -18,7 +18,7 @@ public struct LichessAccount: Decodable, Sendable, Equatable {
   public var id: String
   public var username: String
   /// Keyed by perf name, for example `blitz`.
-  public var perfs: [String: LichessPerf]?
+  var perfs: [String: LichessPerf]?
 }
 
 /// The other side in `gameStart`, `gameFinish`, and `/api/account/playing`.
@@ -28,7 +28,7 @@ public struct LichessOpponent: Decodable, Sendable, Equatable {
   public var username: String
   public var rating: Int?
   /// Stockfish level, when the opponent is the AI.
-  public var ai: Int?
+  var ai: Int?
 }
 
 public struct LichessGameEventInfo: Decodable, Sendable, Equatable {
@@ -39,7 +39,7 @@ public struct LichessGameEventInfo: Decodable, Sendable, Equatable {
   public var isMyTurn: Bool?
   public var rated: Bool?
   public var speed: String?
-  public var secondsLeft: Int?
+  var secondsLeft: Int?
   public var winner: LichessColor?
 }
 
@@ -50,7 +50,7 @@ public struct LichessOngoingGame: Decodable, Sendable, Equatable {
   public var fen: String
   public var opponent: LichessOpponent
   public var isMyTurn: Bool
-  public var secondsLeft: Int?
+  var secondsLeft: Int?
 }
 
 struct LichessOngoingGamesResponse: Decodable {
@@ -78,7 +78,7 @@ public struct LichessChallenge: Decodable, Sendable, Equatable {
   public var id: String
   public var status: String
   public var challenger: LichessChallengeUser
-  public var destUser: LichessChallengeUser?
+  var destUser: LichessChallengeUser?
   public var rated: Bool
   public var speed: String
   public var timeControl: LichessTimeControl
@@ -136,15 +136,15 @@ public struct LichessGameState: Decodable, Sendable, Equatable {
   /// Milliseconds.
   public var wtime: Int
   public var btime: Int
-  public var winc: Int
-  public var binc: Int
+  var winc: Int
+  var binc: Int
   /// Lichess status name, for example `started`, `mate`, `resign`.
   public var status: String
   public var winner: LichessColor?
   public var wdraw: Bool?
   public var bdraw: Bool?
-  public var wtakeback: Bool?
-  public var btakeback: Bool?
+  var wtakeback: Bool?
+  var btakeback: Bool?
 }
 
 public struct LichessGameFull: Decodable, Sendable, Equatable {

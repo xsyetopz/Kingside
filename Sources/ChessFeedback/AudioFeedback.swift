@@ -12,7 +12,7 @@ import Foundation
 public final class AudioFeedback {
   public var isEnabled: Bool
   /// 0...1, applied to the engine's main mixer.
-  public var volume: Float {
+  var volume: Float {
     didSet { engine.mainMixerNode.outputVolume = volume }
   }
   /// Whether the engine runs; false means playing is silent.

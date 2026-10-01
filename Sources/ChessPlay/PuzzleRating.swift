@@ -5,11 +5,11 @@ import Foundation
 /// puzzle's rating. K is `provisionalKFactor` for the first `provisionalGames` rated puzzles,
 /// then `establishedKFactor`.
 extension PuzzleRatingTuning {
-  public func kFactor(puzzlesPlayed: Int) -> Double {
+  func kFactor(puzzlesPlayed: Int) -> Double {
     puzzlesPlayed < provisionalGames ? provisionalKFactor : establishedKFactor
   }
 
-  public static func expectedScore(rating: Int, puzzleRating: Int) -> Double {
+  static func expectedScore(rating: Int, puzzleRating: Int) -> Double {
     1 / (1 + pow(10, Double(puzzleRating - rating) / 400))
   }
 

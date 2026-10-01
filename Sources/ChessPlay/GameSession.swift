@@ -98,7 +98,7 @@ public final class GameSession {
   public var game: ChessGame { perGame.game }
   public var result: GameResult { perGame.result }
   public var termination: GameTermination? { perGame.termination }
-  public private(set) var isBotThinking = false
+  private(set) var isBotThinking = false
   /// Latest chat line of the bot, localised; nil when there is nothing to show.
   public var botMessage: String? { perGame.botMessage }
   public private(set) var isLoadingHint = false
@@ -118,7 +118,7 @@ public final class GameSession {
   }
   public private(set) var moveRows: [MoveRow] = []
   /// Opponent pieces captured by each color.
-  public private(set) var capturedPieces: [PieceColor: [PieceType]] = [.white: [], .black: []]
+  private(set) var capturedPieces: [PieceColor: [PieceType]] = [.white: [], .black: []]
   /// Material lead of each color in points; 0 for the side that is not ahead.
   public private(set) var materialAdvantage: [PieceColor: Int] = [.white: 0, .black: 0]
   public private(set) var topPlayer: PlayerSlot
@@ -212,7 +212,7 @@ public final class GameSession {
   }
   /// The human's color in a bot game; nil in pass-and-play.
   public var humanColor: PieceColor? { mode.humanColor(white: white, black: black) }
-  public var isPassAndPlay: Bool { mode == .passAndPlay }
+  var isPassAndPlay: Bool { mode == .passAndPlay }
   public var isGameOver: Bool { result != .ongoing }
   /// True when the player may move pieces now.
   public var canMove: Bool {

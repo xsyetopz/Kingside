@@ -10,15 +10,15 @@ public struct PieceSet: Codable, Hashable, Identifiable, Sendable {
   public let nameKey: String
   public let attributionID: String
   /// File name without extension; `{color}` and `{piece}` are replaced by the codes below.
-  public let fileNamePattern: String
-  public let fileExtension: String
+  let fileNamePattern: String
+  let fileExtension: String
   /// Code for each `PieceColor` raw value.
-  public let colorCodes: [String: String]
+  let colorCodes: [String: String]
   /// Code for each `PieceType` raw value.
-  public let pieceCodes: [String: String]
+  let pieceCodes: [String: String]
 
   /// The file name without extension, such as `cburnett-wK`; nil when a code is missing.
-  public func resourceName(for piece: Piece) -> String? {
+  func resourceName(for piece: Piece) -> String? {
     guard let color = colorCodes[piece.color.rawValue], let type = pieceCodes[piece.type.rawValue]
     else {
       return nil

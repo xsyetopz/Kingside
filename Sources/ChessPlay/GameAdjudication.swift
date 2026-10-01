@@ -3,9 +3,9 @@ import ChessCore
 import Foundation
 
 /// Pure game-end rules used by the game session.
-public enum GameAdjudication {
+enum GameAdjudication {
   /// Result for a finished `GameOutcome`; nil while the game is ongoing.
-  public static func result(for outcome: GameOutcome) -> (GameResult, GameTermination)? {
+  static func result(for outcome: GameOutcome) -> (GameResult, GameTermination)? {
     switch outcome {
     case .ongoing: nil
     case .checkmate(let winner): (.win(for: winner), .checkmate)
@@ -17,7 +17,7 @@ public enum GameAdjudication {
   }
 
   /// `flagged` ran out of time: the opponent wins, unless the opponent cannot mate at all.
-  public static func timeout(
+  static func timeout(
     flagged: PieceColor,
     in position: ChessPosition
   ) -> (GameResult, GameTermination) {
@@ -29,7 +29,7 @@ public enum GameAdjudication {
   }
 
   /// False for a lone king, king and bishop, or king and knight.
-  public static func hasMatingMaterial(_ color: PieceColor, in position: ChessPosition) -> Bool {
+  static func hasMatingMaterial(_ color: PieceColor, in position: ChessPosition) -> Bool {
     let pieces = position.board.values.filter { $0.color == color && $0.type != .king }
     if pieces.contains(where: { [.pawn, .rook, .queen].contains($0.type) }) { return true }
     return pieces.count >= 2
@@ -39,7 +39,7 @@ public enum GameAdjudication {
 /// Whether a bot accepts a draw offer; the thresholds are `ContentCatalog.tuning.drawOffer`.
 extension DrawOfferTuning {
   /// `evaluation` is from White's point of view, as `ChessEngine.analyze` reports it.
-  public func botAccepts(
+  func botAccepts(
     evaluation: Evaluation,
     botColor: PieceColor,
     plyCount: Int,
@@ -64,8 +64,8 @@ extension DrawOfferTuning {
 }
 
 /// Material counting for player bars.
-public enum Material {
-  public static func value(_ type: PieceType) -> Int {
+enum Material {
+  static func value(_ type: PieceType) -> Int {
     switch type {
     case .pawn: 1
     case .knight, .bishop: 3
@@ -80,12 +80,12 @@ public enum Material {
   ]
 
   /// Material of `color` still on the board.
-  public static func points(_ color: PieceColor, in position: ChessPosition) -> Int {
+  static func points(_ color: PieceColor, in position: ChessPosition) -> Int {
     position.board.values.filter { $0.color == color }.reduce(0) { $0 + value($1.type) }
   }
 
   /// Pieces of `color` missing from a standard starting set (captured by the opponent).
-  public static func missing(_ color: PieceColor, in position: ChessPosition) -> [PieceType] {
+  static func missing(_ color: PieceColor, in position: ChessPosition) -> [PieceType] {
     let pieces = position.board.values
     return startingCounts.keys.sorted { value($0) < value($1) }.flatMap { type -> [PieceType] in
       let onBoard = pieces.filter { $0 == Piece(type: type, color: color) }.count
@@ -95,8 +95,8 @@ public enum Material {
 }
 
 /// Picks the sound for a played move: check, promotion, castling, capture, else a plain move.
-public enum MoveSound {
-  public static func effect(
+enum MoveSound {
+  static func effect(
     for move: ChessMove,
     before: ChessPosition,
     after: ChessPosition
@@ -110,7 +110,7 @@ public enum MoveSound {
   }
 
   /// True for normal captures and en passant (a pawn moving diagonally).
-  public static func isCapture(_ move: ChessMove, before: ChessPosition) -> Bool {
+  static func isCapture(_ move: ChessMove, before: ChessPosition) -> Bool {
     let mover = before[move.from]
     return before[move.to] != nil || (mover?.type == .pawn && move.from.file != move.to.file)
   }

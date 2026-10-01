@@ -4,13 +4,13 @@ public enum PieceColor: String, Codable, Sendable, CaseIterable {
   case white, black
 
   public var opponent: Self { self == .white ? .black : .white }
-  public var pawnDirection: Int { self == .white ? 1 : -1 }
+  var pawnDirection: Int { self == .white ? 1 : -1 }
 }
 
 public enum PieceType: String, Codable, Sendable, CaseIterable {
   case pawn, knight, bishop, rook, queen, king
 
-  public var sanLetter: String {
+  var sanLetter: String {
     switch self {
     case .pawn: ""
     case .knight: "N"
@@ -51,7 +51,7 @@ public struct Square: Codable, Equatable, Hashable, Sendable, Comparable, Custom
     self.init(file: Int(fileScalar - 97), rank: rank - 1)
   }
 
-  public var isValid: Bool { (0..<8).contains(file) && (0..<8).contains(rank) }
+  var isValid: Bool { (0..<8).contains(file) && (0..<8).contains(rank) }
   public var algebraic: String {
     guard isValid, let scalar = UnicodeScalar(file + 97) else { return "??" }
     return "\(Character(scalar))\(rank + 1)"

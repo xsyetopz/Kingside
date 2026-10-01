@@ -12,7 +12,7 @@ public struct Puzzle: Decodable, Hashable, Identifiable, Sendable {
   public let fen: String
   public let moves: [ChessMove]
   public let rating: Int
-  public let themes: [String]
+  let themes: [String]
 
   private enum CodingKeys: String, CodingKey { case id, fen, moves, rating, themes }
 

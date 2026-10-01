@@ -33,7 +33,7 @@ public struct DrawOfferTuning: Codable, Hashable, Sendable {
   /// Total material of both sides (pawn 1, minor 3, rook 5, queen 9) counted as very low.
   public let lowMaterialLimit: Int
   /// Engine time the bot spends judging the position before it answers.
-  public let analysisMilliseconds: Int
+  let analysisMilliseconds: Int
 
   public var analysisTime: Duration { .milliseconds(analysisMilliseconds) }
 }
@@ -48,9 +48,9 @@ public struct GameTuning: Codable, Hashable, Sendable {
   /// Minimum drop, in centipawns from the player's side, that the bot calls a blunder.
   public let blunderCentipawns: Int
   /// Engine time for each of the two evaluations of the blunder check.
-  public let blunderAnalysisMilliseconds: Int
+  let blunderAnalysisMilliseconds: Int
   /// Engine time for a hint.
-  public let hintAnalysisMilliseconds: Int
+  let hintAnalysisMilliseconds: Int
 
   public var blunderAnalysisTime: Duration { .milliseconds(blunderAnalysisMilliseconds) }
   public var hintAnalysisTime: Duration { .milliseconds(hintAnalysisMilliseconds) }
@@ -88,7 +88,7 @@ public struct PuzzleRushTuning: Codable, Hashable, Sendable {
   /// Countdown seconds per timed mode id; a mode without an entry has no clock.
   public let timeLimits: [String: Double]
   /// Pause after a puzzle ends, before the next one loads (or the run ends).
-  public let nextPuzzleMilliseconds: Int
+  let nextPuzzleMilliseconds: Int
 
   public var nextPuzzleDelay: Duration { .milliseconds(nextPuzzleMilliseconds) }
 }
@@ -96,11 +96,11 @@ public struct PuzzleRushTuning: Codable, Hashable, Sendable {
 /// Pacing of a puzzle on the board.
 public struct PuzzleBoardTuning: Codable, Hashable, Sendable {
   /// Pause after a puzzle loads, before the opponent's first move.
-  public let introMilliseconds: Int
+  let introMilliseconds: Int
   /// Pause between the solver's correct move and the opponent's reply.
-  public let replyMilliseconds: Int
+  let replyMilliseconds: Int
   /// Pause between the moves of the solution walk-through.
-  public let solutionStepMilliseconds: Int
+  let solutionStepMilliseconds: Int
 
   public var introDelay: Duration { .milliseconds(introMilliseconds) }
   public var replyDelay: Duration { .milliseconds(replyMilliseconds) }
@@ -125,7 +125,7 @@ public struct ReviewThresholds: Codable, Hashable, Sendable {
   /// ...and the played move lost at least `inaccuracyLoss` without dropping below this.
   public let missMinWinProbabilityAfter: Double
   /// Engine time per position; the Apple TV HD's A8 needs short searches.
-  public let analysisMilliseconds: Int
+  let analysisMilliseconds: Int
 
   public var analysisTime: Duration { .milliseconds(analysisMilliseconds) }
 }

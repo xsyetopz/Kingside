@@ -18,7 +18,7 @@ public final class AppModel {
   public let localization: Localization
   public let settings: SettingsStore
   public let puzzleProgress: PuzzleProgressStore
-  public let gameStore: GamePersistenceStore
+  let gameStore: GamePersistenceStore
   public let engine: ChessEngine
   /// Shared by every review this model opens, so a game is analysed once per launch.
   let reviewAnalyses = ReviewAnalysisCache()
@@ -26,14 +26,14 @@ public final class AppModel {
   public let lichess: LichessAccountModel
   /// The OAuth calls of the Lichess browser sign-in.
   let lichessOAuth: LichessOAuth
-  public let gameCenter: GameCenterAccount
+  let gameCenter: GameCenterAccount
   /// False under `--uitesting`: no Game Center sign-in and no welcome sheet.
-  public let usesOnlineServices: Bool
+  let usesOnlineServices: Bool
   /// Newest first, as `GamePersistenceStore.allGames()` returns them.
-  public private(set) var savedGames: [SavedGame] = []
+  private(set) var savedGames: [SavedGame] = []
   /// The games file exists but cannot be read. The store leaves it untouched, so no game is
   /// saved until it reads again.
-  public private(set) var savedGamesUnreadable = false
+  private(set) var savedGamesUnreadable = false
 
   @ObservationIgnored
   let feedback: any FeedbackSink
@@ -50,10 +50,10 @@ public final class AppModel {
   /// Where the model keeps its data, and whether it makes sound.
   public struct Storage {
     public var defaults: UserDefaults
-    public var gamesFileURL: URL
-    public var playsFeedback: Bool
+    var gamesFileURL: URL
+    var playsFeedback: Bool
     /// Whether the app signs in to Game Center and shows the welcome sheet.
-    public var usesOnlineServices: Bool
+    var usesOnlineServices: Bool
 
     public init(
       defaults: UserDefaults,
@@ -92,7 +92,7 @@ public final class AppModel {
     }
   }
 
-  public init(
+  init(
     catalog: ContentCatalog,
     localization: Localization = Localization(),
     storage: Storage,
@@ -193,20 +193,20 @@ public final class AppModel {
   // MARK: - Account
 
   /// The first-launch welcome sheet is due.
-  public var showsWelcome: Bool { usesOnlineServices && !settings.value.hasSeenWelcome }
+  var showsWelcome: Bool { usesOnlineServices && !settings.value.hasSeenWelcome }
 
   private static let lichessKeychainService = "io.github.xsyetopz.Kingside.lichess"
 
   /// Signs in to Game Center at launch, unless the welcome sheet will offer it first. Resumes
   /// the Lichess session, if one is stored.
-  public func signInAtLaunch() {
+  func signInAtLaunch() {
     guard usesOnlineServices else { return }
     Task { await lichess.start() }
     guard !showsWelcome else { return }
     gameCenter.authenticate()
   }
 
-  public func finishWelcome() {
+  func finishWelcome() {
     settings.value.hasSeenWelcome = true
   }
 
@@ -215,7 +215,7 @@ public final class AppModel {
   /// The game offered by Continue, if any.
   public var unfinishedGame: SavedGame? { savedGames.first { !$0.isFinished } }
 
-  public func reloadGames() async {
+  func reloadGames() async {
     do {
       savedGames = try await gameStore.allGames()
       savedGamesUnreadable = false
@@ -225,7 +225,7 @@ public final class AppModel {
     }
   }
 
-  public func makeGameSession(_ launch: GameLaunch) -> GameSession {
+  func makeGameSession(_ launch: GameLaunch) -> GameSession {
     GameSession(
       launch: launch,
       engine: engine,
@@ -252,7 +252,7 @@ public final class AppModel {
     }
   }
 
-  public func makePuzzleBoard() -> PuzzleBoardSession {
+  func makePuzzleBoard() -> PuzzleBoardSession {
     PuzzleBoardSession(catalog: catalog, feedback: feedback)
   }
 
@@ -260,7 +260,7 @@ public final class AppModel {
 
   /// Sends extended-gamepad input to `target` until `releaseController()`.
   /// The Siri Remote is not included: it drives SwiftUI focus, which the board view handles.
-  public func routeController(to target: @escaping (BoardInput) -> Void) {
+  func routeController(to target: @escaping (BoardInput) -> Void) {
     controllerTarget = target
     if controllerInput == nil {
       let input = ControllerInput(tuning: catalog.feedback.controller) { [weak self] intent in
@@ -271,7 +271,7 @@ public final class AppModel {
     }
   }
 
-  public func releaseController() {
+  func releaseController() {
     controllerTarget = nil
   }
 

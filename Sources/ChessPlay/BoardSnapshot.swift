@@ -58,22 +58,12 @@ public struct SquareBadge: Hashable, Sendable {
 
   public var square: Square
   public var kind: Kind
-
-  public init(square: Square, kind: Kind) {
-    self.square = square
-    self.kind = kind
-  }
 }
 
 /// An arrow from one square to another; its color comes from the theme.
 public struct BoardArrow: Hashable, Sendable {
   public var from: Square
   public var to: Square
-
-  public init(from: Square, to: Square) {
-    self.from = from
-    self.to = to
-  }
 }
 
 /// A pawn move waiting for the promotion piece.
@@ -83,13 +73,6 @@ public struct PendingPromotion: Equatable, Sendable {
   public var color: PieceColor
   /// Pieces offered by the picker, in the order of the legal moves.
   public var choices: [PieceType]
-
-  public init(from: Square, to: Square, color: PieceColor, choices: [PieceType]) {
-    self.from = from
-    self.to = to
-    self.color = color
-    self.choices = choices
-  }
 }
 
 /// Input from the board: pointer, keyboard, controller and accessibility. Each session takes it

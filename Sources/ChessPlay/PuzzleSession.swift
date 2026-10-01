@@ -17,7 +17,7 @@ public final class PuzzleSession {
     case intro, solverToMove, opponentToMove, solved, failed, revealing, revealed
   }
 
-  public enum MoveResult: Equatable, Sendable {
+  enum MoveResult: Equatable, Sendable {
     /// Correct, the opponent replies next.
     case correct
     /// Correct and the puzzle is complete.
@@ -36,14 +36,14 @@ public final class PuzzleSession {
   /// Index into `puzzle.moves` of the next move to play.
   public private(set) var ply = 0
   public private(set) var phase: Phase = .intro
-  public private(set) var usedHint = false
-  public private(set) var ratedOutcome: RatedOutcome?
+  private(set) var usedHint = false
+  private(set) var ratedOutcome: RatedOutcome?
   /// The move played last (by either side), for last-move highlighting.
   public private(set) var lastMove: ChessMove?
 
-  public struct InvalidPuzzle: Error {}
+  struct InvalidPuzzle: Error {}
 
-  public init(puzzle: Puzzle) throws {
+  init(puzzle: Puzzle) throws {
     guard puzzle.moves.count >= 2, let position = try? puzzle.initialPosition() else {
       throw InvalidPuzzle()
     }
@@ -53,19 +53,19 @@ public final class PuzzleSession {
   }
 
   /// The listed move expected next, or nil when the line is finished.
-  public var expectedMove: ChessMove? { ply < puzzle.moves.count ? puzzle.moves[ply] : nil }
+  var expectedMove: ChessMove? { ply < puzzle.moves.count ? puzzle.moves[ply] : nil }
 
   public var isFinished: Bool { phase == .solved || phase == .revealed }
 
   /// Plays the opponent's first move. Returns nil if the intro was already played.
   @discardableResult
-  public func playIntro() -> ChessMove? {
+  func playIntro() -> ChessMove? {
     guard phase == .intro, let move = expectedMove, advance(with: move) else { return nil }
     phase = .solverToMove
     return move
   }
 
-  public func submit(_ move: ChessMove) -> MoveResult {
+  func submit(_ move: ChessMove) -> MoveResult {
     guard phase == .solverToMove, let expected = expectedMove,
       let next = try? position.applying(move)
     else { return .ignored }
@@ -90,7 +90,7 @@ public final class PuzzleSession {
 
   /// Plays the opponent's listed reply after a correct move.
   @discardableResult
-  public func playOpponentReply() -> ChessMove? {
+  func playOpponentReply() -> ChessMove? {
     guard phase == .opponentToMove, let move = expectedMove, advance(with: move) else { return nil }
     phase = ply >= puzzle.moves.count ? .solved : .solverToMove
     return move
@@ -111,7 +111,7 @@ public final class PuzzleSession {
 
   /// Plays the next listed move of the solution (either side). Returns nil when done.
   @discardableResult
-  public func revealNext() -> ChessMove? {
+  func revealNext() -> ChessMove? {
     guard phase != .intro, !isFinished else { return nil }
     decide(.failed)
     phase = .revealing

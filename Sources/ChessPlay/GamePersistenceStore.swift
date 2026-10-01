@@ -11,7 +11,7 @@ import Foundation
 /// - The file is decoded once, on the first successful read, and a missing file is kept as an
 ///   empty archive; later changes to the file from outside the store are not seen.
 public actor GamePersistenceStore {
-  public static let archiveLimit = 200
+  static let archiveLimit = 200
   /// Only a name: no build has shipped another format, so nothing reads or migrates older files.
   public static let fileName = "saved-games.json"
 
