@@ -32,14 +32,17 @@
     var gameMenuTarget: GameMenuTarget?
   }
 
-  /// The Game menu in the menu bar, so the toolbar's game actions are also menu commands. It always
-  /// lists the same items and dims the ones that do not apply.
+  /// The Game menu in the menu bar, so the toolbar's game actions are also menu commands, with New
+  /// Game in File's New place. The menus always list the same items and dim the ones that do not
+  /// apply.
   struct GameCommands: Commands {
     let localization: Localization
 
     var body: some Commands {
-      // The app has one window, and File > New Window would otherwise take New Game's ⌘N.
-      CommandGroup(replacing: .newItem) {}
+      // Replacing File > New Window, not removing it: an empty group also drops Close.
+      CommandGroup(replacing: .newItem) {
+        NewGameItem().environment(\.localization, localization)
+      }
       CommandMenu(localization("game.title")) {
         GameMenuItems().environment(\.localization, localization)
       }
@@ -103,38 +106,59 @@
     }
   }
 
-  /// A view, not a `Commands` body, so the items follow the session's observed state.
+  /// Views, not a `Commands` body, so the items follow the session's observed state.
   private struct GameMenuItems: View {
     @FocusedValue(\.gameMenuTarget)
     private var target
-    @Environment(\.localization)
-    private var localization
 
     var body: some View {
       let session = target?.session
       if target?.showsHint ?? true {
-        item(.hint, enabled: target?.canHint ?? false) { session?.apply(.requestHint) }
+        GameMenuButton(.hint, enabled: target?.canHint ?? false) { session?.apply(.requestHint) }
       }
       if target?.showsTakeback ?? true {
-        item(.takeback, enabled: target?.canTakeback ?? false) { session?.apply(.takeback) }
+        GameMenuButton(.takeback, enabled: target?.canTakeback ?? false) {
+          session?.apply(.takeback)
+        }
       }
-      item(.offerDraw, enabled: target?.canOfferDraw ?? false) { session?.apply(.offerDraw) }
-      item(.resign, enabled: target?.canResign ?? false) { target?.confirmResign() }
+      GameMenuButton(.offerDraw, enabled: target?.canOfferDraw ?? false) {
+        session?.apply(.offerDraw)
+      }
+      GameMenuButton(.resign, enabled: target?.canResign ?? false) { target?.confirmResign() }
       Divider()
-      item(.flipBoard, enabled: target != nil) { target?.flip() }
-      Divider()
-      let canStartAgain = target?.canStartAgain ?? false
+      GameMenuButton(.flipBoard, enabled: target != nil) { target?.flip() }
       if target?.showsRematch ?? true {
-        item(.rematch, enabled: canStartAgain) { session?.apply(.rematch) }
+        Divider()
+        GameMenuButton(.rematch, enabled: target?.canStartAgain ?? false) {
+          session?.apply(.rematch)
+        }
       }
-      item(.newGame, enabled: canStartAgain) { target?.newGame() }
+    }
+  }
+
+  private struct NewGameItem: View {
+    @FocusedValue(\.gameMenuTarget)
+    private var target
+
+    var body: some View {
+      GameMenuButton(.newGame, enabled: target?.canStartAgain ?? false) { target?.newGame() }
+    }
+  }
+
+  private struct GameMenuButton: View {
+    let command: GameMenuCommand
+    let enabled: Bool
+    let action: () -> Void
+    @Environment(\.localization)
+    private var localization
+
+    init(_ command: GameMenuCommand, enabled: Bool, action: @escaping () -> Void) {
+      self.command = command
+      self.enabled = enabled
+      self.action = action
     }
 
-    private func item(
-      _ command: GameMenuCommand,
-      enabled: Bool,
-      action: @escaping () -> Void
-    ) -> some View {
+    var body: some View {
       Button(localization(command.titleKey), systemImage: command.systemImage, action: action)
         .keyboardShortcut(command.shortcut.keyboardShortcut)
         .disabled(!enabled)
