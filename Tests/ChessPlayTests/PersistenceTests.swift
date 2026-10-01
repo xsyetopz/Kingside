@@ -7,10 +7,14 @@ import Testing
 
 @Suite
 struct PersistenceTests {
+  private func archiveURL(in directory: URL) -> URL {
+    directory.appending(components: "Kingside", GamePersistenceStore.fileName)
+  }
+
+  /// A second store on the same directory reads the file, as the next launch does, not the
+  /// memory of the first.
   private func makeStore(in directory: URL) -> GamePersistenceStore {
-    GamePersistenceStore(
-      fileURL: directory.appending(components: "Kingside", GamePersistenceStore.fileName)
-    )
+    GamePersistenceStore(fileURL: archiveURL(in: directory))
   }
 
   private func defaultBot() throws -> PlayerInfo {
@@ -54,7 +58,7 @@ struct PersistenceTests {
       let store = makeStore(in: directory)
       let saved = try makeGame()
       try await store.save(saved)
-      let restored = try await store.unfinishedGame()
+      let restored = try await makeStore(in: directory).unfinishedGame()
       #expect(restored == saved)
       #expect(restored?.clock.remaining(.white) == 167.5)
       #expect(restored?.humanColor == .white)
@@ -101,7 +105,7 @@ struct PersistenceTests {
         )
         try await store.save(game)
       }
-      let all = try await store.allGames()
+      let all = try await makeStore(in: directory).allGames()
       #expect(all.count == 200)
       #expect(all.first?.updatedAt == Date(timeIntervalSince1970: 201))
       #expect(all.last?.updatedAt == Date(timeIntervalSince1970: 2))
@@ -121,9 +125,10 @@ struct PersistenceTests {
         )
         try await store.save(game)
       }
-      let all = try await store.allGames()
+      let reread = makeStore(in: directory)
+      let all = try await reread.allGames()
       #expect(all.count == 201)
-      #expect(try await store.unfinishedGame()?.id == unfinished.id)
+      #expect(try await reread.unfinishedGame()?.id == unfinished.id)
     }
   }
 
@@ -134,7 +139,7 @@ struct PersistenceTests {
       let game = try makeGame(result: .draw)
       try await store.save(game)
       try await store.delete(id: game.id)
-      let all = try await store.allGames()
+      let all = try await makeStore(in: directory).allGames()
       #expect(all.isEmpty)
     }
   }
@@ -161,6 +166,64 @@ struct PersistenceTests {
       await #expect(throws: DecodingError.self) { try await store.save(try makeGame()) }
       await #expect(throws: DecodingError.self) { try await store.delete(id: UUID()) }
       #expect(try Data(contentsOf: fileURL) == damaged)
+    }
+  }
+
+  @Test
+  func fileChangedBehindTheStoreIsNotReadAgain() async throws {
+    try await withTemporaryDirectory { directory in
+      let store = makeStore(in: directory)
+      let first = try makeGame(result: .draw, updatedAt: Date(timeIntervalSince1970: 100))
+      let second = try makeGame(result: .draw, updatedAt: Date(timeIntervalSince1970: 200))
+      try await store.save(first)
+      try Data("[]".utf8).write(to: archiveURL(in: directory))
+
+      #expect(try await store.allGames().map(\.id) == [first.id])
+      try await store.save(second)
+      #expect(try await store.allGames().map(\.id) == [second.id, first.id])
+      #expect(try await makeStore(in: directory).allGames().map(\.id) == [second.id, first.id])
+    }
+  }
+
+  @Test
+  func unreadableArchiveIsReadAgainOnEachAccess() async throws {
+    try await withTemporaryDirectory { directory in
+      let fileURL = archiveURL(in: directory)
+      try FileManager.default.createDirectory(
+        at: fileURL.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+      try Data("[{\"id\": \"truncated".utf8).write(to: fileURL)
+      let store = makeStore(in: directory)
+      await #expect(throws: DecodingError.self) { try await store.allGames() }
+
+      try FileManager.default.removeItem(at: fileURL)
+      let game = try makeGame(result: .draw)
+      try await makeStore(in: directory).save(game)
+      #expect(try await store.allGames().map(\.id) == [game.id])
+    }
+  }
+
+  @Test
+  func failedSaveLeavesTheArchiveAsTheFileHasIt() async throws {
+    try await withTemporaryDirectory { directory in
+      let store = makeStore(in: directory)
+      let first = try makeGame(result: .draw, updatedAt: Date(timeIntervalSince1970: 100))
+      let second = try makeGame(result: .draw, updatedAt: Date(timeIntervalSince1970: 200))
+      let third = try makeGame(result: .draw, updatedAt: Date(timeIntervalSince1970: 300))
+      try await store.save(first)
+      // A directory in place of the file makes the next write fail.
+      let fileURL = archiveURL(in: directory)
+      try FileManager.default.removeItem(at: fileURL)
+      try FileManager.default.createDirectory(at: fileURL, withIntermediateDirectories: false)
+
+      await #expect(throws: (any Error).self) { try await store.save(second) }
+      #expect(try await store.allGames().map(\.id) == [first.id])
+
+      try FileManager.default.removeItem(at: fileURL)
+      try await store.save(third)
+      #expect(try await store.allGames().map(\.id) == [third.id, first.id])
+      #expect(try await makeStore(in: directory).allGames().map(\.id) == [third.id, first.id])
     }
   }
 

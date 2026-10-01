@@ -185,4 +185,59 @@ struct ReviewTests {
         == "Nf3 is best."
     )
   }
+
+  // MARK: Analysis cache
+
+  @MainActor
+  private func makeReview(
+    of game: SavedGame,
+    cache: ReviewAnalysisCache
+  ) throws -> GameReviewModel {
+    let catalog = try Shared.catalog
+    return GameReviewModel(
+      game: game,
+      engine: ChessEngine(),
+      thresholds: catalog.tuning.review,
+      openingBook: catalog.openingBook,
+      cache: cache
+    )
+  }
+
+  @Test
+  @MainActor
+  func reviewOpensCompleteFromItsCacheOnly() async throws {
+    var played = ChessGame()
+    _ = try played.makeMove(#require(ChessMove(uci: "e2e4")))
+    let date = Date(timeIntervalSince1970: 1_700_000_000)
+    let game = SavedGame(
+      id: try #require(UUID(uuidString: "11111111-0000-4000-8000-000000000001")),
+      createdAt: date,
+      updatedAt: date,
+      mode: .passAndPlay,
+      white: PlayerInfo(name: "A"),
+      black: PlayerInfo(name: "B"),
+      timeControl: .untimed,
+      autoFlip: false,
+      game: played,
+      result: .whiteWon,
+      termination: .resignation,
+      clock: GameClock(timeControl: .untimed)
+    )
+    let engine = ChessEngine()
+    var analyses: [EngineAnalysis] = []
+    for position in [played.initialPosition, played.position] {
+      analyses.append(try await engine.analyze(position: position, limit: .depth(1)))
+    }
+    let cache = ReviewAnalysisCache()
+    cache.analyses[game.id] = analyses
+
+    let cached = try makeReview(of: game, cache: cache)
+    #expect(cached.isComplete)
+    #expect(cached.analyses == analyses)
+    #expect(cached.moves.map(\.san) == ["e4"])
+
+    let uncached = try makeReview(of: game, cache: ReviewAnalysisCache())
+    #expect(!uncached.isComplete)
+    #expect(uncached.analyses.isEmpty)
+  }
 }

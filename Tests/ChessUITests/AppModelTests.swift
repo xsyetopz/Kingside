@@ -98,4 +98,11 @@ struct AppModelTests {
     model.signInAtLaunch()
     #expect(model.gameCenter.state == .signedOut)
   }
+
+  @Test
+  func everyReviewSharesOneAnalysisCache() throws {
+    let model = try makeModel(usesOnlineServices: false)
+    let first = model.reviewAnalyses
+    #expect(model.reviewAnalyses === first)
+  }
 }

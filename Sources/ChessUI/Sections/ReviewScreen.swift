@@ -23,7 +23,8 @@ struct ReviewScreen: View {
           game: game,
           engine: model.engine,
           thresholds: model.catalog.tuning.review,
-          openingBook: model.catalog.openingBook
+          openingBook: model.catalog.openingBook,
+          cache: model.reviewAnalyses
         )
       }
       review?.start()

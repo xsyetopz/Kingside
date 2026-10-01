@@ -27,10 +27,14 @@ public struct ReviewedMove: Identifiable, Sendable {
   }
 }
 
-/// Engine results kept for the app session so reopening a review does not analyse again.
+/// Engine results by game id, so reopening a review does not analyse again. The app keeps one
+/// for its lifetime and gives it to each `GameReviewModel`.
+@preconcurrency
 @MainActor
-private enum ReviewAnalysisCache {
-  static var analyses: [UUID: [EngineAnalysis]] = [:]
+public final class ReviewAnalysisCache {
+  var analyses: [SavedGame.ID: [EngineAnalysis]] = [:]
+
+  public init() {}
 }
 
 /// Runs the engine over every position of a saved game and classifies each move as results arrive.
@@ -50,22 +54,25 @@ public final class GameReviewModel {
   private let engine: ChessEngine
   private let thresholds: ReviewThresholds
   private let bookPlies: Int
+  private let cache: ReviewAnalysisCache
   private var task: Task<Void, Never>?
 
   public init(
     game: SavedGame,
     engine: ChessEngine,
     thresholds: ReviewThresholds,
-    openingBook: OpeningBook
+    openingBook: OpeningBook,
+    cache: ReviewAnalysisCache
   ) {
     self.game = game
     self.engine = engine
     self.thresholds = thresholds
+    self.cache = cache
     positions = game.game.moves.map(\.positionBefore) + [game.game.position]
     bookPlies =
       game.game.initialPosition == .initial
       ? openingBook.bookPlyCount(for: game.game.moves.map(\.san)) : 0
-    for analysis in ReviewAnalysisCache.analyses[game.id] ?? [] { append(analysis) }
+    for analysis in cache.analyses[game.id] ?? [] { append(analysis) }
   }
 
   public var moveCount: Int { game.game.moves.count }
@@ -97,7 +104,7 @@ public final class GameReviewModel {
         )
         guard !Task.isCancelled else { break }
         append(analysis)
-        ReviewAnalysisCache.analyses[game.id] = analyses
+        cache.analyses[game.id] = analyses
       } catch {
         break
       }

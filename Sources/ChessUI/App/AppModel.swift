@@ -20,6 +20,8 @@ public final class AppModel {
   public let puzzleProgress: PuzzleProgressStore
   public let gameStore: GamePersistenceStore
   public let engine: ChessEngine
+  /// Shared by every review this model opens, so a game is analysed once per launch.
+  let reviewAnalyses = ReviewAnalysisCache()
   public let chessCom: ChessComClient
   public let lichess: LichessAccountModel
   /// The OAuth calls of the Lichess browser sign-in.

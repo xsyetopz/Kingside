@@ -8,6 +8,8 @@ import Foundation
 /// - `allGames()` is sorted newest first by `updatedAt`.
 /// - Writes replace the file atomically, so a crash during a write keeps the old archive.
 /// - A file that exists but does not decode is never overwritten; reads and writes throw.
+/// - The file is decoded once, on the first successful read, and a missing file is kept as an
+///   empty archive; later changes to the file from outside the store are not seen.
 public actor GamePersistenceStore {
   public static let archiveLimit = 200
   /// Only a name: no build has shipped another format, so nothing reads or migrates older files.
@@ -16,6 +18,8 @@ public actor GamePersistenceStore {
   public let fileURL: URL
   private let encoder = JSONEncoder()
   private let decoder = JSONDecoder()
+  /// Newest first. Nil until the file reads, so an unreadable file is read again on each access.
+  private var games: [SavedGame]?
 
   /// `fileURL` is the archive file; its directory is created on the first write.
   public init(fileURL: URL) {
@@ -38,14 +42,16 @@ public actor GamePersistenceStore {
   /// Empty when the file does not exist yet. Throws when it exists but cannot be read or
   /// decoded, so `save` and `delete` never replace an archive they could not read.
   public func allGames() throws -> [SavedGame] {
-    let data: Data
+    if let games { return games }
+    let loaded: [SavedGame]
     do {
-      data = try Data(contentsOf: fileURL)
+      loaded = try decoder.decode([SavedGame].self, from: Data(contentsOf: fileURL))
     } catch CocoaError.fileReadNoSuchFile {
-      return []
+      loaded = []
     }
-    let games = try decoder.decode([SavedGame].self, from: data)
-    return games.sorted { $0.updatedAt > $1.updatedAt }
+    let sorted = loaded.sorted { $0.updatedAt > $1.updatedAt }
+    games = sorted
+    return sorted
   }
 
   /// The game to offer on Resume, if any.
@@ -53,25 +59,28 @@ public actor GamePersistenceStore {
 
   /// Inserts or replaces `game` by id.
   public func save(_ game: SavedGame) throws {
-    var games = try allGames().filter { $0.id != game.id }
-    if !game.isFinished { games.removeAll { !$0.isFinished } }
-    games.append(game)
-    try write(games)
+    var updated = try allGames().filter { $0.id != game.id }
+    if !game.isFinished { updated.removeAll { !$0.isFinished } }
+    updated.append(game)
+    try write(updated)
   }
 
   public func delete(id: UUID) throws {
     try write(try allGames().filter { $0.id != id })
   }
 
-  private func write(_ games: [SavedGame]) throws {
-    let sorted = games.sorted { $0.updatedAt > $1.updatedAt }
+  /// Memory changes only after the file is written, so a failed write leaves both unchanged.
+  private func write(_ updated: [SavedGame]) throws {
+    let sorted = updated.sorted { $0.updatedAt > $1.updatedAt }
     let unfinished = sorted.filter { !$0.isFinished }
     let finished = sorted.filter(\.isFinished).prefix(Self.archiveLimit)
-    let data = try encoder.encode(unfinished + finished)
+    let kept = unfinished + finished
+    let data = try encoder.encode(kept)
     try FileManager.default.createDirectory(
       at: fileURL.deletingLastPathComponent(),
       withIntermediateDirectories: true
     )
     try data.write(to: fileURL, options: .atomic)
+    games = kept.sorted { $0.updatedAt > $1.updatedAt }
   }
 }
