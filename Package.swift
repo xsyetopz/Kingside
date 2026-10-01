@@ -87,7 +87,7 @@ let package = Package(
       name: "ChessUITests",
       dependencies: [
         "ChessUI", "ChessPlay", "ChessCore", "ChessContent", "HTTPSupportTests", "ChessComLink",
-        "ChessComPlay", "LichessLink", "LichessPlay", "ChessOnline",
+        "ChessComPlay", "LichessLink", "LichessPlay", "ChessOnline", "ChessFeedback",
       ]
     ),
   ]

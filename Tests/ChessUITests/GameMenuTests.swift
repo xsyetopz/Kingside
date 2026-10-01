@@ -3,6 +3,8 @@
   import ChessCore
   import ChessPlay
   import Foundation
+  import HTTPSupportTests
+  import LichessLink
   import Testing
   @testable import ChessUI
 
@@ -15,12 +17,18 @@
 
     private func makeSession() throws -> GameSession {
       let defaults = try #require(UserDefaults(suiteName: suiteName))
-      let storage = AppModel.Storage(
+      let catalog = try ContentCatalog.load()
+      let localization = Localization()
+      let dependencies = AppDependencies(
+        catalog: catalog,
+        localization: localization,
         defaults: defaults,
         gamesFileURL: directory.appending(path: GamePersistenceStore.fileName),
-        playsFeedback: false
+        transport: FakeTransport { _ in (404, [:], Data()) },
+        tokenStore: InMemoryTokenStore(),
+        signsInAtLaunch: false
       )
-      let model = AppModel(catalog: try ContentCatalog.load(), storage: storage)
+      let model = AppModel(dependencies: dependencies)
       return model.makeGameSession(
         .new(
           GameSetup(

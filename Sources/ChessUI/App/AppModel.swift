@@ -1,15 +1,13 @@
 import ChessComLink
 import ChessContent
 import ChessCore
-import ChessFeedback
 import ChessOnline
 import ChessPlay
 import Foundation
-import HTTPSupport
 import LichessLink
 import Observation
 
-/// The composition root: builds the stores, engine, feedback, and clients once, and makes the
+/// Holds the stores, engine, feedback, and clients that `AppDependencies` builds, and makes the
 /// sessions that screens use. Screens read it from the environment.
 @preconcurrency
 @Observable
@@ -28,8 +26,8 @@ public final class AppModel {
   /// The OAuth calls of the Lichess browser sign-in.
   let lichessOAuth: LichessOAuth
   let gameCenter: GameCenterAccount
-  /// False under `--uitesting`: no Game Center sign-in and no welcome sheet.
-  let usesOnlineServices: Bool
+  /// False under `--uitesting`: no Game Center or Lichess sign-in and no welcome sheet.
+  let signsInAtLaunch: Bool
   /// Newest first, as `GamePersistenceStore.allGames()` returns them.
   private(set) var savedGames: [SavedGame] = []
   /// The games file exists but cannot be read. The store leaves it untouched, so no game is
@@ -39,127 +37,36 @@ public final class AppModel {
   @ObservationIgnored
   let feedback: any FeedbackSink
   @ObservationIgnored
-  private let audio: AudioFeedback?
+  private let authenticateGameCenter: @MainActor () -> Void
   @ObservationIgnored
-  private let haptics: HapticFeedback?
+  private let setSoundEnabled: @MainActor (Bool) -> Void
   @ObservationIgnored
-  private var controllerInput: ControllerInput?
+  private let setHapticsEnabled: @MainActor (Bool) -> Void
+  @ObservationIgnored
+  private let makeControllerInput: AppDependencies.ControllerInputFactory
+  @ObservationIgnored
+  private var controllerInput: (any ControllerInputSource)?
   /// Where controller intents go; the screen that shows a board sets it and clears it.
   @ObservationIgnored
   private var controllerTarget: ((BoardInput) -> Void)?
 
-  /// Where the model keeps its data, and whether it makes sound.
-  public struct Storage {
-    public var defaults: UserDefaults
-    var gamesFileURL: URL
-    var playsFeedback: Bool
-    /// Whether the app signs in to Game Center and shows the welcome sheet.
-    var usesOnlineServices: Bool
-
-    public init(
-      defaults: UserDefaults,
-      gamesFileURL: URL,
-      playsFeedback: Bool,
-      usesOnlineServices: Bool = true
-    ) {
-      self.defaults = defaults
-      self.gamesFileURL = gamesFileURL
-      self.playsFeedback = playsFeedback
-      self.usesOnlineServices = usesOnlineServices
-    }
-
-    /// Standard defaults and Application Support. With `--uitesting`, a throwaway suite and
-    /// directory per process, no sound, and no online services, so UI tests start clean.
-    public static func live(arguments: [String] = ProcessInfo.processInfo.arguments) -> Self {
-      if arguments.contains("--uitesting") {
-        let name = "Kingside.UITests.\(ProcessInfo.processInfo.processIdentifier)"
-        return Self(
-          defaults: UserDefaults(suiteName: name) ?? .standard,
-          gamesFileURL: FileManager.default.temporaryDirectory.appending(
-            components: name,
-            GamePersistenceStore.fileName
-          ),
-          playsFeedback: false,
-          usesOnlineServices: false
-        )
-      }
-      let url =
-        (try? GamePersistenceStore.defaultFileURL())
-        ?? FileManager.default.temporaryDirectory.appending(
-          components: "Kingside",
-          GamePersistenceStore.fileName
-        )
-      return Self(defaults: .standard, gamesFileURL: url, playsFeedback: true)
-    }
-  }
-
-  init(
-    catalog: ContentCatalog,
-    localization: Localization = Localization(),
-    storage: Storage,
-    transport: any HTTPTransport = URLSessionTransport(),
-    lichessTransport: any HTTPStreamingTransport = URLSessionTransport(),
-    bundle: Bundle = .main
-  ) {
-    self.catalog = catalog
-    self.localization = localization
-    settings = SettingsStore(defaults: storage.defaults)
-    puzzleProgress = PuzzleProgressStore(
-      defaults: storage.defaults,
-      rating: catalog.tuning.puzzleRating
-    )
-    gameStore = GamePersistenceStore(fileURL: storage.gamesFileURL)
-    engine = ChessEngine()
-    gameCenter = GameCenterAccount()
-    usesOnlineServices = storage.usesOnlineServices
-    let services = catalog.services
-    let product =
-      bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
-      ?? localization.string("app.name")
-    let version =
-      bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
-    let userAgent = services.userAgent(product: product, version: version)
-    chessCom = ChessComClient(
-      configuration: ChessComConfiguration(
-        baseURL: services.chessCom.baseURL,
-        userAgent: userAgent
-      ),
-      transport: transport
-    )
-    let lichessConfiguration = LichessConfiguration(
-      baseURL: services.lichess.baseURL,
-      userAgent: userAgent,
-      clientID: services.lichess.clientID,
-      redirectURI: services.lichess.redirectURI
-    )
-    lichessOAuth = LichessOAuth(configuration: lichessConfiguration, transport: lichessTransport)
-    // UI tests get an empty in-memory store and never call `start()`, so they make no requests.
-    let tokenStore: any TokenStore =
-      storage.usesOnlineServices
-      ? KeychainTokenStore(service: Self.lichessKeychainService, account: "access-token")
-      : InMemoryTokenStore()
-    lichess = LichessAccountModel(store: tokenStore) { tokenProvider in
-      LichessClient(
-        configuration: lichessConfiguration,
-        transport: lichessTransport,
-        tokenProvider: tokenProvider
-      )
-    }
-
-    if storage.playsFeedback, let pack = catalog.soundPack(id: catalog.defaults.soundPackID) {
-      let audio = AudioFeedback(pack: pack, isEnabled: settings.value.soundEffects)
-      let haptics = HapticFeedback(
-        haptics: catalog.feedback.haptics,
-        isEnabled: settings.value.haptics
-      )
-      self.audio = audio
-      self.haptics = haptics
-      feedback = FeedbackRouter(audio: audio, haptics: haptics, tuning: catalog.feedback)
-    } else {
-      audio = nil
-      haptics = nil
-      feedback = NullFeedbackSink()
-    }
+  init(dependencies: AppDependencies) {
+    catalog = dependencies.catalog
+    localization = dependencies.localization
+    settings = dependencies.settings
+    puzzleProgress = dependencies.puzzleProgress
+    gameStore = dependencies.gameStore
+    engine = dependencies.engine
+    chessCom = dependencies.chessCom
+    lichess = dependencies.lichess
+    lichessOAuth = dependencies.lichessOAuth
+    gameCenter = dependencies.gameCenter
+    signsInAtLaunch = dependencies.signsInAtLaunch
+    authenticateGameCenter = dependencies.authenticateGameCenter
+    feedback = dependencies.feedback
+    setSoundEnabled = dependencies.setSoundEnabled
+    setHapticsEnabled = dependencies.setHapticsEnabled
+    makeControllerInput = dependencies.makeControllerInput
     observeSettings()
   }
 
@@ -167,7 +74,8 @@ public final class AppModel {
   /// load them means a broken build.
   public static func launch() -> AppModel {
     do {
-      return AppModel(catalog: try ContentCatalog.load(), storage: .live())
+      let catalog = try ContentCatalog.load()
+      return AppModel(dependencies: .live(catalog: catalog, localization: Localization()))
     } catch {
       fatalError("The bundled content catalogs do not load: \(error)")
     }
@@ -194,17 +102,15 @@ public final class AppModel {
   // MARK: - Account
 
   /// The first-launch welcome sheet is due.
-  var showsWelcome: Bool { usesOnlineServices && !settings.value.hasSeenWelcome }
-
-  private static let lichessKeychainService = "io.github.xsyetopz.Kingside.lichess"
+  var showsWelcome: Bool { signsInAtLaunch && !settings.value.hasSeenWelcome }
 
   /// Signs in to Game Center at launch, unless the welcome sheet will offer it first. Resumes
   /// the Lichess session, if one is stored.
   func signInAtLaunch() {
-    guard usesOnlineServices else { return }
+    guard signsInAtLaunch else { return }
     Task { await lichess.start() }
     guard !showsWelcome else { return }
-    gameCenter.authenticate()
+    authenticateGameCenter()
   }
 
   func finishWelcome() {
@@ -264,9 +170,7 @@ public final class AppModel {
   func routeController(to target: @escaping (BoardInput) -> Void) {
     controllerTarget = target
     if controllerInput == nil {
-      let input = ControllerInput(tuning: catalog.feedback.controller) { [weak self] intent in
-        self?.controllerTarget?(intent)
-      }
+      let input = makeControllerInput { [weak self] intent in self?.controllerTarget?(intent) }
       input.start()
       controllerInput = input
     }
@@ -287,8 +191,8 @@ public final class AppModel {
   }
 
   private func settingsChanged() {
-    audio?.isEnabled = settings.value.soundEffects
-    haptics?.isEnabled = settings.value.haptics
+    setSoundEnabled(settings.value.soundEffects)
+    setHapticsEnabled(settings.value.haptics)
     observeSettings()
   }
 }

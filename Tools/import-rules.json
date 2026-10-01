@@ -195,7 +195,8 @@
 				"ChessComPlay",
 				"LichessLink",
 				"LichessPlay",
-				"ChessOnline"
+				"ChessOnline",
+				"ChessFeedback"
 			]
 		}
 	},
