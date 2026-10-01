@@ -34,7 +34,7 @@ public struct PGNParser: Sendable {
           trimmed.index(after: space)..<trimmed.index(before: trimmed.endIndex)
         ]
         guard valuePart.first == "\"", valuePart.last == "\"" else { throw PGNError.malformedTag }
-        tags[key] = String(valuePart.dropFirst().dropLast())
+        tags[key] = unescapedTagValue(valuePart.dropFirst().dropLast())
       } else if !trimmed.isEmpty {
         moveTextLines.append(trimmed)
       }
@@ -66,6 +66,25 @@ public struct PGNParser: Sendable {
       try game.makeMove(move)
     }
     return game
+  }
+
+  private func unescapedTagValue(_ escaped: Substring) -> String {
+    var value = ""
+    var characters = escaped.makeIterator()
+    while let character = characters.next() {
+      guard character == "\\" else {
+        value.append(character)
+        continue
+      }
+      guard let escapedCharacter = characters.next() else {
+        value.append(character)
+        break
+      }
+      // A backslash before anything but `"` or `\` is not an escape; keep it literally.
+      if escapedCharacter != "\"" && escapedCharacter != "\\" { value.append(character) }
+      value.append(escapedCharacter)
+    }
+    return value
   }
 
   private func stripCommentsAndVariations(_ text: String) -> String {
@@ -102,15 +121,29 @@ public struct PGNExporter: Sendable {
     }
     let headers = allTags.keys.sorted().map { key in
       let value = allTags[key] ?? ""
-      return "[\(key) \"\(value)\"]"
+      return "[\(key) \"\(escapedTagValue(value))\"]"
     }.joined(separator: "\n")
+    let blackMovesFirst = game.initialPosition.sideToMove == .black
     var tokens: [String] = []
     for (index, played) in game.moves.enumerated() {
-      if index.isMultiple(of: 2) { tokens.append("\(index / 2 + 1).") }
+      let ply = blackMovesFirst ? index + 1 : index
+      let moveNumber = game.initialPosition.fullmoveNumber + ply / 2
+      if ply.isMultiple(of: 2) {
+        tokens.append("\(moveNumber).")
+      } else if index == 0 {
+        tokens.append("\(moveNumber)...")
+      }
       tokens.append(played.san)
     }
     tokens.append(finalResult)
     return headers + "\n\n" + tokens.joined(separator: " ")
+  }
+
+  private func escapedTagValue(_ value: String) -> String {
+    // PGN string tokens cannot contain line breaks, so each one becomes a space.
+    String(value.map { $0.isNewline ? " " : $0 })
+      .replacingOccurrences(of: "\\", with: "\\\\")
+      .replacingOccurrences(of: "\"", with: "\\\"")
   }
 
   private func resultString(for outcome: GameOutcome) -> String {

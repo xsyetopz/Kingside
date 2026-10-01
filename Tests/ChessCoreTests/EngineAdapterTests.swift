@@ -16,8 +16,72 @@ struct PerftCase: Sendable, CustomTestStringConvertible {
   var testDescription: String { "\(name) depth \(depth)" }
 }
 
+struct UnsupportedCase: Sendable, CustomTestStringConvertible {
+  let name: String
+  let position: ChessPosition
+  var testDescription: String { name }
+
+  private static let kings: [Square: Piece] = [
+    Square(file: 4, rank: 0): Piece(type: .king, color: .white),
+    Square(file: 4, rank: 7): Piece(type: .king, color: .black),
+  ]
+
+  static let all = [
+    Self(
+      name: "no black king",
+      position: ChessPosition(board: [Square(file: 4, rank: 0): Piece(type: .king, color: .white)])
+    ),
+    Self(
+      name: "white king off the board",
+      position: ChessPosition(board: [
+        Square(file: 8, rank: 0): Piece(type: .king, color: .white),
+        Square(file: 0, rank: 0): Piece(type: .rook, color: .white),
+        Square(file: 4, rank: 7): Piece(type: .king, color: .black),
+      ])
+    ),
+    Self(
+      name: "side not to move in check",
+      position: ChessPosition(board: [
+        Square(file: 4, rank: 0): Piece(type: .king, color: .white),
+        Square(file: 4, rank: 1): Piece(type: .rook, color: .white),
+        Square(file: 4, rank: 7): Piece(type: .king, color: .black),
+      ])
+    ),
+    Self(
+      name: "halfmove clock Int.max",
+      position: ChessPosition(board: kings, halfmoveClock: .max)
+    ),
+    Self(
+      name: "halfmove clock Int.min",
+      position: ChessPosition(board: kings, halfmoveClock: .min)
+    ),
+    Self(name: "fullmove number 0", position: ChessPosition(board: kings, fullmoveNumber: 0)),
+    Self(
+      name: "fullmove number Int.max",
+      position: ChessPosition(board: kings, fullmoveNumber: .max)
+    ),
+  ]
+}
+
 @Suite
 struct EngineAdapterTests {
+  @Test(arguments: UnsupportedCase.all)
+  func analyzeReportsNoMoveForUnsupportedPosition(_ test: UnsupportedCase) async throws {
+    let analysis = try await ChessEngine().analyze(position: test.position, limit: .depth(2))
+    #expect(analysis.bestMove == nil)
+    #expect(analysis.principalVariation.isEmpty)
+  }
+
+  @Test(arguments: UnsupportedCase.all)
+  func bestMoveThrowsForUnsupportedPosition(_ test: UnsupportedCase) async {
+    await #expect(throws: ChessEngineError.noLegalMove) {
+      try await ChessEngine().bestMove(
+        game: ChessGame(position: test.position),
+        strength: EngineStrength(elo: 250)
+      )
+    }
+  }
+
   @Test(arguments: [
     PerftCase(name: "start", fen: startFEN, depth: 1, nodes: 20),
     PerftCase(name: "start", fen: startFEN, depth: 2, nodes: 400),

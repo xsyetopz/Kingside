@@ -635,3 +635,5 @@
 "chat.report.tv" = "Ak chcete tohto súpera nahlásiť, otvorte %@ na inom zariadení.";
 /* %@: the player's own name. */
 "chat.line.own" = "%@ (vy)";
+/* %d: the Stockfish level, such as 3. */
+"online.opponent.stockfish" = "Stockfish level %d";

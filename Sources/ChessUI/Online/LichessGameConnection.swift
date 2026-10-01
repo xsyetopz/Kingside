@@ -1,3 +1,4 @@
+import ChessContent
 import ChessCore
 import ChessPlay
 import Foundation
@@ -13,18 +14,26 @@ struct LichessGameConnection: OnlineGameConnection {
   let gameID: String
   /// The signed-in user's Lichess id, which is the lowercased username.
   let userID: String
+  var localization = Localization()
 
   var service: String { "lichess" }
 
   func events() -> AsyncThrowingStream<OnlineGameEvent, Error> {
-    let (client, gameID, userID) = (client, gameID, userID)
+    let (client, gameID, userID, localization) = (client, gameID, userID, localization)
     return AsyncThrowingStream { continuation in
       let task = Task {
         do {
           // A `gameState` does not say whether the game has a clock; the `gameFull` did.
           var timed = false
           for try await event in try await client.gameStream(id: gameID) {
-            guard let mapped = try Self.map(event, userID: userID, timed: timed) else { continue }
+            guard
+              let mapped = try Self.map(
+                event,
+                userID: userID,
+                timed: timed,
+                localization: localization
+              )
+            else { continue }
             if case .started(let start) = mapped { timed = start.timeControl != nil }
             continuation.yield(mapped)
           }
@@ -56,11 +65,15 @@ struct LichessGameConnection: OnlineGameConnection {
   /// Maps one stream event; `timed` is whether the game has a clock. Nil for events the session
   /// does not use (spectator chat).
   /// Throws `NotAPlayer` when `userID` plays neither side of a `gameFull`.
-  static func map(_ event: LichessGameEvent, userID: String, timed: Bool) throws -> OnlineGameEvent?
-  {
+  static func map(
+    _ event: LichessGameEvent,
+    userID: String,
+    timed: Bool,
+    localization: Localization
+  ) throws -> OnlineGameEvent? {
     switch event {
     case .gameFull(let game):
-      return .started(try start(game, userID: userID))
+      return .started(try start(game, userID: userID, localization: localization))
     case .gameState(let state):
       return .state(self.state(state, timed: timed))
     case .chatLine(let username, let text, let room):
@@ -71,7 +84,11 @@ struct LichessGameConnection: OnlineGameConnection {
     }
   }
 
-  static func start(_ game: LichessGameFull, userID: String) throws -> OnlineGameStart {
+  static func start(
+    _ game: LichessGameFull,
+    userID: String,
+    localization: Localization
+  ) throws -> OnlineGameStart {
     let myColor: PieceColor
     if game.white.id == userID {
       myColor = .white
@@ -83,8 +100,8 @@ struct LichessGameConnection: OnlineGameConnection {
     return OnlineGameStart(
       gameID: game.id,
       initialFEN: game.initialFen == "startpos" ? nil : game.initialFen,
-      white: player(game.white),
-      black: player(game.black),
+      white: player(game.white, localization: localization),
+      black: player(game.black, localization: localization),
       myColor: myColor,
       timeControl: timeControl(game.clock),
       rated: game.rated,
@@ -92,9 +109,11 @@ struct LichessGameConnection: OnlineGameConnection {
     )
   }
 
-  static func player(_ player: LichessGamePlayer) -> OnlinePlayer {
+  static func player(_ player: LichessGamePlayer, localization: Localization) -> OnlinePlayer {
     // The AI has no name; Lichess shows it as "Stockfish level N".
-    let name = player.name ?? player.aiLevel.map { "Stockfish level \($0)" } ?? ""
+    let name =
+      player.name ?? player.aiLevel.map { localization.string("online.opponent.stockfish", $0) }
+      ?? ""
     return OnlinePlayer(name: name, rating: player.rating, title: player.title)
   }
 

@@ -38,7 +38,8 @@ public struct SearchLimit: Hashable, Sendable {
 public struct EngineAnalysis: Equatable, Sendable {
   /// Score of the best move, from White's point of view.
   public let evaluation: Evaluation
-  /// `nil` when the side to move has no legal move (checkmate or stalemate).
+  /// `nil` when the side to move has no legal move (checkmate or stalemate) or the engine does
+  /// not support the position (see `ChessEngine.analyze`).
   public let bestMove: ChessMove?
   /// Expected line starting with `bestMove`.
   public let principalVariation: [ChessMove]
@@ -104,9 +105,11 @@ public actor ChessEngine {
 
   /// Picks a move for the side to move in `game`, playing at `strength`. Earlier positions of
   /// the game count for repetition. Throws `CancellationError` when the task is cancelled and
-  /// `ChessEngineError.noLegalMove` when the game is already over.
+  /// `ChessEngineError.noLegalMove` when the game is already over or the engine does not support
+  /// the position.
   public func bestMove(game: ChessGame, strength: EngineStrength) throws -> ChessMove {
     try Task.checkCancellation()
+    guard game.position.isSupportedByEngine else { throw ChessEngineError.noLegalMove }
     let board = EngineBoard(game.position, history: game.moves.map(\.positionBefore))
     var searcher = EngineSearcher(board: board, table: table)
     let result = searcher.search(
@@ -123,6 +126,9 @@ public actor ChessEngine {
 
   /// Searches `position` and reports the best line and the runner-up score (MultiPV 2).
   /// `history` holds the earlier positions of the game, oldest first; repeats count as draws.
+  /// A position the engine does not support has no best move: one with an off-board square, not
+  /// exactly one king per side, a clock outside 0 (1 for the move number) ..< `Int.max`, more
+  /// material than a game can reach, or the side not to move in check.
   public func analyze(
     position: ChessPosition,
     history: [ChessPosition] = [],
@@ -130,6 +136,9 @@ public actor ChessEngine {
   ) throws -> EngineAnalysis {
     try Task.checkCancellation()
     let whiteToMove = position.sideToMove == .white
+    guard position.isSupportedByEngine else {
+      return Self.analysisWithoutMove(evaluation: Evaluation(centipawns: 0), nodes: 0)
+    }
     var searcher = EngineSearcher(board: EngineBoard(position, history: history), table: table)
     let time = limit.time ?? (limit.depth == nil ? .seconds(1) : nil)
     let result = searcher.search(
@@ -145,15 +154,7 @@ public actor ChessEngine {
         result.inCheck
         ? Evaluation(centipawns: whiteToMove ? -20_000 : 20_000, mateIn: 0)
         : Evaluation(centipawns: 0)
-      return EngineAnalysis(
-        evaluation: evaluation,
-        bestMove: nil,
-        principalVariation: [],
-        depth: 0,
-        secondBestMove: nil,
-        secondBestEvaluation: nil,
-        nodes: result.nodes
-      )
+      return Self.analysisWithoutMove(evaluation: evaluation, nodes: result.nodes)
     }
     let second = result.lines.count > 1 && result.lines[1].exact ? result.lines[1] : nil
     return EngineAnalysis(
@@ -164,6 +165,18 @@ public actor ChessEngine {
       secondBestMove: second?.move.chessMove,
       secondBestEvaluation: second.map { Self.evaluation($0.score, whiteToMove: whiteToMove) },
       nodes: result.nodes
+    )
+  }
+
+  private static func analysisWithoutMove(evaluation: Evaluation, nodes: Int) -> EngineAnalysis {
+    EngineAnalysis(
+      evaluation: evaluation,
+      bestMove: nil,
+      principalVariation: [],
+      depth: 0,
+      secondBestMove: nil,
+      secondBestEvaluation: nil,
+      nodes: nodes
     )
   }
 

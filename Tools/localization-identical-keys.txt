@@ -21,3 +21,4 @@ pieceSet.cburnett.name
 account.chessCom.title
 account.gameCenter.title
 account.lichess.title
+online.opponent.stockfish

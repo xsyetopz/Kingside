@@ -635,3 +635,5 @@
 "chat.report.tv" = "Til að tilkynna þennan andstæðing skaltu opna %@ á öðru tæki.";
 /* %@: the player's own name. */
 "chat.line.own" = "%@ (þú)";
+/* %d: the Stockfish level, such as 3. */
+"online.opponent.stockfish" = "Stockfish level %d";

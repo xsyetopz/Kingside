@@ -3,17 +3,21 @@ import Foundation
 public extension ChessPosition {
   init(fen: String) throws {
     let fields = fen.split(separator: " ")
-    guard fields.count >= 4 else { throw ChessRuleError.invalidFEN }
+    guard (4...6).contains(fields.count) else { throw ChessRuleError.invalidFEN }
     let rows = fields[0].split(separator: "/")
     guard rows.count == 8 else { throw ChessRuleError.invalidFEN }
     var board: [Square: Piece] = [:]
     for (rowIndex, row) in rows.enumerated() {
       var file = 0
+      var previousWasDigit = false
       for character in row {
-        if let empty = character.wholeNumberValue {
+        if let empty = character.asciiValue.flatMap(Self.emptyRun(fromFEN:)) {
+          guard !previousWasDigit else { throw ChessRuleError.invalidFEN }
           file += empty
+          previousWasDigit = true
           continue
         }
+        previousWasDigit = false
         guard file < 8, let piece = Self.piece(fromFEN: character) else {
           throw ChessRuleError.invalidFEN
         }
@@ -23,22 +27,30 @@ public extension ChessPosition {
       guard file == 8 else { throw ChessRuleError.invalidFEN }
     }
     guard let side = PieceColor(fen: String(fields[1])) else { throw ChessRuleError.invalidFEN }
-    var rights: CastlingRights = []
-    if fields[2].contains("K") { rights.insert(.whiteKingSide) }
-    if fields[2].contains("Q") { rights.insert(.whiteQueenSide) }
-    if fields[2].contains("k") { rights.insert(.blackKingSide) }
-    if fields[2].contains("q") { rights.insert(.blackQueenSide) }
+    guard let rights = Self.castlingRights(fromFEN: fields[2]) else {
+      throw ChessRuleError.invalidFEN
+    }
     let ep: Square?
     if fields[3] == "-" {
       ep = nil
     } else {
-      guard let parsed = Square(algebraic: String(fields[3])) else {
+      guard let parsed = Square(algebraic: String(fields[3])),
+        Self.isEnPassantTarget(parsed, sideToMove: side, board: board)
+      else {
         throw ChessRuleError.invalidFEN
       }
       ep = parsed
     }
-    let halfmove = fields.count > 4 ? Int(fields[4]) ?? 0 : 0
-    let fullmove = fields.count > 5 ? Int(fields[5]) ?? 1 : 1
+    var halfmove = 0
+    if fields.count > 4 {
+      guard let clock = Self.clock(fromFEN: fields[4]) else { throw ChessRuleError.invalidFEN }
+      halfmove = clock
+    }
+    var fullmove = 1
+    if fields.count > 5 {
+      guard let number = Self.clock(fromFEN: fields[5]) else { throw ChessRuleError.invalidFEN }
+      fullmove = number
+    }
     self.init(
       board: board,
       sideToMove: side,
@@ -47,6 +59,37 @@ public extension ChessPosition {
       halfmoveClock: halfmove,
       fullmoveNumber: fullmove
     )
+    guard isSupportedByEngine else { throw ChessRuleError.invalidFEN }
+  }
+
+  /// Whether the engine can load and search this position. Its board drops off-board squares
+  /// and has no king-less case, either clock must survive adding 1, its per-ply move lists only
+  /// fit the material of a reachable game, and a side not to move in check would let it capture
+  /// a king.
+  var isSupportedByEngine: Bool {
+    guard board.keys.allSatisfy(\.isValid),
+      (0..<Int.max).contains(halfmoveClock),
+      (1..<Int.max).contains(fullmoveNumber),
+      PieceColor.allCases.allSatisfy(hasReachableMaterial)
+    else { return false }
+    return !isInCheck(sideToMove.opponent)
+  }
+
+  /// One king, no pawn on its first or last rank, and no more promoted pieces than missing pawns.
+  /// That bound also limits the side to 8 pawns and 16 pieces.
+  private func hasReachableMaterial(_ color: PieceColor) -> Bool {
+    let pieces = board.filter { $0.value.color == color }
+    let pawnOnBackRank = pieces.contains { square, piece in
+      piece.type == .pawn && (square.rank == 0 || square.rank == 7)
+    }
+    let counts = Dictionary(grouping: pieces.values, by: \.type).mapValues(\.count)
+    func extra(_ type: PieceType, beyond initial: Int) -> Int {
+      max(0, counts[type, default: 0] - initial)
+    }
+    let promoted =
+      extra(.queen, beyond: 1) + extra(.rook, beyond: 2) + extra(.bishop, beyond: 2)
+      + extra(.knight, beyond: 2)
+    return counts[.king] == 1 && !pawnOnBackRank && promoted <= 8 - counts[.pawn, default: 0]
   }
 
   var fen: String {
@@ -77,7 +120,50 @@ public extension ChessPosition {
     return "\(placement) \(side) \(castling) \(enPassant) \(halfmoveClock) \(fullmoveNumber)"
   }
 
+  /// `-`, or a non-empty subsequence of `KQkq` in that order.
+  private static func castlingRights(fromFEN field: Substring) -> CastlingRights? {
+    if field == "-" { return [] }
+    let order: [(Character, CastlingRights)] = [
+      ("K", .whiteKingSide), ("Q", .whiteQueenSide), ("k", .blackKingSide), ("q", .blackQueenSide),
+    ]
+    var rights: CastlingRights = []
+    var next = order.startIndex
+    for character in field {
+      guard let match = order[next...].firstIndex(where: { $0.0 == character }) else { return nil }
+      rights.insert(order[match].1)
+      next = match + 1
+    }
+    return rights.isEmpty ? nil : rights
+  }
+
+  /// The length of an empty run written as one ASCII digit 1-8.
+  private static func emptyRun(fromFEN ascii: UInt8) -> Int? {
+    (0x31...0x38).contains(ascii) ? Int(ascii - 0x30) : nil
+  }
+
+  /// The target is empty, the pawn that just double-pushed stands in front of it (an opponent of
+  /// the side to move), and the square that pawn came from is empty.
+  private static func isEnPassantTarget(
+    _ target: Square,
+    sideToMove: PieceColor,
+    board: [Square: Piece]
+  ) -> Bool {
+    let pushDirection = sideToMove.opponent.pawnDirection
+    guard target.rank == (sideToMove == .white ? 5 : 2) else { return false }
+    let pawn = Square(file: target.file, rank: target.rank + pushDirection)
+    let origin = Square(file: target.file, rank: target.rank - pushDirection)
+    return board[target] == nil && board[origin] == nil
+      && board[pawn] == Piece(type: .pawn, color: sideToMove.opponent)
+  }
+
+  /// A non-negative decimal number written with ASCII digits only.
+  private static func clock(fromFEN field: Substring) -> Int? {
+    guard field.utf8.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }) else { return nil }
+    return Int(field)
+  }
+
   private static func piece(fromFEN character: Character) -> Piece? {
+    guard character.isASCII else { return nil }
     let type: PieceType
     switch character.lowercased() {
     case "p": type = .pawn

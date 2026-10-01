@@ -635,3 +635,5 @@
 "chat.report.tv" = "Open %@ op een ander apparaat om deze tegenstander te melden.";
 /* %@: the player's own name. */
 "chat.line.own" = "%@ (jij)";
+/* %d: the Stockfish level, such as 3. */
+"online.opponent.stockfish" = "Stockfish level %d";

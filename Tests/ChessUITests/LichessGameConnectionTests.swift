@@ -1,3 +1,4 @@
+import ChessContent
 import ChessCore
 import ChessPlay
 import Foundation
@@ -63,13 +64,25 @@ private let correspondenceLine =
   + #""state":{"type":"gameState","moves":"","wtime":2147483647,"btime":2147483647,"winc":0,"#
   + #""binc":0,"status":"started"}}"#
 
+private let aiGameLine =
+  #"{"type":"gameFull","id":"aiGame01","speed":"rapid","rated":false,"#
+  + #""white":{"id":"georges","name":"Georges","rating":1838},"#
+  + #""black":{"aiLevel":3,"id":null},"initialFen":"startpos","#
+  + #""state":{"type":"gameState","moves":"","wtime":2147483647,"btime":2147483647,"winc":0,"#
+  + #""binc":0,"status":"started"}}"#
+
 private func event(
   _ line: String,
   userID: String = "georges",
   timed: Bool = true
 ) throws -> OnlineGameEvent? {
   let parsed = try #require(try LichessGameEvent.parse(line: line))
-  return try LichessGameConnection.map(parsed, userID: userID, timed: timed)
+  return try LichessGameConnection.map(
+    parsed,
+    userID: userID,
+    timed: timed,
+    localization: Localization(preferredLanguages: ["en-US"])
+  )
 }
 
 struct LichessGameConnectionMappingTests {
@@ -89,6 +102,15 @@ struct LichessGameConnectionMappingTests {
     #expect(start.state.blackTime == .milliseconds(298_000))
     #expect(start.state.status == .started)
     #expect(start.state.blackOffersDraw && !start.state.whiteOffersDraw)
+  }
+
+  @Test
+  func anAIOpponentIsNamedByItsLocalizedStockfishLevel() throws {
+    guard case .started(let start)? = try event(aiGameLine) else {
+      Issue.record("not started")
+      return
+    }
+    #expect(start.black == OnlinePlayer(name: "Stockfish level 3", rating: nil, title: nil))
   }
 
   @Test

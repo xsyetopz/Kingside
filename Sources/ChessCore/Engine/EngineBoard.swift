@@ -228,8 +228,6 @@ struct EngineBoard {
   private mutating func load(_ position: ChessPosition) {
     squares.initialize(repeating: 0, count: 128)
     counts.initialize(repeating: 0, count: 16)
-    kings[0] = -1
-    kings[1] = -1
     hash = 0
     middlegame = 0
     endgame = 0
