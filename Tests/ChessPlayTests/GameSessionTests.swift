@@ -194,6 +194,27 @@ final class GameSessionTests {
     )
   }
 
+  /// An ongoing game against `botID` that starts from `fen`; the human plays White.
+  private func savedBotGame(_ botID: String, fen: String) throws -> GameLaunch {
+    let bot = try #require(try Shared.catalog.bots.bot(id: botID))
+    return .saved(
+      SavedGame(
+        id: UUID(),
+        createdAt: Date(),
+        updatedAt: Date(),
+        mode: .bot(id: botID),
+        white: PlayerInfo(name: "You"),
+        black: PlayerInfo(bot: bot, localization: Shared.english),
+        timeControl: .untimed,
+        autoFlip: false,
+        game: ChessGame(position: try ChessPosition(fen: fen)),
+        result: .ongoing,
+        termination: nil,
+        clock: GameClock(timeControl: .untimed)
+      )
+    )
+  }
+
   private static let promotionFEN = "4k3/1P5p/8/8/8/8/8/4K3 w - - 0 1"
 
   private func square(_ name: String) throws -> Square { try #require(Square(algebraic: name)) }
@@ -416,6 +437,31 @@ final class GameSessionTests {
   }
 
   @Test
+  func botRepliesToTheMovePlayedAfterATakeback() throws {
+    let session = try makeSession(try botGame("pip"))
+    session.activate()
+    try play(["e2e4"], in: session)
+    session.apply(.takeback)
+
+    try play(["d2d4"], in: session)
+    #expect(session.isBotThinking)
+    session.deactivate()
+  }
+
+  @Test
+  func clockKeepsRunningAfterATakeback() async throws {
+    let session = try makeSession(passAndPlay(TimeControl(initialSeconds: 60, incrementSeconds: 0)))
+    session.activate()
+    try play(["e2e4", "e7e5", "g1f3"], in: session)
+    session.apply(.takeback)
+
+    await clock.waitForSleeper()
+    clock.advance(by: .seconds(61))
+    await sink.wait { $0.contains(.gameOver(.blackWon)) }
+    #expect(session.termination == .timeout)
+  }
+
+  @Test
   func takebackAfterBotReplyUndoesBothMoves() async throws {
     let session = try makeSession(try botGame("pip"))
     session.activate()
@@ -428,6 +474,22 @@ final class GameSessionTests {
     #expect(session.game.moves.isEmpty)
     #expect(session.game.position.sideToMove == .white)
     session.deactivate()
+  }
+
+  @Test
+  func takebackCancelsTheBotsPendingDrawDecision() async throws {
+    // After Rxa4 only two rooks are left, so the bot would accept; with the knight still on
+    // the board it declines.
+    let session = try makeSession(try savedBotGame("pip", fen: "4k2r/8/8/8/n7/8/8/R3K3 w - - 0 1"))
+    try play(["a1a4"], in: session)
+    session.apply(.offerDraw)
+    session.apply(.takeback)
+    session.apply(.dismissBotMessage)
+
+    session.apply(.offerDraw)
+    while session.botMessage == nil && !session.isGameOver { await Task.yield() }
+    #expect(session.result == .ongoing)
+    #expect(session.game.moves.isEmpty)
   }
 
   // MARK: Draw and resignation

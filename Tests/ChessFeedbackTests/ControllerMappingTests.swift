@@ -22,8 +22,8 @@ struct ControllerMappingTests {
 
   @Test
   func mapsButtons() {
-    #expect(ControllerMapping.intent(for: .a) == .selectFocused)
-    #expect(ControllerMapping.intent(for: .b) == .cancel)
+    #expect(ControllerMapping.input(for: .a) == .selectFocused)
+    #expect(ControllerMapping.input(for: .b) == .cancel)
   }
 
   @Test

@@ -8,7 +8,7 @@ import Observation
 //   all state; `.state` brings the moves, clocks, draw offers and status.
 // - Call `activate()` when the screen appears: it reads `connection.events()`. `deactivate()`
 //   stops reading and stops the clock; `activate()` again reconnects with a new stream.
-// - `apply(_:)` handles board input and the game intents, as in `GameSession`. The player's
+// - `apply(_:)` handles `BoardInput` and `GameAction`, as in `GameSession`. The player's
 //   move shows at once and is sent as UCI; it stays pending until a server state has it, and
 //   a failed send rolls the board back to the last server state.
 // - The local clock only counts down between server states; it never flags. The server ends
@@ -270,17 +270,22 @@ public final class OnlineGameSession {
     cancelClaimTimer()
   }
 
-  // MARK: - Intents
+  // MARK: - Input and actions
 
-  /// Board input, resign, draws and flip. Hint, takeback, rematch and bot messages do nothing.
-  public func apply(_ intent: BoardIntent) {
-    switch intent {
+  public func apply(_ boardInput: BoardInput) {
+    switch boardInput {
     case .moveFocus(let direction): input.moveFocus(direction)
     case .focus(let square): input.focus(square)
     case .selectFocused: select(input.focusedSquare)
     case .select(let square): select(square)
     case .cancel: input.cancel()
     case .promote(let type): if let move = input.promote(type) { play(move) }
+    }
+  }
+
+  /// Resign, draws and flip. Hint, takeback, rematch and bot messages do nothing.
+  public func apply(_ action: GameAction) {
+    switch action {
     case .offerDraw: offerDraw()
     case .acceptDraw: answerDraw(accept: true)
     case .declineDraw: answerDraw(accept: false)
@@ -398,7 +403,7 @@ public final class OnlineGameSession {
   /// Replaces all state with the server's full game.
   private func begin(_ start: OnlineGameStart) {
     let position: ChessPosition
-    do { position = try start.initialFEN.map(ChessPosition.init(fen:)) ?? .initial } catch {
+    do { position = try start.initialFEN.map { try ChessPosition(fen: $0) } ?? .initial } catch {
       connectionError = true
       return
     }
@@ -436,7 +441,13 @@ public final class OnlineGameSession {
   /// Brings the board, clocks, draw offers and result to `state`.
   private func adopt(_ state: OnlineGameState, announcesEnd: Bool) {
     guard let start else { return }
-    let incoming = state.uciMoves.map(Self.normalized)
+    adoptMoves(state.uciMoves.map(Self.normalized))
+    adoptClock(state)
+    adoptDrawOffers(state, myColor: start.myColor)
+    adoptOutcome(state, announcesEnd: announcesEnd)
+  }
+
+  private func adoptMoves(_ incoming: [String]) {
     let local = game.moves.map(\.move.uci)
     // A state without the player's pending move keeps that move on the board.
     let awaitsPendingMove = perGame.pendingMove.map { local == incoming + [$0] } ?? false
@@ -448,7 +459,10 @@ public final class OnlineGameSession {
       if !extended && incoming != local { rebuild(incoming) }
     }
     perGame.serverMoves = incoming
+  }
 
+  /// Keeps the local time of a side the server does not report.
+  private func adoptClock(_ state: OnlineGameState) {
     clockRunner.resync(
       to: GameClock(
         timeControl: clock.timeControl,
@@ -456,13 +470,18 @@ public final class OnlineGameSession {
         blackRemaining: state.blackTime.map(GamePresentation.seconds) ?? clock.remaining(.black)
       )
     )
+  }
 
-    let opponent = start.myColor.opponent
+  private func adoptDrawOffers(_ state: OnlineGameState, myColor: PieceColor) {
+    let opponent = myColor.opponent
     let opponentOffers = opponent == .white ? state.whiteOffersDraw : state.blackOffersDraw
-    let myOffer = start.myColor == .white ? state.whiteOffersDraw : state.blackOffersDraw
+    let myOffer = myColor == .white ? state.whiteOffersDraw : state.blackOffersDraw
     perGame.pendingDrawOffer = opponentOffers && !state.status.isFinished ? opponent : nil
     perGame.myDrawOfferPending = myOffer && !state.status.isFinished
+  }
 
+  /// Sets the result and, once the game is finished, stops play and saves.
+  private func adoptOutcome(_ state: OnlineGameState, announcesEnd: Bool) {
     let wasFinished = status.isFinished
     perGame.status = state.status
     (perGame.result, perGame.termination) = Self.outcome(
@@ -635,22 +654,33 @@ public final class OnlineGameSession {
     let decided = winner.map(GameResult.win(for:)) ?? .draw
     switch status {
     case .created, .started, .aborted: return (.ongoing, nil)
-    case .mate:
-      if case .checkmate(let winner) = outcome { return (.win(for: winner), .checkmate) }
-      return (decided, .checkmate)
+    case .mate: return (checkmateWinner(outcome).map(GameResult.win(for:)) ?? decided, .checkmate)
     case .resign: return (decided, .resignation)
     case .stalemate: return (.draw, .stalemate)
-    case .draw:
-      if case (.draw, let reason)? = GameAdjudication.result(for: outcome) {
-        return (.draw, reason)
-      }
-      return (.draw, .agreement)
-    case .outoftime:
-      guard let winner else { return (.draw, .timeoutVsInsufficientMaterial) }
-      return (.win(for: winner), .timeout)
+    case .draw: return (.draw, drawReason(outcome))
+    case .outoftime: return timeoutOutcome(winner: winner)
     case .timeout, .cheat, .noStart, .unknownFinish, .variantEnd, .other:
       return (decided, nil)
     }
+  }
+
+  nonisolated private static func checkmateWinner(_ outcome: GameOutcome) -> PieceColor? {
+    if case .checkmate(let winner) = outcome { return winner }
+    return nil
+  }
+
+  /// The board's own draw reason; a draw the board does not show was agreed.
+  nonisolated private static func drawReason(_ outcome: GameOutcome) -> GameTermination {
+    if case (.draw, let reason)? = GameAdjudication.result(for: outcome) { return reason }
+    return .agreement
+  }
+
+  /// A flag fall with no winner means the side with time left cannot mate.
+  nonisolated private static func timeoutOutcome(
+    winner: PieceColor?
+  ) -> (GameResult, GameTermination?) {
+    guard let winner else { return (.draw, .timeoutVsInsufficientMaterial) }
+    return (.win(for: winner), .timeout)
   }
 
   /// Stable id of the saved copy of an online game: the same service and game id always

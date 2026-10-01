@@ -51,7 +51,7 @@ struct BoardSceneTests {
 
   private static func makeScene(
     size: CGSize = CGSize(width: 800, height: 800),
-    onIntent: @escaping (BoardIntent) -> Void = { _ in }
+    onIntent: @escaping (BoardInput) -> Void = { _ in }
   ) throws -> BoardScene {
     let catalog = try ContentCatalog.load()
     let theme = try #require(catalog.boardTheme(id: catalog.defaults.boardThemeID))
@@ -214,7 +214,7 @@ struct BoardSceneTests {
 
   @Test
   func accessibilityElementsDescribeEverySquare() throws {
-    var intents: [BoardIntent] = []
+    var intents: [BoardInput] = []
     let scene = try Self.makeScene { intents.append($0) }
     scene.apply(Self.snapshot(.initial, selected: "g1", targets: ["f3", "h3"]), animated: false)
 
@@ -304,7 +304,7 @@ struct BoardSceneTests {
 
   @Test(arguments: [PieceColor.white, .black])
   func hitTestFindsTheSquareUnderAPoint(orientation: PieceColor) throws {
-    var intents: [BoardIntent] = []
+    var intents: [BoardInput] = []
     let scene = try Self.makeScene(size: CGSize(width: 1000, height: 600)) { intents.append($0) }
     scene.apply(Self.snapshot(.initial, orientation: orientation), animated: false)
 

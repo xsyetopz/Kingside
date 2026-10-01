@@ -7,7 +7,7 @@ enum ControllerButton: Equatable, Sendable {
   case a, b
 }
 
-/// Turns controller state into board intents, without hardware.
+/// Turns controller state into board input, without hardware.
 ///
 /// The d-pad wins over the thumbstick while both point somewhere. A new direction moves the
 /// cursor at once; a held one repeats after `repeatDelay`, then every `repeatInterval`.
@@ -32,33 +32,33 @@ struct ControllerMapping: Equatable {
     return y > 0 ? .up : .down
   }
 
-  static func intent(for button: ControllerButton) -> BoardIntent {
+  static func input(for button: ControllerButton) -> BoardInput {
     switch button {
     case .a: .selectFocused
     case .b: .cancel
     }
   }
 
-  mutating func dpadChanged(x: Float, y: Float, at time: TimeInterval) -> [BoardIntent] {
+  mutating func dpadChanged(x: Float, y: Float, at time: TimeInterval) -> [BoardInput] {
     dpad = Self.direction(x: x, y: y, threshold: tuning.axisThreshold)
     return update(at: time)
   }
 
-  mutating func stickChanged(x: Float, y: Float, at time: TimeInterval) -> [BoardIntent] {
+  mutating func stickChanged(x: Float, y: Float, at time: TimeInterval) -> [BoardInput] {
     stick = Self.direction(x: x, y: y, threshold: tuning.axisThreshold)
     return update(at: time)
   }
 
   /// Repeats of the held direction that are due at `time`.
-  mutating func tick(at time: TimeInterval) -> [BoardIntent] {
+  mutating func tick(at time: TimeInterval) -> [BoardInput] {
     guard let direction = held, var due = nextRepeat else { return [] }
-    var intents: [BoardIntent] = []
+    var inputs: [BoardInput] = []
     while due <= time {
-      intents.append(.moveFocus(direction))
+      inputs.append(.moveFocus(direction))
       due += tuning.repeatInterval
     }
     nextRepeat = due
-    return intents
+    return inputs
   }
 
   /// Forgets every held direction, such as when a controller disconnects.
@@ -69,7 +69,7 @@ struct ControllerMapping: Equatable {
     nextRepeat = nil
   }
 
-  private mutating func update(at time: TimeInterval) -> [BoardIntent] {
+  private mutating func update(at time: TimeInterval) -> [BoardInput] {
     let direction = dpad ?? stick
     guard direction != held else { return tick(at: time) }
     held = direction

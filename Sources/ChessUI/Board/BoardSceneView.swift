@@ -7,7 +7,7 @@ import SwiftUI
 // from `import SpriteKit` plus `import SwiftUI` alone.
 import _SpriteKit_SwiftUI
 
-/// Shows a `BoardScene` and turns every input source into `BoardIntent`s.
+/// Shows a `BoardScene` and turns every input source into `BoardInput`s.
 ///
 /// Touches and the mouse reach the scene directly. The Siri Remote drives SwiftUI focus
 /// commands, keys go through `onKeyPress`, and extended gamepads go through `AppModel`.
@@ -15,7 +15,7 @@ struct BoardSceneView: View {
   let snapshot: BoardSnapshot
   /// Whether Back or Escape has something to cancel; otherwise they leave the screen.
   let canCancel: Bool
-  let send: (BoardIntent) -> Void
+  let send: (BoardInput) -> Void
 
   @Environment(AppModel.self)
   private var model
@@ -80,7 +80,7 @@ struct BoardSceneView: View {
   }
 
   /// Pointer and accessibility intents from the scene end directional mode.
-  private func routeFromScene(_ intent: BoardIntent) {
+  private func routeFromScene(_ intent: BoardInput) {
     switch intent {
     case .focus, .select: usesDirectionalInput = false
     default: break
@@ -117,7 +117,7 @@ struct BoardSceneView: View {
 @MainActor
 private final class SceneHost {
   var scene: BoardScene!
-  var send: (BoardIntent) -> Void = { _ in }
+  var send: (BoardInput) -> Void = { _ in }
 }
 
 private struct BoardInputModifier: ViewModifier {
@@ -126,7 +126,7 @@ private struct BoardInputModifier: ViewModifier {
   let snapshot: BoardSnapshot
   /// The board's VoiceOver label on tvOS, where the board is a single element.
   let label: String
-  let send: (BoardIntent) -> Void
+  let send: (BoardInput) -> Void
 
   #if os(tvOS)
     /// Set by a press that moved the focused square: the focus engine also moves focus to any

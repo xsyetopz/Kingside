@@ -43,7 +43,7 @@ public final class AppModel {
   private var controllerInput: ControllerInput?
   /// Where controller intents go; the screen that shows a board sets it and clears it.
   @ObservationIgnored
-  private var controllerTarget: ((BoardIntent) -> Void)?
+  private var controllerTarget: ((BoardInput) -> Void)?
 
   /// Where the model keeps its data, and whether it makes sound.
   public struct Storage {
@@ -258,7 +258,7 @@ public final class AppModel {
 
   /// Sends extended-gamepad input to `target` until `releaseController()`.
   /// The Siri Remote is not included: it drives SwiftUI focus, which the board view handles.
-  public func routeController(to target: @escaping (BoardIntent) -> Void) {
+  public func routeController(to target: @escaping (BoardInput) -> Void) {
     controllerTarget = target
     if controllerInput == nil {
       let input = ControllerInput(tuning: catalog.feedback.controller) { [weak self] intent in

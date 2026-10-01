@@ -11,7 +11,7 @@ import GameController
 @preconcurrency
 @MainActor
 public final class ControllerInput {
-  private let send: (BoardIntent) -> Void
+  private let send: (BoardInput) -> Void
   private let now: () -> TimeInterval
   private var mapping: ControllerMapping
   private var repeatTask: Task<Void, Never>?
@@ -21,7 +21,7 @@ public final class ControllerInput {
   public init(
     tuning: ControllerTuning,
     now: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
-    send: @escaping (BoardIntent) -> Void
+    send: @escaping (BoardInput) -> Void
   ) {
     self.mapping = ControllerMapping(tuning: tuning)
     self.now = now
@@ -55,14 +55,14 @@ public final class ControllerInput {
       MainActor.assumeIsolated { self?.handle { $0.stickChanged(x: x, y: y, at: $1) } }
     }
     gamepad.buttonA.pressedChangedHandler = { [weak self] _, _, pressed in
-      if pressed { MainActor.assumeIsolated { self?.send(ControllerMapping.intent(for: .a)) } }
+      if pressed { MainActor.assumeIsolated { self?.send(ControllerMapping.input(for: .a)) } }
     }
     gamepad.buttonB.pressedChangedHandler = { [weak self] _, _, pressed in
-      if pressed { MainActor.assumeIsolated { self?.send(ControllerMapping.intent(for: .b)) } }
+      if pressed { MainActor.assumeIsolated { self?.send(ControllerMapping.input(for: .b)) } }
     }
   }
 
-  private func handle(_ change: (inout ControllerMapping, TimeInterval) -> [BoardIntent]) {
+  private func handle(_ change: (inout ControllerMapping, TimeInterval) -> [BoardInput]) {
     change(&mapping, now()).forEach(send)
     scheduleRepeat()
   }

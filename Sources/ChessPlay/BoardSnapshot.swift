@@ -2,7 +2,7 @@ import ChessCore
 import Foundation
 
 /// Everything the board scene draws, as ids and values. The scene resolves colors and assets
-/// from `ChessContent` and the settings; it never changes chess state and sends `BoardIntent`s.
+/// from `ChessContent` and the settings; it never changes chess state and sends `BoardInput`s.
 /// Sessions build it through `MoveInput.snapshot(of:canMove:hint:badge:)`.
 public struct BoardSnapshot: Equatable, Sendable {
   public var pieces: [Square: Piece]
@@ -15,7 +15,7 @@ public struct BoardSnapshot: Equatable, Sendable {
   public var lastMove: ChessMove?
   /// The king of the side to move when it is in check.
   public var checkSquare: Square?
-  /// The suggested move from a `.requestHint` intent.
+  /// The suggested move from a `.requestHint` action.
   public var hint: BoardArrow?
   /// Set while the player picks a promotion piece.
   public var pendingPromotion: PendingPromotion?
@@ -92,10 +92,9 @@ public struct PendingPromotion: Equatable, Sendable {
   }
 }
 
-/// Input to `GameSession.apply(_:)`, the only way a game changes. `PuzzleBoardSession` handles
-/// the board input, `.requestHint` and `.flipBoard` and ignores the rest.
-public enum BoardIntent: Equatable, Sendable {
-  // Board input
+/// Input from the board: pointer, keyboard, controller and accessibility. Each session takes it
+/// through `apply(_:)`.
+public enum BoardInput: Equatable, Sendable {
   /// Moves the cursor one square in a screen direction.
   case moveFocus(BoardDirection)
   /// Puts the cursor on a square, such as under a pointer.
@@ -107,8 +106,12 @@ public enum BoardIntent: Equatable, Sendable {
   /// Closes the promotion picker or drops the selection.
   case cancel
   case promote(PieceType)
+}
 
-  // Game actions
+/// A game command from a button or menu, taken by each session's `apply(_:)`. With
+/// `GameSession.apply(_:)` and `BoardInput`, the only way a game changes. `PuzzleBoardSession`
+/// handles `.requestHint` and `.flipBoard` and ignores the rest.
+public enum GameAction: Equatable, Sendable {
   case requestHint
   /// Bot games: back to the player's previous turn (1 or 2 plies). Pass-and-play: 1 ply.
   case takeback

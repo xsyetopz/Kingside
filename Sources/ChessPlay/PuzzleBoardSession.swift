@@ -5,8 +5,8 @@ import Observation
 
 // One puzzle on the board.
 // - `load(_:)` shows a puzzle and, after the intro delay, plays the opponent's first move.
-// - `apply(_:)` handles the board input intents, `.requestHint` and `.flipBoard`; game-only
-//   intents are ignored. The board scene reads `snapshot`.
+// - `apply(_:)` handles every `BoardInput` and the `.requestHint` and `.flipBoard` actions;
+//   other `GameAction`s are ignored. The board scene reads `snapshot`.
 // - `retry()`, `showSolution()`, `phase` and `canHint` / `canRetry` / `canShowSolution` drive
 //   the puzzle buttons. `onOutcome` fires once per puzzle.
 // - The rules live in `PuzzleSession`; this type adds timing and presentation. Feedback goes
@@ -110,16 +110,21 @@ public final class PuzzleBoardSession {
     }
   }
 
-  // MARK: - Intents
+  // MARK: - Input and actions
 
-  public func apply(_ intent: BoardIntent) {
-    switch intent {
+  public func apply(_ boardInput: BoardInput) {
+    switch boardInput {
     case .moveFocus(let direction): input.moveFocus(direction)
     case .focus(let square): input.focus(square)
     case .selectFocused: select(input.focusedSquare)
     case .select(let square): select(square)
     case .cancel: input.cancel()
     case .promote(let type): if let move = input.promote(type) { submit(move) }
+    }
+  }
+
+  public func apply(_ action: GameAction) {
+    switch action {
     case .requestHint: requestHint()
     case .flipBoard: input.isFlipped.toggle()
     case .takeback, .offerDraw, .acceptDraw, .declineDraw, .resign, .rematch, .dismissBotMessage:

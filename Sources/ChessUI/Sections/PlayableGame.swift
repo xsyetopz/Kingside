@@ -6,7 +6,8 @@ import Observation
 /// Both sessions are `@Observable`, so a view that reads these members updates when they change.
 @MainActor
 protocol PlayableGame: AnyObject, Observable {
-  func apply(_ intent: BoardIntent)
+  func apply(_ boardInput: BoardInput)
+  func apply(_ action: GameAction)
 
   var isGameOver: Bool { get }
   var resultTitle: String { get }

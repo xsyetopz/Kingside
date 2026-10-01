@@ -5,7 +5,7 @@ import Foundation
 import SpriteKit
 
 /// The SpriteKit chess board. It draws a `BoardSnapshot` and turns pointer input and
-/// accessibility activation into `BoardIntent`s; it never changes chess state.
+/// accessibility activation into `BoardInput`s; it never changes chess state.
 ///
 /// Remote and game-controller input is mapped to intents outside the scene (`ChessFeedback`).
 /// Nodes are kept between snapshots: `apply(_:animated:)` diffs the old snapshot against the
@@ -20,7 +20,7 @@ public final class BoardScene: SKScene {
     didSet { if displayScale != oldValue { updatePieceTextures() } }
   }
 
-  let onIntent: (BoardIntent) -> Void
+  let onIntent: (BoardInput) -> Void
   private let textures: PieceTextureCache
   let labels: SquareLabels
 
@@ -54,7 +54,7 @@ public final class BoardScene: SKScene {
     localization: Localization,
     displayScale: CGFloat,
     bundle: Bundle = Localization.moduleBundle,
-    onIntent: @escaping (BoardIntent) -> Void
+    onIntent: @escaping (BoardInput) -> Void
   ) {
     self.theme = theme
     self.pieceSet = pieceSet

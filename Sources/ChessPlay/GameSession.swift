@@ -58,6 +58,39 @@ public final class GameSession {
     var saveFailure = SaveFailure.none
   }
 
+  /// What a launch decides, built before `self` exists.
+  private struct LaunchValues {
+    let perGame: PerGameState
+    let mode: GameMode
+    let white: PlayerInfo
+    let black: PlayerInfo
+    let timeControl: TimeControl
+    let autoFlip: Bool
+    let clock: GameClock
+
+    init(_ launch: GameLaunch) {
+      switch launch {
+      case .new(let setup):
+        perGame = PerGameState()
+        (mode, white, black) = (setup.mode, setup.white, setup.black)
+        (timeControl, autoFlip) = (setup.timeControl, setup.autoFlip)
+        clock = GameClock(timeControl: setup.timeControl)
+      case .saved(let saved):
+        perGame = PerGameState(
+          id: saved.id,
+          createdAt: saved.createdAt,
+          game: saved.game,
+          result: saved.result,
+          termination: saved.termination,
+          hasAnnouncedStart: true
+        )
+        (mode, white, black) = (saved.mode, saved.white, saved.black)
+        (timeControl, autoFlip) = (saved.timeControl, saved.autoFlip)
+        clock = saved.clock
+      }
+    }
+  }
+
   private var perGame: PerGameState {
     didSet { if perGame.game != oldValue.game { refreshDerived() } }
   }
@@ -95,10 +128,10 @@ public final class GameSession {
   /// Side whose clock runs while the game is ongoing; nil once it has ended.
   public private(set) var activeClockColor: PieceColor?
 
-  public var id: UUID { perGame.id }
   public private(set) var mode: GameMode
   public private(set) var white: PlayerInfo
   public private(set) var black: PlayerInfo
+  public var id: UUID { perGame.id }
   public let opponent: Opponent
   public let timeControl: TimeControl
   public let autoFlip: Bool
@@ -152,53 +185,21 @@ public final class GameSession {
     let origin = clock.now
     now = { origin.duration(to: clock.now) }
     sleep = { try await clock.sleep(for: $0) }
-    let gameClock: GameClock
-    switch launch {
-    case .new(let setup):
-      perGame = PerGameState()
-      mode = setup.mode
-      white = setup.white
-      black = setup.black
-      timeControl = setup.timeControl
-      autoFlip = setup.autoFlip
-      gameClock = GameClock(timeControl: setup.timeControl)
-    case .saved(let saved):
-      perGame = PerGameState(
-        id: saved.id,
-        createdAt: saved.createdAt,
-        game: saved.game,
-        result: saved.result,
-        termination: saved.termination,
-        hasAnnouncedStart: true
-      )
-      mode = saved.mode
-      white = saved.white
-      black = saved.black
-      timeControl = saved.timeControl
-      autoFlip = saved.autoFlip
-      gameClock = saved.clock
-    }
+    let values = LaunchValues(launch)
+    perGame = values.perGame
+    (mode, white, black) = (values.mode, values.white, values.black)
+    (timeControl, autoFlip) = (values.timeControl, values.autoFlip)
     clockRunner = ClockRunner(
-      gameClock,
+      values.clock,
       policy: .endsGame,
       tuning: catalog.tuning.clock,
       feedback: feedback,
       time: clock
     )
-    let (launchMode, launchWhite, launchBlack): (GameMode, PlayerInfo, PlayerInfo)
-    switch launch {
-    case .new(let setup):
-      (launchMode, launchWhite, launchBlack) = (setup.mode, setup.white, setup.black)
-    case .saved(let saved):
-      (launchMode, launchWhite, launchBlack) = (saved.mode, saved.white, saved.black)
-    }
-    opponent = launchMode.botID.flatMap(catalog.bots.bot(id:)).map(Opponent.bot) ?? .human
-    topPlayer = PlayerSlot(color: .black, info: launchBlack)
-    bottomPlayer = PlayerSlot(color: .white, info: launchWhite)
-    input.lastMove = game.moves.last?.move
-    input.isFlipped = initialFlip
-    refreshPlayers()
-    input.resetFocus(for: humanColor ?? game.position.sideToMove)
+    opponent = values.mode.botID.flatMap(catalog.bots.bot(id:)).map(Opponent.bot) ?? .human
+    topPlayer = PlayerSlot(color: .black, info: values.black)
+    bottomPlayer = PlayerSlot(color: .white, info: values.white)
+    resetInput()
     refreshDerived()
   }
 
@@ -278,31 +279,18 @@ public final class GameSession {
     save()
   }
 
-  // MARK: - Intents
+  // MARK: - Board input
 
-  public func apply(_ intent: BoardIntent) {
-    switch intent {
+  public func apply(_ boardInput: BoardInput) {
+    switch boardInput {
     case .moveFocus(let direction): input.moveFocus(direction)
     case .focus(let square): input.focus(square)
     case .selectFocused: select(input.focusedSquare)
     case .select(let square): select(square)
     case .cancel: input.cancel()
     case .promote(let type): if let move = input.promote(type) { play(move) }
-    case .requestHint: requestHint()
-    case .takeback: takeback()
-    case .offerDraw: offerDraw()
-    case .acceptDraw: acceptDraw()
-    case .declineDraw: perGame.pendingDrawOffer = nil
-    case .resign: resign()
-    case .flipBoard:
-      input.isFlipped.toggle()
-      refreshPlayers()
-    case .rematch: rematch()
-    case .dismissBotMessage: perGame.botMessage = nil
     }
   }
-
-  // MARK: - Board input
 
   private func select(_ square: Square) {
     guard canMove else { return }
@@ -320,6 +308,20 @@ public final class GameSession {
   }
 
   // MARK: - Actions
+
+  public func apply(_ action: GameAction) {
+    switch action {
+    case .requestHint: requestHint()
+    case .takeback: takeback()
+    case .offerDraw: offerDraw()
+    case .acceptDraw: acceptDraw()
+    case .declineDraw: perGame.pendingDrawOffer = nil
+    case .resign: resign()
+    case .flipBoard: flipBoard()
+    case .rematch: rematch()
+    case .dismissBotMessage: perGame.botMessage = nil
+    }
+  }
 
   private func requestHint() {
     guard canMove, hintTask == nil else { return }
@@ -348,17 +350,16 @@ public final class GameSession {
       humanColor: humanColor
     )
     guard plies > 0 else { return }
-    botTask?.cancel()
-    botTask = nil
-    isBotThinking = false
-    cancelHint()
+    tickClock()
+    guard !isGameOver else { return }
+    cancelTasks()
     perGame.pendingDrawOffer = nil
     for _ in 0..<plies { perGame.game.undo() }
     input.cancel()
     input.lastMove = game.moves.last?.move
     say(.takeback)
     applyAutoFlip()
-    updateClockTurn()
+    if isActive { startClock() } else { updateClockTurn() }
     save()
   }
 
@@ -409,15 +410,17 @@ public final class GameSession {
     finish(.win(for: loser.opponent), .resignation)
   }
 
+  private func flipBoard() {
+    input.isFlipped.toggle()
+    refreshPlayers()
+  }
+
   private func rematch() {
     cancelTasks()
     swap(&white, &black)
     perGame = PerGameState()
     clockRunner.reset(to: GameClock(timeControl: timeControl))
-    input = MoveInput()
-    input.isFlipped = initialFlip
-    input.resetFocus(for: humanColor ?? .white)
-    refreshPlayers()
+    resetInput()
     if isActive {
       isActive = false
       activate()
@@ -472,41 +475,46 @@ public final class GameSession {
     let start = now()
     botTask = Task { [weak self, engine, now, sleep] in
       do {
-        if let playerMove = game.moves.last {
-          let history = game.moves.map(\.positionBefore)
-          let limit = SearchLimit.time(tuning.blunderAnalysisTime)
-          let before = try await engine.analyze(
-            position: playerMove.positionBefore,
-            history: Array(history.dropLast()),
-            limit: limit
-          )
-          let after = try await engine.analyze(
-            position: game.position,
-            history: history,
-            limit: limit
-          )
-          if Self.isBlunder(
-            before: before.evaluation,
-            after: after.evaluation,
-            by: humanColor,
-            tuning: tuning
-          ) {
-            self?.say(.playerBlunder)
-          }
+        if try await Self.playerBlundered(in: game, by: humanColor, engine: engine, tuning: tuning)
+        {
+          self?.say(.playerBlunder)
         }
         let move = try await engine.bestMove(game: game, strength: bot.strength)
         let remaining = delay - (now() - start)
         if remaining > .zero { try await sleep(remaining) }
         guard let self, !Task.isCancelled, self.game == game else { return }
-        self.botTask = nil
-        self.isBotThinking = false
-        self.play(move)
+        self.playBotReply(move)
       } catch {
         guard let self, !Task.isCancelled else { return }
         self.botTask = nil
         self.isBotThinking = false
       }
     }
+  }
+
+  /// Whether the last move in `game`, the player's, is a blunder by `isBlunder`.
+  nonisolated private static func playerBlundered(
+    in game: ChessGame,
+    by player: PieceColor,
+    engine: ChessEngine,
+    tuning: GameTuning
+  ) async throws -> Bool {
+    guard let playerMove = game.moves.last else { return false }
+    let history = game.moves.map(\.positionBefore)
+    let limit = SearchLimit.time(tuning.blunderAnalysisTime)
+    let before = try await engine.analyze(
+      position: playerMove.positionBefore,
+      history: Array(history.dropLast()),
+      limit: limit
+    )
+    let after = try await engine.analyze(position: game.position, history: history, limit: limit)
+    return isBlunder(before: before.evaluation, after: after.evaluation, by: player, tuning: tuning)
+  }
+
+  private func playBotReply(_ move: ChessMove) {
+    botTask = nil
+    isBotThinking = false
+    play(move)
   }
 
   private func finish(_ result: GameResult, _ termination: GameTermination) {
@@ -599,6 +607,15 @@ public final class GameSession {
       .black: Material.missing(.white, in: position),
     ]
     materialAdvantage = GamePresentation.materialAdvantage(in: position)
+  }
+
+  /// Fresh selection and focus for the current game, with the board turned for the launch.
+  private func resetInput() {
+    input = MoveInput()
+    input.lastMove = game.moves.last?.move
+    input.isFlipped = initialFlip
+    input.resetFocus(for: humanColor ?? game.position.sideToMove)
+    refreshPlayers()
   }
 
   private func refreshPlayers() {
