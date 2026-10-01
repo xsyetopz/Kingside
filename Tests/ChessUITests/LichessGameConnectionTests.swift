@@ -92,11 +92,10 @@ struct LichessGameConnectionMappingTests {
     guard case .started(let start) = mapped else { Issue.record("not started: \(mapped)"); return }
     #expect(start.gameID == "rCRw1Auv")
     #expect(start.initialFEN == nil)
-    #expect(start.white == OnlinePlayer(name: "Georges", rating: 1838, title: nil))
-    #expect(start.black == OnlinePlayer(name: "Philippe", rating: 1790, title: "FM"))
+    #expect(start.white == OnlinePlayer(name: "Georges", rating: 1838))
+    #expect(start.black == OnlinePlayer(name: "Philippe", rating: 1790))
     #expect(start.myColor == .white)
     #expect(start.timeControl == TimeControl(initialSeconds: 300, incrementSeconds: 3))
-    #expect(start.rated)
     #expect(start.state.uciMoves == ["e2e4", "e7e5"])
     #expect(start.state.whiteTime == .milliseconds(300_000))
     #expect(start.state.blackTime == .milliseconds(298_000))
@@ -110,7 +109,7 @@ struct LichessGameConnectionMappingTests {
       Issue.record("not started")
       return
     }
-    #expect(start.black == OnlinePlayer(name: "Stockfish level 3", rating: nil, title: nil))
+    #expect(start.black == OnlinePlayer(name: "Stockfish level 3", rating: nil))
   }
 
   @Test
@@ -269,7 +268,7 @@ struct LichessGameConnectionTests {
   func actionsCallTheBoardApi() async throws {
     let (connection, transport) = try await makeConnection()
     let actions: [OnlineAction] = [
-      .move("e2e4"), .resign, .abort, .claimVictory, .claimDraw, .offerDraw, .acceptDraw,
+      .move("e2e4"), .resign, .abort, .claimVictory, .offerDraw, .acceptDraw,
       .declineDraw, .chat("hello"),
     ]
     for action in actions { try await connection.send(action) }
@@ -278,7 +277,7 @@ struct LichessGameConnectionTests {
       await transport.paths.suffix(actions.count) == [
         "POST \(game)/move/e2e4", "POST \(game)/resign", "POST \(game)/abort",
         "POST \(game)/claim-victory",
-        "POST \(game)/claim-draw", "POST \(game)/draw/yes", "POST \(game)/draw/yes",
+        "POST \(game)/draw/yes", "POST \(game)/draw/yes",
         "POST \(game)/draw/no",
         "POST \(game)/chat",
       ]

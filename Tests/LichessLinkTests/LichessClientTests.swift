@@ -51,7 +51,6 @@ struct LichessClientTests {
     try await client.resign(gameID: "abc12345")
     try await client.abort(gameID: "abc12345")
     try await client.claimVictory(gameID: "abc12345")
-    try await client.claimDraw(gameID: "abc12345")
     try await client.draw(gameID: "abc12345", accept: true)
     try await client.draw(gameID: "abc12345", accept: false)
     try await client.acceptChallenge(id: "VU0nyvsW")
@@ -61,8 +60,8 @@ struct LichessClientTests {
     #expect(
       requests.map { $0.url!.path } == [
         "/api/board/game/abc12345/resign", "/api/board/game/abc12345/abort",
-        "/api/board/game/abc12345/claim-victory", "/api/board/game/abc12345/claim-draw",
-        "/api/board/game/abc12345/draw/yes", "/api/board/game/abc12345/draw/no",
+        "/api/board/game/abc12345/claim-victory", "/api/board/game/abc12345/draw/yes",
+        "/api/board/game/abc12345/draw/no",
         "/api/challenge/VU0nyvsW/accept", "/api/challenge/VU0nyvsW/decline",
         "/api/challenge/VU0nyvsW/cancel",
       ]

@@ -16,12 +16,6 @@ public struct ServiceEndpoints: Codable, Hashable, Sendable {
 /// The Chess.com Published-Data API.
 public struct ChessComEndpoints: Codable, Hashable, Sendable {
   public let baseURL: URL
-  /// A member page; `{username}` is replaced with the linked username.
-  public let profileURLTemplate: String
-
-  public func profileURL(username: String) -> URL? {
-    URL(string: profileURLTemplate.replacingOccurrences(of: "{username}", with: username))
-  }
 }
 
 /// The Lichess site, and the OAuth client the app signs in with.

@@ -1,8 +1,7 @@
 {
     "contact": "CONTACT_EMAIL_PLACEHOLDER",
     "chessCom": {
-        "baseURL": "https://api.chess.com/pub/",
-        "profileURLTemplate": "https://www.chess.com/member/{username}"
+        "baseURL": "https://api.chess.com/pub/"
     },
     "lichess": {
         "baseURL": "https://lichess.org",

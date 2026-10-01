@@ -101,7 +101,6 @@ final class OnlineGameSessionTests {
       black: OnlinePlayer(name: "Bob", rating: 1600),
       myColor: myColor,
       timeControl: timeControl,
-      rated: true,
       state: OnlineGameState(uciMoves: moves, status: status)
     )
   }
@@ -497,7 +496,6 @@ final class OnlineGameSessionTests {
       black: OnlinePlayer(name: "Bob", rating: 1600),
       myColor: .white,
       timeControl: nil,
-      rated: true,
       state: OnlineGameState()
     )
     connection.push(.started(broken))

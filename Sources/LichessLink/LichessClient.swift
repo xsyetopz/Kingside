@@ -83,7 +83,6 @@ public actor LichessClient {
   public func claimVictory(gameID: String) async throws {
     try await gameAction(gameID, "claim-victory")
   }
-  public func claimDraw(gameID: String) async throws { try await gameAction(gameID, "claim-draw") }
 
   /// Offers a draw, or answers the opponent's offer.
   public func draw(gameID: String, accept: Bool) async throws {

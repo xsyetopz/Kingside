@@ -342,7 +342,6 @@ struct CatalogTests {
     let catalog = try ContentCatalog.load()
     let chessCom = catalog.services.chessCom
     #expect(chessCom.baseURL.scheme == "https")
-    #expect(chessCom.profileURL(username: "hikaru")?.absoluteString.hasSuffix("/hikaru") == true)
     let lichess = catalog.services.lichess
     #expect(lichess.baseURL.scheme == "https")
     #expect(lichess.redirectURI.scheme?.isEmpty == false)

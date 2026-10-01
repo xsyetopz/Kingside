@@ -52,7 +52,6 @@ struct LichessGameConnection: OnlineGameConnection {
     case .resign: try await client.resign(gameID: gameID)
     case .abort: try await client.abort(gameID: gameID)
     case .claimVictory: try await client.claimVictory(gameID: gameID)
-    case .claimDraw: try await client.claimDraw(gameID: gameID)
     // Lichess offers a draw and accepts an offer with the same call.
     case .offerDraw, .acceptDraw: try await client.draw(gameID: gameID, accept: true)
     case .declineDraw: try await client.draw(gameID: gameID, accept: false)
@@ -104,7 +103,6 @@ struct LichessGameConnection: OnlineGameConnection {
       black: player(game.black, localization: localization),
       myColor: myColor,
       timeControl: timeControl(game.clock),
-      rated: game.rated,
       state: state(game.state, timed: game.clock != nil)
     )
   }
@@ -114,7 +112,7 @@ struct LichessGameConnection: OnlineGameConnection {
     let name =
       player.name ?? player.aiLevel.map { localization.string("online.opponent.stockfish", $0) }
       ?? ""
-    return OnlinePlayer(name: name, rating: player.rating, title: player.title)
+    return OnlinePlayer(name: name, rating: player.rating)
   }
 
   /// Whole seconds; nil when the game has no clock (correspondence, unlimited).

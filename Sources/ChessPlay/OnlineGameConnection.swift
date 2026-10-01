@@ -11,13 +11,10 @@ import Foundation
 public struct OnlinePlayer: Equatable, Sendable {
   public var name: String
   public var rating: Int?
-  /// Title such as `GM` or `BOT`; nil for untitled players.
-  public var title: String?
 
-  public init(name: String, rating: Int? = nil, title: String? = nil) {
+  public init(name: String, rating: Int? = nil) {
     self.name = name
     self.rating = rating
-    self.title = title
   }
 }
 
@@ -32,7 +29,6 @@ public struct OnlineGameStart: Equatable, Sendable {
   public var myColor: PieceColor
   /// nil for correspondence and unlimited games.
   public var timeControl: TimeControl?
-  public var rated: Bool
   public var state: OnlineGameState
 
   public init(
@@ -42,7 +38,6 @@ public struct OnlineGameStart: Equatable, Sendable {
     black: OnlinePlayer,
     myColor: PieceColor,
     timeControl: TimeControl?,
-    rated: Bool,
     state: OnlineGameState
   ) {
     self.gameID = gameID
@@ -51,7 +46,6 @@ public struct OnlineGameStart: Equatable, Sendable {
     self.black = black
     self.myColor = myColor
     self.timeControl = timeControl
-    self.rated = rated
     self.state = state
   }
 }
@@ -128,7 +122,7 @@ public struct OnlineChatLine: Equatable, Sendable, Identifiable {
 public enum OnlineAction: Equatable, Sendable {
   /// A move in UCI.
   case move(String)
-  case resign, abort, offerDraw, acceptDraw, declineDraw, claimVictory, claimDraw
+  case resign, abort, offerDraw, acceptDraw, declineDraw, claimVictory
   case chat(String)
 }
 

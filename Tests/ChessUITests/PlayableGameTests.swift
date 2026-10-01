@@ -99,7 +99,6 @@ final class PlayableGameTests {
       black: OnlinePlayer(name: "Bob", rating: 1600),
       myColor: .white,
       timeControl: nil,
-      rated: true,
       state: state
     )
   }

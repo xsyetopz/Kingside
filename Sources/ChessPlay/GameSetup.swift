@@ -40,14 +40,6 @@ public struct GameSetup: Hashable, Sendable {
       timeControl: .untimed
     )
   }
-
-  /// Same players with colors swapped.
-  public var swapped: Self {
-    var copy = self
-    copy.white = black
-    copy.black = white
-    return copy
-  }
 }
 
 /// How the game screen starts: a fresh game or a saved one.
