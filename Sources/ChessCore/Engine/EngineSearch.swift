@@ -50,7 +50,7 @@ struct SearchResult {
 
 /// Alpha-beta searcher over an `EngineBoard`: iterative deepening, PVS, transposition table,
 /// null-move pruning, late-move reductions, futility pruning, check extension and quiescence.
-struct EngineSearcher {
+struct EngineSearcher: ~Copyable {
   static let maxPly = 96
   static let infinity = 32_000
   static let mate = 31_000
@@ -66,7 +66,7 @@ struct EngineSearcher {
   private let table: TranspositionTable
   private let entries: UnsafeMutablePointer<TranspositionEntry>
   private let tableMask: Int
-  private let generation: UInt8
+  private var generation: UInt8 = 0
   private let killers: UnsafeMutablePointer<EngineMove>
   private let history: UnsafeMutablePointer<Int32>
   private let moveLists: UnsafeMutablePointer<EngineMove>
@@ -80,13 +80,16 @@ struct EngineSearcher {
   private var canStopOnTime = false
   private var deadline: ContinuousClock.Instant?
 
-  init(board: EngineBoard, table: TranspositionTable) {
+  init(board: consuming EngineBoard, table: TranspositionTable) {
+    // The search and `extendedPV` (with its `legalMoves()` probe) make fewer than `maxPly` moves.
+    precondition(
+      board.plyCapacity - board.undoCount >= Self.maxPly,
+      "board too small for a search"
+    )
     self.board = board
     self.table = table
-    table.startSearch()
     entries = table.entries
     tableMask = table.mask
-    generation = table.generation
     killers = .allocate(capacity: Self.maxPly * 2)
     killers.initialize(repeating: 0, count: Self.maxPly * 2)
     history = .allocate(capacity: 2 * 128 * 128)
@@ -98,15 +101,13 @@ struct EngineSearcher {
     pvLength.initialize(repeating: 0, count: Self.maxPly + 1)
   }
 
-  /// Frees the search buffers and the board.
-  func deallocate() {
+  deinit {
     killers.deallocate()
     history.deallocate()
     moveLists.deallocate()
     moveScores.deallocate()
     pvTable.deallocate()
     pvLength.deallocate()
-    board.deallocate()
   }
 
   // MARK: - Iterative deepening
@@ -115,6 +116,8 @@ struct EngineSearcher {
   /// cancelled. `multiPV` root moves get exact scores; the rest only get upper bounds.
   /// Depth 1 always completes unless the task is cancelled.
   mutating func search(maxDepth: Int, timeLimit: Duration?, multiPV: Int) -> SearchResult {
+    table.startSearch()
+    generation = table.generation
     let start = ContinuousClock.now
     deadline = timeLimit.map { start.advanced(by: $0) }
     let inCheck = board.inCheck

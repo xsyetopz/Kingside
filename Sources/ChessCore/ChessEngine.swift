@@ -117,7 +117,6 @@ public actor ChessEngine {
       timeLimit: strength.thinkTime,
       multiPV: strength.candidateMoves
     )
-    searcher.deallocate()
     if result.cancelled { throw CancellationError() }
     guard !result.lines.isEmpty else { throw ChessEngineError.noLegalMove }
     var generator = SystemRandomNumberGenerator()
@@ -146,7 +145,6 @@ public actor ChessEngine {
       timeLimit: time,
       multiPV: 2
     )
-    searcher.deallocate()
     if result.cancelled { throw CancellationError() }
 
     guard let best = result.lines.first else {

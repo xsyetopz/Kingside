@@ -70,29 +70,29 @@ final class EngineTables: @unchecked Sendable {
   static let shared = EngineTables()
 
   /// 0..<8 knight jumps, 8..<12 diagonal steps, 12..<16 orthogonal steps.
-  let offsets: UnsafeMutablePointer<Int>
+  let offsets: UnsafePointer<Int>
   /// Zobrist keys: 16 * 128 piece-square keys, then 16 castling keys, 8 en-passant file keys, 1
   /// side key.
-  let zobrist: UnsafeMutablePointer<UInt64>
+  let zobrist: UnsafePointer<UInt64>
   /// Middlegame / endgame value (material + placement) indexed by piece * 128 + square.
-  let middlegame: UnsafeMutablePointer<Int>
-  let endgame: UnsafeMutablePointer<Int>
+  let middlegame: UnsafePointer<Int>
+  let endgame: UnsafePointer<Int>
   /// Castling rights kept after a move touches a square.
-  let castleMask: UnsafeMutablePointer<Int>
+  let castleMask: UnsafePointer<Int>
 
   static let castleKeyBase = 16 * 128
   static let enPassantKeyBase = castleKeyBase + 16
   static let sideKeyIndex = enPassantKeyBase + 8
 
   private init() {
-    offsets = .allocate(capacity: 16)
+    let offsets = UnsafeMutablePointer<Int>.allocate(capacity: 16)
     for (index, offset) in [-33, -31, -18, -14, 14, 18, 31, 33, -17, -15, 15, 17, -16, -1, 1, 16]
       .enumerated()
     {
       offsets[index] = offset
     }
 
-    zobrist = .allocate(capacity: Self.sideKeyIndex + 1)
+    let zobrist = UnsafeMutablePointer<UInt64>.allocate(capacity: Self.sideKeyIndex + 1)
     var seed: UInt64 = 0x5EED_C0DE_1234_5678
     for index in 0...Self.sideKeyIndex {
       // SplitMix64 gives well-distributed, deterministic keys.
@@ -103,8 +103,8 @@ final class EngineTables: @unchecked Sendable {
       zobrist[index] = value ^ (value >> 31)
     }
 
-    middlegame = .allocate(capacity: 16 * 128)
-    endgame = .allocate(capacity: 16 * 128)
+    let middlegame = UnsafeMutablePointer<Int>.allocate(capacity: 16 * 128)
+    let endgame = UnsafeMutablePointer<Int>.allocate(capacity: 16 * 128)
     middlegame.initialize(repeating: 0, count: 16 * 128)
     endgame.initialize(repeating: 0, count: 16 * 128)
     for kind in 1...6 {
@@ -121,7 +121,7 @@ final class EngineTables: @unchecked Sendable {
       }
     }
 
-    castleMask = .allocate(capacity: 128)
+    let castleMask = UnsafeMutablePointer<Int>.allocate(capacity: 128)
     castleMask.initialize(repeating: 15, count: 128)
     castleMask[0x00] = 15 & ~2  // a1: white queen side
     castleMask[0x07] = 15 & ~1  // h1: white king side
@@ -129,6 +129,12 @@ final class EngineTables: @unchecked Sendable {
     castleMask[0x70] = 15 & ~8  // a8: black queen side
     castleMask[0x77] = 15 & ~4  // h8: black king side
     castleMask[0x74] = 15 & ~12  // e8: both black rights
+
+    self.offsets = UnsafePointer(offsets)
+    self.zobrist = UnsafePointer(zobrist)
+    self.middlegame = UnsafePointer(middlegame)
+    self.endgame = UnsafePointer(endgame)
+    self.castleMask = UnsafePointer(castleMask)
   }
 }
 
@@ -144,8 +150,8 @@ struct EngineUndo {
   var phase: Int
 }
 
-/// Mutable 0x88 board with make/unmake. Owns its buffers; call `deallocate()` when done.
-struct EngineBoard {
+/// Mutable 0x88 board with make/unmake. Owns its buffers and frees them in `deinit`.
+struct EngineBoard: ~Copyable {
   static let maxGamePly = 2048
 
   let squares: UnsafeMutablePointer<Int>
@@ -153,15 +159,17 @@ struct EngineBoard {
   let counts: UnsafeMutablePointer<Int>
   /// King square per side (0 white, 1 black).
   let kings: UnsafeMutablePointer<Int>
+  /// Most moves that can be made at once: `undoStack` and the tail of `hashHistory` hold no more.
+  let plyCapacity: Int
   let undoStack: UnsafeMutablePointer<EngineUndo>
   /// Hash of every position from the start of the known game history to the current node.
   let hashHistory: UnsafeMutablePointer<UInt64>
 
-  let offsets: UnsafeMutablePointer<Int>
-  let zobrist: UnsafeMutablePointer<UInt64>
-  let pstMiddlegame: UnsafeMutablePointer<Int>
-  let pstEndgame: UnsafeMutablePointer<Int>
-  let castleMask: UnsafeMutablePointer<Int>
+  let offsets: UnsafePointer<Int>
+  let zobrist: UnsafePointer<UInt64>
+  let pstMiddlegame: UnsafePointer<Int>
+  let pstEndgame: UnsafePointer<Int>
+  let castleMask: UnsafePointer<Int>
 
   /// 0 = white to move, 1 = black to move.
   var side = 0
@@ -179,7 +187,15 @@ struct EngineBoard {
   var undoCount = 0
   var historyCount = 0
 
+  /// A board with room for a whole game of moves, for search.
   init(_ position: ChessPosition, history: [ChessPosition] = []) {
+    self.init(position, history: history, plyCapacity: Self.maxGamePly)
+  }
+
+  /// A board for rules queries such as `legalMoves()`: it can hold `plyCapacity` made moves
+  /// (at least `depth` for `perft(depth)`), so it does not allocate search-size buffers.
+  init(_ position: ChessPosition, history: [ChessPosition] = [], plyCapacity: Int) {
+    precondition(plyCapacity >= 1, "a board must hold at least one made move")
     let tables = EngineTables.shared
     offsets = tables.offsets
     zobrist = tables.zobrist
@@ -189,8 +205,9 @@ struct EngineBoard {
     squares = .allocate(capacity: 128)
     counts = .allocate(capacity: 16)
     kings = .allocate(capacity: 2)
-    undoStack = .allocate(capacity: Self.maxGamePly)
-    hashHistory = .allocate(capacity: history.count + Self.maxGamePly)
+    self.plyCapacity = plyCapacity
+    undoStack = .allocate(capacity: plyCapacity)
+    hashHistory = .allocate(capacity: history.count + 1 + plyCapacity)
     for earlier in history {
       load(earlier)
       hashHistory[historyCount] = hash
@@ -201,13 +218,17 @@ struct EngineBoard {
     historyCount += 1
   }
 
-  func deallocate() {
+  deinit {
     squares.deallocate()
     counts.deallocate()
     kings.deallocate()
     undoStack.deallocate()
     hashHistory.deallocate()
   }
+
+  /// Does nothing: `deinit` frees the buffers. Kept only because a protected test file still
+  /// calls it.
+  func deallocate() {}
 
   static func square(_ index: Int) -> Square { Square(file: index & 7, rank: index >> 4) }
   static func index(_ square: Square) -> Int { square.rank * 16 + square.file }
@@ -463,6 +484,7 @@ struct EngineBoard {
     let captured = flag == MoveFlag.enPassant ? (EngineKind.pawn | (us ^ 1) << 3) : squares[to]
     // FEN validation guarantees the side not to move is not in check, so no king is capturable.
     assert(captured & 7 != EngineKind.king, "pseudo-legal move captures a king")
+    assert(undoCount < plyCapacity, "more made moves than plyCapacity")
     undoStack[undoCount] = EngineUndo(
       move: move,
       captured: captured,
@@ -563,6 +585,7 @@ struct EngineBoard {
   /// Passes the turn (null-move pruning). The halfmove clock is reset so repetition
   /// detection never looks across a null move.
   mutating func makeNull() {
+    assert(undoCount < plyCapacity, "more made moves than plyCapacity")
     undoStack[undoCount] = EngineUndo(
       move: 0,
       captured: 0,
@@ -682,6 +705,8 @@ struct EngineBoard {
 
   /// Counts leaf nodes of the legal move tree to `depth` (move generator validation).
   mutating func perft(_ depth: Int) -> Int {
+    // Depth 0 still makes one move per legal move, like depth 1.
+    precondition(undoCount + max(depth, 1) <= plyCapacity, "perft depth exceeds plyCapacity")
     let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: 256 * max(depth, 1))
     defer { buffer.deallocate() }
     return perft(depth, buffer: buffer)

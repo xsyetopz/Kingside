@@ -8,14 +8,12 @@ import Testing
 @Suite
 struct DifferentialTests {
   private static func engineMoves(in position: ChessPosition) -> Set<ChessMove> {
-    var board = EngineBoard(position)
-    defer { board.deallocate() }
+    var board = EngineBoard(position, plyCapacity: 1)
     return Set(board.legalMoves().map(\.chessMove))
   }
 
   private static func engineInsufficientMaterial(in position: ChessPosition) -> Bool {
-    let board = EngineBoard(position)
-    defer { board.deallocate() }
+    let board = EngineBoard(position, plyCapacity: 1)
     return board.hasInsufficientMaterial
   }
 
