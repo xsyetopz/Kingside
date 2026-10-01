@@ -61,6 +61,7 @@ struct RootView: View {
         }
         .navigationSplitViewColumnWidth(min: 180, ideal: 200)
       } detail: {
+        // Without a new identity, one section's pushed pages (`ownPath`) show in the next one.
         SectionStack(section: selection, playPath: $playPath)
           .id(selection)
       }
@@ -68,6 +69,37 @@ struct RootView: View {
   #else
     @ViewBuilder
     private var content: some View {
+      #if os(iOS)
+        if #available(iOS 18, *), UIDevice.current.userInterfaceIdiom == .pad {
+          sidebarAdaptableTabs
+        } else {
+          tabs
+        }
+      #else
+        tabs
+      #endif
+    }
+
+    #if os(iOS)
+      /// On iPad the tab bar can turn into a sidebar.
+      @available(iOS 18, *)
+      private var sidebarAdaptableTabs: some View {
+        TabView(selection: $selection) {
+          ForEach(AppSection.allCases) { section in
+            Tab(
+              localization(section.titleKey),
+              systemImage: section.systemImage,
+              value: section
+            ) {
+              SectionStack(section: section, playPath: $playPath)
+            }
+          }
+        }
+        .tabViewStyle(.sidebarAdaptable)
+      }
+    #endif
+
+    private var tabs: some View {
       TabView(selection: $selection) {
         ForEach(AppSection.allCases) { section in
           SectionStack(section: section, playPath: $playPath)

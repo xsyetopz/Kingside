@@ -38,9 +38,68 @@
     let localization: Localization
 
     var body: some Commands {
+      // The app has one window, and File > New Window would otherwise take New Game's ⌘N.
+      CommandGroup(replacing: .newItem) {}
       CommandMenu(localization("game.title")) {
         GameMenuItems().environment(\.localization, localization)
       }
+    }
+  }
+
+  /// The Game menu's commands with their titles, symbols and keyboard shortcuts.
+  enum GameMenuCommand: CaseIterable {
+    case hint, takeback, offerDraw, resign, flipBoard, rematch, newGame
+
+    var titleKey: String {
+      switch self {
+      case .hint: "game.action.hint"
+      case .takeback: "game.action.takeback"
+      case .offerDraw: "game.action.offerDraw"
+      case .resign: "game.action.resign"
+      case .flipBoard: "game.action.flipBoard"
+      case .rematch: "game.action.rematch"
+      case .newGame: "game.action.newGame"
+      }
+    }
+
+    var systemImage: String {
+      switch self {
+      case .hint: "lightbulb"
+      case .takeback: "arrow.uturn.backward"
+      case .offerDraw: "equal.circle"
+      case .resign: "flag"
+      case .flipBoard: "arrow.up.arrow.down"
+      case .rematch: "arrow.counterclockwise"
+      case .newGame: "plus"
+      }
+    }
+
+    /// ⌘N is the standard New. The rest avoid the standard and system shortcuts: ⌘H hides the
+    /// app, ⌘F is Find, and ⌘Z stays with Edit > Undo, which text fields such as chat rely on.
+    var shortcut: GameMenuShortcut {
+      switch self {
+      case .hint: GameMenuShortcut(key: "h", shift: true)
+      case .takeback: GameMenuShortcut(key: "z", option: true)
+      case .offerDraw: GameMenuShortcut(key: "d", shift: true)
+      case .resign: GameMenuShortcut(key: "r", shift: true)
+      case .flipBoard: GameMenuShortcut(key: "f", shift: true)
+      case .rematch: GameMenuShortcut(key: "n", shift: true)
+      case .newGame: GameMenuShortcut(key: "n")
+      }
+    }
+  }
+
+  /// A Command-key shortcut, as plain values because the tests cannot import SwiftUI.
+  struct GameMenuShortcut: Hashable {
+    let key: Character
+    var shift = false
+    var option = false
+
+    var keyboardShortcut: KeyboardShortcut {
+      var modifiers: EventModifiers = .command
+      if shift { modifiers.insert(.shift) }
+      if option { modifiers.insert(.option) }
+      return KeyboardShortcut(KeyEquivalent(key), modifiers: modifiers)
     }
   }
 
@@ -54,43 +113,31 @@
     var body: some View {
       let session = target?.session
       if target?.showsHint ?? true {
-        item("game.action.hint", "lightbulb", enabled: target?.canHint ?? false) {
-          session?.apply(.requestHint)
-        }
+        item(.hint, enabled: target?.canHint ?? false) { session?.apply(.requestHint) }
       }
       if target?.showsTakeback ?? true {
-        item("game.action.takeback", "arrow.uturn.backward", enabled: target?.canTakeback ?? false)
-        {
-          session?.apply(.takeback)
-        }
+        item(.takeback, enabled: target?.canTakeback ?? false) { session?.apply(.takeback) }
       }
-      item("game.action.offerDraw", "equal.circle", enabled: target?.canOfferDraw ?? false) {
-        session?.apply(.offerDraw)
-      }
-      item("game.action.resign", "flag", enabled: target?.canResign ?? false) {
-        target?.confirmResign()
-      }
+      item(.offerDraw, enabled: target?.canOfferDraw ?? false) { session?.apply(.offerDraw) }
+      item(.resign, enabled: target?.canResign ?? false) { target?.confirmResign() }
       Divider()
-      item("game.action.flipBoard", "arrow.up.arrow.down", enabled: target != nil) {
-        target?.flip()
-      }
+      item(.flipBoard, enabled: target != nil) { target?.flip() }
       Divider()
       let canStartAgain = target?.canStartAgain ?? false
       if target?.showsRematch ?? true {
-        item("game.action.rematch", "arrow.counterclockwise", enabled: canStartAgain) {
-          session?.apply(.rematch)
-        }
+        item(.rematch, enabled: canStartAgain) { session?.apply(.rematch) }
       }
-      item("game.action.newGame", "plus", enabled: canStartAgain) { target?.newGame() }
+      item(.newGame, enabled: canStartAgain) { target?.newGame() }
     }
 
     private func item(
-      _ key: String,
-      _ systemImage: String,
+      _ command: GameMenuCommand,
       enabled: Bool,
       action: @escaping () -> Void
     ) -> some View {
-      Button(localization(key), systemImage: systemImage, action: action).disabled(!enabled)
+      Button(localization(command.titleKey), systemImage: command.systemImage, action: action)
+        .keyboardShortcut(command.shortcut.keyboardShortcut)
+        .disabled(!enabled)
     }
   }
 #endif

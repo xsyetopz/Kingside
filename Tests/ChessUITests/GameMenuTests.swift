@@ -81,5 +81,28 @@
       #expect(!target.canHint && !target.canTakeback && !target.canOfferDraw && !target.canResign)
       #expect(target.canStartAgain)
     }
+
+    @Test
+    func everyCommandHasItsShortcut() {
+      let expected: [GameMenuCommand: GameMenuShortcut] = [
+        .hint: GameMenuShortcut(key: "h", shift: true),
+        .takeback: GameMenuShortcut(key: "z", option: true),
+        .offerDraw: GameMenuShortcut(key: "d", shift: true),
+        .resign: GameMenuShortcut(key: "r", shift: true),
+        .flipBoard: GameMenuShortcut(key: "f", shift: true),
+        .rematch: GameMenuShortcut(key: "n", shift: true),
+        .newGame: GameMenuShortcut(key: "n"),
+      ]
+      let actual = Dictionary(
+        uniqueKeysWithValues: GameMenuCommand.allCases.map { ($0, $0.shortcut) }
+      )
+      #expect(actual == expected)
+    }
+
+    @Test
+    func shortcutsAreUnique() {
+      let shortcuts = GameMenuCommand.allCases.map(\.shortcut)
+      #expect(Set(shortcuts).count == shortcuts.count)
+    }
   }
 #endif
