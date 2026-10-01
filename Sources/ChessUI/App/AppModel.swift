@@ -98,7 +98,7 @@ public final class AppModel {
     localization: Localization = Localization(),
     storage: Storage,
     transport: any HTTPTransport = URLSessionTransport(),
-    lichessTransport: any LichessTransport = URLSessionLichessTransport(),
+    lichessTransport: any HTTPStreamingTransport = URLSessionTransport(),
     bundle: Bundle = .main
   ) {
     self.catalog = catalog

@@ -2,12 +2,13 @@ import ChessContent
 import ChessCore
 import ChessPlay
 import Foundation
+import HTTPSupport
 import LichessLink
 import Testing
 @testable import ChessUI
 
 /// Answers by path, records every request, and lets a test push lines into the open game stream.
-private actor FakeTransport: LichessTransport {
+private actor FakeTransport: HTTPStreamingTransport {
   private(set) var requests: [URLRequest] = []
   private var continuation: AsyncThrowingStream<String, Error>.Continuation?
 

@@ -173,6 +173,22 @@ struct LichessStreamTests {
   }
 
   @Test
+  func streamRateLimitStartsTheBackoff() async throws {
+    let clock = TestClock()
+    let limited = LockedFlag(true)
+    let (client, transport) = makeClient(clock: clock) { _ in
+      limited.value ? (429, [:], Data()) : (200, [:], Data("{\"ok\":true}".utf8))
+    }
+    await #expect(throws: LichessError.rateLimited) {
+      for try await _ in await client.eventStream() {}
+    }
+    limited.value = false
+    clock.advance(59)
+    await #expect(throws: LichessError.rateLimited) { try await client.resign(gameID: "abc12345") }
+    #expect(await transport.requests.count == 1)
+  }
+
+  @Test
   func cancellingSeekTerminatesTheConnection() async throws {
     let (client, transport) = makeClient(streamLines: ["", ""], keepStreamOpen: true) { _ in
       (200, [:], Data())

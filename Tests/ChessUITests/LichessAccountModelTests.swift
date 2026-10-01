@@ -1,10 +1,11 @@
 import Foundation
+import HTTPSupport
 import LichessLink
 import Testing
 @testable import ChessUI
 
 /// Answers by path, records every request, and lets a test push lines into the open event stream.
-private actor FakeTransport: LichessTransport {
+private actor FakeTransport: HTTPStreamingTransport {
   typealias Handler = @Sendable (URLRequest) -> (Int, Data)
 
   private(set) var requests: [URLRequest] = []

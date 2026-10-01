@@ -1,9 +1,10 @@
 import Foundation
+import HTTPSupport
 import Testing
 @testable import LichessLink
 
 /// Records every request, answers through `handler`, and tracks how many requests overlap.
-actor FakeLichessTransport: LichessTransport {
+actor FakeLichessTransport: HTTPStreamingTransport {
   typealias Handler = @Sendable (URLRequest) -> (Int, [String: String], Data)
 
   private(set) var requests: [URLRequest] = []
@@ -60,6 +61,19 @@ actor FakeLichessTransport: LichessTransport {
   }
 
   private func markTerminated() { streamTerminated = true }
+}
+
+/// Fails every request the way `URLSessionTransport` does when the response is not HTTP.
+struct NonHTTPTransport: HTTPStreamingTransport {
+  func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
+    throw HTTPTransportError.invalidResponse
+  }
+
+  func lines(
+    for request: URLRequest
+  ) throws -> (HTTPURLResponse, AsyncThrowingStream<String, Error>) {
+    throw HTTPTransportError.invalidResponse
+  }
 }
 
 /// A mutable clock for the rate-limit back-off.

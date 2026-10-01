@@ -73,4 +73,12 @@ struct URLSessionTransportTests {
       try await URLSessionTransport().data(for: request)
     }
   }
+
+  @Test
+  func nonHTTPStreamResponseThrowsInvalidResponse() async throws {
+    let request = URLRequest(url: try #require(URL(string: "data:,hello")))
+    await #expect(throws: HTTPTransportError.invalidResponse) {
+      try await URLSessionTransport().lines(for: request)
+    }
+  }
 }

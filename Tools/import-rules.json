@@ -35,11 +35,11 @@
 		},
 		"LichessLink": {
 			"path": "Sources/LichessLink",
-			"allow": ["Foundation", "ChessCore", "CryptoKit", "Security"]
+			"allow": ["Foundation", "ChessCore", "CryptoKit", "HTTPSupport", "Security"]
 		},
 		"LichessLinkTests": {
 			"path": "Tests/LichessLinkTests",
-			"allow": ["Foundation", "Testing", "ChessCore", "LichessLink"]
+			"allow": ["Foundation", "Testing", "ChessCore", "HTTPSupport", "LichessLink"]
 		},
 		"ChessOnline": {
 			"path": "Sources/ChessOnline",

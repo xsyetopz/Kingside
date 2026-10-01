@@ -1,4 +1,5 @@
 import Foundation
+import HTTPSupport
 import Testing
 @testable import LichessLink
 
@@ -215,6 +216,26 @@ struct LichessClientTests {
   func validUCIsAreAccepted() {
     for uci in ["e2e4", "a7a8q", "h2h1n", "b7b8r", "c7c8b"] {
       #expect(LichessClient.isValidUCI(uci))
+    }
+  }
+
+  @Test
+  func nonHTTPResponseThrowsInvalidResponse() async {
+    let client = LichessClient(configuration: testConfiguration, transport: NonHTTPTransport()) {
+      "tok"
+    }
+    await #expect(throws: LichessError.invalidResponse) {
+      try await client.resign(gameID: "rCRw1Auv")
+    }
+  }
+
+  @Test
+  func nonHTTPStreamResponseThrowsInvalidResponse() async {
+    let client = LichessClient(configuration: testConfiguration, transport: NonHTTPTransport()) {
+      "tok"
+    }
+    await #expect(throws: LichessError.invalidResponse) {
+      for try await _ in await client.eventStream() {}
     }
   }
 }

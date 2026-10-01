@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import HTTPSupport
 import Security
 
 /// Authorization-code flow with PKCE (S256 only) for the Lichess OAuth endpoints.
@@ -7,11 +8,12 @@ public struct LichessOAuth: Sendable {
   public static let scope = "board:play challenge:read challenge:write"
 
   private let configuration: LichessConfiguration
-  private let transport: any LichessTransport
+  private let transport: any HTTPTransport
+  private let decoder = JSONBodyDecoder(failure: LichessError.decoding)
 
   public init(
     configuration: LichessConfiguration,
-    transport: any LichessTransport = URLSessionLichessTransport()
+    transport: any HTTPTransport = URLSessionTransport()
   ) {
     self.configuration = configuration
     self.transport = transport
@@ -64,17 +66,16 @@ public struct LichessOAuth: Sendable {
       ("redirect_uri", configuration.redirectURI.absoluteString),
       ("client_id", configuration.clientID),
     ])
-    let (data, response) = try await transport.data(for: request)
-    switch response.statusCode {
-    case 200..<300: break
-    case 429: throw LichessError.rateLimited
-    default: throw LichessError.http(status: response.statusCode)
-    }
+    let (data, response): (Data, HTTPURLResponse)
     do {
-      return try JSONDecoder().decode(TokenResponse.self, from: data).access_token
-    } catch {
-      throw LichessError.decoding(String(describing: error))
+      (data, response) = try await transport.data(for: request)
+    } catch HTTPTransportError.invalidResponse {
+      throw LichessError.invalidResponse
     }
+    try response.validateStatus {
+      $0.statusCode == 429 ? LichessError.rateLimited : .http(status: $0.statusCode)
+    }
+    return try decoder.decode(TokenResponse.self, from: data).access_token
   }
 
   private static func randomToken() throws -> String {

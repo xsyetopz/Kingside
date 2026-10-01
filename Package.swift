@@ -26,7 +26,7 @@ let package = Package(
     .target(name: "ChessContent", dependencies: ["ChessCore"], resources: [.process("Resources")]),
     .target(name: "HTTPSupport"),
     .target(name: "ChessComLink", dependencies: ["ChessCore", "HTTPSupport"]),
-    .target(name: "LichessLink", dependencies: ["ChessCore"]),
+    .target(name: "LichessLink", dependencies: ["ChessCore", "HTTPSupport"]),
     .target(name: "ChessOnline"),
     .target(name: "ChessPlay", dependencies: ["ChessCore", "ChessContent"]),
     .target(name: "ChessBoardScene", dependencies: ["ChessCore", "ChessContent", "ChessPlay"]),
@@ -49,7 +49,7 @@ let package = Package(
     ),
     .testTarget(
       name: "LichessLinkTests",
-      dependencies: ["LichessLink", "ChessCore"],
+      dependencies: ["LichessLink", "ChessCore", "HTTPSupport"],
       resources: [.copy("Fixtures")]
     ),
     .testTarget(name: "ChessOnlineTests", dependencies: ["ChessOnline"]),

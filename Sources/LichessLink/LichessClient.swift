@@ -1,4 +1,5 @@
 import Foundation
+import HTTPSupport
 
 /// Client for the Lichess Board API. Non-stream requests run strictly one at a time.
 public actor LichessClient {
@@ -6,17 +7,17 @@ public actor LichessClient {
   static let rateLimitBackoff: TimeInterval = 60
 
   private let configuration: LichessConfiguration
-  private let transport: any LichessTransport
+  private let transport: any HTTPStreamingTransport
   private let tokenProvider: @Sendable () async -> String?
   private let now: @Sendable () -> Date
   private var rateLimitedUntil: Date?
-  /// Completes when the most recently queued request has finished.
-  private var tail: Task<Void, Never>?
+  private let queue = SerialRequestQueue()
+  private let decoder = JSONBodyDecoder(failure: LichessError.decoding)
 
   @preconcurrency
   public init(
     configuration: LichessConfiguration,
-    transport: any LichessTransport = URLSessionLichessTransport(),
+    transport: any HTTPStreamingTransport = URLSessionTransport(),
     tokenProvider: @escaping @Sendable () async -> String?,
     now: @escaping @Sendable () -> Date = { Date() }
   ) {
@@ -29,12 +30,15 @@ public actor LichessClient {
   // MARK: Account
 
   public func account() async throws -> LichessAccount {
-    try decode(LichessAccount.self, from: try await send("GET", "api/account"))
+    try decoder.decode(LichessAccount.self, from: try await send("GET", "api/account"))
   }
 
   public func ongoingGames() async throws -> [LichessOngoingGame] {
-    try decode(LichessOngoingGamesResponse.self, from: try await send("GET", "api/account/playing"))
-      .nowPlaying
+    try decoder.decode(
+      LichessOngoingGamesResponse.self,
+      from: try await send("GET", "api/account/playing")
+    )
+    .nowPlaying
   }
 
   /// Revokes the access token the client is using.
@@ -116,7 +120,7 @@ public actor LichessClient {
         ("clock.increment", String(increment)), ("color", color.rawValue),
       ]
     )
-    return try decode(LichessChallenge.self, from: data)
+    return try decoder.decode(LichessChallenge.self, from: data)
   }
 
   /// Starts a game against Stockfish; returns the game id.
@@ -136,7 +140,7 @@ public actor LichessClient {
         ("clock.increment", String(increment)), ("color", color.rawValue),
       ]
     )
-    return try decode(Game.self, from: data).id
+    return try decoder.decode(Game.self, from: data).id
   }
 
   public func acceptChallenge(id: String) async throws { try await challengeAction(id, "accept") }
@@ -187,14 +191,6 @@ public actor LichessClient {
 
   // MARK: Transport
 
-  private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
-    do {
-      return try JSONDecoder().decode(type, from: data)
-    } catch {
-      throw LichessError.decoding(String(describing: error))
-    }
-  }
-
   private func makeRequest(
     method: String,
     path: String,
@@ -223,35 +219,25 @@ public actor LichessClient {
     }
   }
 
-  private func validate(_ response: HTTPURLResponse) throws {
+  /// Maps a failed status to the client's error. A 429 also starts the rate-limit back-off.
+  private func statusError(_ response: HTTPURLResponse) -> LichessError {
     switch response.statusCode {
-    case 200..<300: return
-    case 401: throw LichessError.unauthorized
+    case 401:
+      return .unauthorized
     case 429:
       rateLimitedUntil = now().addingTimeInterval(Self.rateLimitBackoff)
-      throw LichessError.rateLimited
-    default: throw LichessError.http(status: response.statusCode)
+      return .rateLimited
+    default:
+      return .http(status: response.statusCode)
     }
   }
 
-  /// Queues behind every earlier request. Actor isolation alone would interleave requests
-  /// at each `await`, so the requests are chained explicitly.
   private func send(
     _ method: String,
     _ path: String,
     form: [(String, String)]? = nil
   ) async throws -> Data {
-    let previous = tail
-    let task = Task {
-      await previous?.value
-      return try await fetch(method: method, path: path, form: form)
-    }
-    tail = Task { _ = await task.result }
-    return try await withTaskCancellationHandler {
-      try await task.value
-    } onCancel: {
-      task.cancel()
-    }
+    try await queue.run { try await self.fetch(method: method, path: path, form: form) }
   }
 
   private func fetch(method: String, path: String, form: [(String, String)]?) async throws -> Data {
@@ -261,8 +247,13 @@ public actor LichessClient {
       form: form,
       accept: "application/json"
     )
-    let (data, response) = try await transport.data(for: request)
-    try validate(response)
+    let (data, response): (Data, HTTPURLResponse)
+    do {
+      (data, response) = try await transport.data(for: request)
+    } catch HTTPTransportError.invalidResponse {
+      throw LichessError.invalidResponse
+    }
+    try response.validateStatus { statusError($0) }
     return data
   }
 
@@ -283,8 +274,13 @@ public actor LichessClient {
             form: form,
             accept: "application/x-ndjson"
           )
-          let (response, lines) = try await transport.lines(for: request)
-          try validate(response)
+          let (response, lines): (HTTPURLResponse, AsyncThrowingStream<String, Error>)
+          do {
+            (response, lines) = try await transport.lines(for: request)
+          } catch HTTPTransportError.invalidResponse {
+            throw LichessError.invalidResponse
+          }
+          try response.validateStatus { statusError($0) }
           for try await line in lines {
             if let element = try parse(line) { continuation.yield(element) }
           }

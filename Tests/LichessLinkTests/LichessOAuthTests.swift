@@ -79,6 +79,23 @@ struct LichessOAuthTests {
   }
 
   @Test
+  func exchangeMapsTooManyRequestsToRateLimited() async throws {
+    let transport = FakeLichessTransport { _ in (429, [:], Data()) }
+    let oauth = LichessOAuth(configuration: testConfiguration, transport: transport)
+    await #expect(throws: LichessError.rateLimited) {
+      try await oauth.exchange(code: "c", verifier: "v")
+    }
+  }
+
+  @Test
+  func exchangeNonHTTPResponseThrowsInvalidResponse() async {
+    let oauth = LichessOAuth(configuration: testConfiguration, transport: NonHTTPTransport())
+    await #expect(throws: LichessError.invalidResponse) {
+      try await oauth.exchange(code: "c", verifier: "v")
+    }
+  }
+
+  @Test
   func inMemoryTokenStoreRoundTrips() throws {
     let store = InMemoryTokenStore()
     #expect(store.token() == nil)
