@@ -17,35 +17,77 @@ import Observation
 // - A finished game is saved once, with `GameMode.online` and an id derived from the
 //   service and game id, so a later save of the same game replaces it.
 
+/// Whether the opponent of an online game is connected, and whether the player may claim the win.
+enum OpponentPresence: Equatable {
+  case present
+  /// The opponent left; the claim timer, if the server offers a claim, makes it `claimable`.
+  case gone
+  /// The opponent left long enough ago that the player may claim the win.
+  case claimable
+}
+
 @preconcurrency
 @Observable
 @MainActor
 public final class OnlineGameSession {
-  public private(set) var game = ChessGame() { didSet { refreshDerived() } }
-  public private(set) var result: GameResult = .ongoing
-  public private(set) var termination: GameTermination?
+  /// Everything a `.started` event replaces; `begin` replaces it in one assignment. The server
+  /// sends `.started` again on every reconnect.
+  private struct PerGameState {
+    var game = ChessGame()
+    /// Kept across a reconnect to the same game.
+    var createdAt = Date()
+    var result: GameResult = .ongoing
+    var termination: GameTermination?
+    var status: OnlineGameStatus = .created
+    var pendingDrawOffer: PieceColor?
+    var myDrawOfferPending = false
+    var chat: [OnlineChatLine] = []
+    /// How many lines of `chat` the player has seen.
+    var chatReadCount = 0
+    var presence = OpponentPresence.present
+    var pendingMove: String?
+    /// The moves of the latest server state; the board rolls back to them after a failed send.
+    var serverMoves: [String] = []
+    /// Kept across a reconnect to the same game.
+    var saveFailure = SaveFailure.none
+  }
+
+  private var perGame = PerGameState() {
+    didSet { if perGame.game != oldValue.game { refreshDerived() } }
+  }
+
+  public var game: ChessGame { perGame.game }
+  public var result: GameResult { perGame.result }
+  public var termination: GameTermination? { perGame.termination }
   /// The server's status; `.aborted` ends the game with `result` still `.ongoing`.
-  public private(set) var status: OnlineGameStatus = .created
+  public var status: OnlineGameStatus { perGame.status }
   /// The latest `.started` event; nil until the server sent one.
   public private(set) var start: OnlineGameStart?
   /// The opponent's color while the opponent offers a draw.
-  public private(set) var pendingDrawOffer: PieceColor?
+  public var pendingDrawOffer: PieceColor? { perGame.pendingDrawOffer }
   /// True while the player's own draw offer waits for an answer.
-  public private(set) var myDrawOfferPending = false
-  public private(set) var chat: [OnlineChatLine] = []
+  public var myDrawOfferPending: Bool { perGame.myDrawOfferPending }
+  public var chat: [OnlineChatLine] { perGame.chat }
   /// True after the player muted the opponent's chat; it lasts for this session only.
   public private(set) var isOpponentMuted = false
-  /// How many lines of `chat` the player has seen.
-  @ObservationIgnored
-  private var chatReadCount = 0
+  var opponentPresence: OpponentPresence { perGame.presence }
   /// True after the server said the opponent left, until it says they are back.
-  public private(set) var opponentGone = false
+  var opponentGone: Bool { perGame.presence != .present }
   /// True after the event stream ended with an error; `activate()` again reconnects.
   public private(set) var connectionError = false
   /// UCI of the player's move that the server has not confirmed yet.
-  public private(set) var pendingMove: String?
-  /// True after a save failed; the screen sets it back to false. Raised once per session.
-  public var showsSaveFailure = false
+  public var pendingMove: String? { perGame.pendingMove }
+  /// True after a save failed; the screen sets it back to false. Raised once per game.
+  public var showsSaveFailure: Bool {
+    get { perGame.saveFailure == .reported }
+    set {
+      if newValue {
+        perGame.saveFailure = .reported
+      } else if perGame.saveFailure == .reported {
+        perGame.saveFailure = .dismissed
+      }
+    }
+  }
   public private(set) var moveRows: [MoveRow] = []
   /// Opponent pieces captured by each color.
   public private(set) var capturedPieces: [PieceColor: [PieceType]] = [.white: [], .black: []]
@@ -57,7 +99,6 @@ public final class OnlineGameSession {
   public var clock: GameClock { clockRunner.clock }
   /// Side whose clock runs while the game is ongoing; nil before the start and once it has ended.
   public private(set) var activeClockColor: PieceColor?
-  private var claimVictoryReady = false
 
   public let connection: any OnlineGameConnection
 
@@ -71,11 +112,6 @@ public final class OnlineGameSession {
   private let onSave: @MainActor () -> Void
   private let clockRunner: ClockRunner
   private let sleep: @Sendable (Duration) async throws -> Void
-  /// The moves of the latest server state; the board rolls back to them after a failed send.
-  @ObservationIgnored
-  private var serverMoves: [String] = []
-  @ObservationIgnored
-  private var createdAt = Date()
   @ObservationIgnored
   private var savedGameID: String?
   @ObservationIgnored
@@ -85,8 +121,6 @@ public final class OnlineGameSession {
   /// The latest save; each save waits for the previous one.
   @ObservationIgnored
   private var saveTask: Task<Void, Never>?
-  @ObservationIgnored
-  private var hasReportedSaveFailure = false
 
   /// `catalog` supplies the clock tuning and the chat filter. `onSave` runs on the main actor
   /// after each successful save. `clock` drives the local countdown and the claim-victory delay.
@@ -134,7 +168,7 @@ public final class OnlineGameSession {
   /// The game can be aborted until both sides moved.
   public var canAbort: Bool { start != nil && !isGameOver && game.moves.count < 2 }
   /// The opponent left long enough ago that the player may claim the win.
-  public var canClaimVictory: Bool { claimVictoryReady && opponentGone && !isGameOver }
+  public var canClaimVictory: Bool { perGame.presence == .claimable && !isGameOver }
   /// True when `.cancel` would close the promotion picker or drop a selection.
   public var hasCancellableSelection: Bool { input.hasCancellableSelection }
   public var resultTitle: String {
@@ -166,7 +200,8 @@ public final class OnlineGameSession {
   public var chatMessages: [OnlineChatMessage] { visibleMessages(of: chat) }
   /// Lines from others that arrived since `markChatRead()`.
   public var unreadChatCount: Int {
-    visibleMessages(of: Array(chat.dropFirst(chatReadCount))).filter { $0.kind != .own }.count
+    visibleMessages(of: Array(chat.dropFirst(perGame.chatReadCount)))
+      .filter { $0.kind != .own }.count
   }
 
   private func visibleMessages(of lines: [OnlineChatLine]) -> [OnlineChatMessage] {
@@ -191,7 +226,7 @@ public final class OnlineGameSession {
 
   public func setOpponentMuted(_ muted: Bool) { isOpponentMuted = muted }
 
-  public func markChatRead() { chatReadCount = chat.count }
+  public func markChatRead() { perGame.chatReadCount = chat.count }
 
   public func player(_ color: PieceColor) -> PlayerInfo { color == .white ? white : black }
 
@@ -232,8 +267,7 @@ public final class OnlineGameSession {
     eventTask?.cancel()
     eventTask = nil
     clockRunner.stop()
-    claimTask?.cancel()
-    claimTask = nil
+    cancelClaimTimer()
   }
 
   // MARK: - Intents
@@ -297,14 +331,14 @@ public final class OnlineGameSession {
     tickClock()
     let before = game.position
     let plyBefore = game.moves.count
-    do { try game.makeMove(move) } catch {
+    do { try perGame.game.makeMove(move) } catch {
       feedback.receive(.illegalMove)
       return
     }
     clockRunner.recordMove(by: before.sideToMove, plyBeforeMove: plyBefore)
     input.complete(move)
     let uci = move.uci
-    pendingMove = uci
+    perGame.pendingMove = uci
     updateClockTurn()
     feedback.receive(.moved(MoveSound.effect(for: move, before: before, after: game.position)))
     Task { [weak self, connection] in
@@ -314,8 +348,8 @@ public final class OnlineGameSession {
         guard let self, self.pendingMove == uci, self.game.moves.count == plyBefore + 1 else {
           return
         }
-        self.pendingMove = nil
-        self.rebuild(self.serverMoves)
+        self.perGame.pendingMove = nil
+        self.rebuild(self.perGame.serverMoves)
         self.feedback.receive(.illegalMove)
       }
     }
@@ -323,19 +357,21 @@ public final class OnlineGameSession {
 
   private func offerDraw() {
     guard start != nil, !isGameOver, !myDrawOfferPending else { return }
-    myDrawOfferPending = true
+    perGame.myDrawOfferPending = true
     Task { [weak self, connection] in
-      do { try await connection.send(.offerDraw) } catch { self?.myDrawOfferPending = false }
+      do { try await connection.send(.offerDraw) } catch {
+        self?.perGame.myDrawOfferPending = false
+      }
     }
   }
 
   private func answerDraw(accept: Bool) {
     guard let offer = pendingDrawOffer, !isGameOver else { return }
-    pendingDrawOffer = nil
+    perGame.pendingDrawOffer = nil
     Task { [weak self, connection] in
       do { try await connection.send(accept ? .acceptDraw : .declineDraw) } catch {
         guard let self, !self.isGameOver, self.pendingDrawOffer == nil else { return }
-        self.pendingDrawOffer = offer
+        self.perGame.pendingDrawOffer = offer
       }
     }
   }
@@ -351,13 +387,11 @@ public final class OnlineGameSession {
     switch event {
     case .started(let start): begin(start)
     case .state(let state): sync(state)
-    case .chat(let line): chat.append(line)
+    case .chat(let line): perGame.chat.append(line)
     case .opponentGone(let claimWinIn): opponentLeft(claimWinIn: claimWinIn)
     case .opponentBack:
-      opponentGone = false
-      claimVictoryReady = false
-      claimTask?.cancel()
-      claimTask = nil
+      cancelClaimTimer()
+      perGame.presence = .present
     }
   }
 
@@ -373,28 +407,21 @@ public final class OnlineGameSession {
     let announcesEnd = !isNewGame && !status.isFinished
     self.start = start
     if isNewGame {
-      createdAt = Date()
       input.isFlipped = initialFlip
       input.resetFocus(for: start.myColor)
       if !start.state.status.isFinished && start.state.uciMoves.isEmpty {
         feedback.receive(.gameStarted)
       }
     }
-    game = ChessGame(position: position)
-    serverMoves = []
-    pendingMove = nil
+    cancelClaimTimer()
+    perGame = PerGameState(
+      game: ChessGame(position: position),
+      createdAt: isNewGame ? Date() : perGame.createdAt,
+      saveFailure: isNewGame ? .none : perGame.saveFailure
+    )
     input.cancel()
     input.lastMove = nil
-    chat = []
-    chatReadCount = 0
-    opponentGone = false
-    claimVictoryReady = false
-    claimTask?.cancel()
-    claimTask = nil
-    myDrawOfferPending = false
-    pendingDrawOffer = nil
     clockRunner.reset(to: GameClock(timeControl: start.timeControl ?? .untimed))
-    status = .created
     refreshPlayers()
     // Replayed moves get no move feedback.
     rebuild(start.state.uciMoves.map(Self.normalized))
@@ -412,15 +439,15 @@ public final class OnlineGameSession {
     let incoming = state.uciMoves.map(Self.normalized)
     let local = game.moves.map(\.move.uci)
     // A state without the player's pending move keeps that move on the board.
-    let awaitsPendingMove = pendingMove.map { local == incoming + [$0] } ?? false
+    let awaitsPendingMove = perGame.pendingMove.map { local == incoming + [$0] } ?? false
     if !awaitsPendingMove {
-      pendingMove = nil
+      perGame.pendingMove = nil
       let extended =
         incoming.starts(with: local) && incoming.count > local.count
         && playServerMoves(incoming[local.count...])
       if !extended && incoming != local { rebuild(incoming) }
     }
-    serverMoves = incoming
+    perGame.serverMoves = incoming
 
     clockRunner.resync(
       to: GameClock(
@@ -433,12 +460,12 @@ public final class OnlineGameSession {
     let opponent = start.myColor.opponent
     let opponentOffers = opponent == .white ? state.whiteOffersDraw : state.blackOffersDraw
     let myOffer = start.myColor == .white ? state.whiteOffersDraw : state.blackOffersDraw
-    pendingDrawOffer = opponentOffers && !state.status.isFinished ? opponent : nil
-    myDrawOfferPending = myOffer && !state.status.isFinished
+    perGame.pendingDrawOffer = opponentOffers && !state.status.isFinished ? opponent : nil
+    perGame.myDrawOfferPending = myOffer && !state.status.isFinished
 
     let wasFinished = status.isFinished
-    status = state.status
-    (result, termination) = Self.outcome(
+    perGame.status = state.status
+    (perGame.result, perGame.termination) = Self.outcome(
       status: state.status,
       winner: state.winner,
       position: game.position,
@@ -446,11 +473,10 @@ public final class OnlineGameSession {
     )
     updateClockTurn()
     guard status.isFinished else { return }
-    pendingMove = nil
+    perGame.pendingMove = nil
     input.cancel()
     clockRunner.stop()
-    claimTask?.cancel()
-    claimTask = nil
+    cancelClaimTimer()
     if announcesEnd && !wasFinished { feedback.receive(.gameOver(result)) }
     save()
   }
@@ -465,7 +491,7 @@ public final class OnlineGameSession {
       guard (try? updated.makeMove(move)) != nil else { return false }
       last = (move, before)
     }
-    game = updated
+    perGame.game = updated
     if let (move, before) = last {
       input.complete(move)
       feedback.receive(.moved(MoveSound.effect(for: move, before: before, after: game.position)))
@@ -481,28 +507,31 @@ public final class OnlineGameSession {
         (try? rebuilt.makeMove(move)) != nil
       else { break }
     }
-    game = rebuilt
+    perGame.game = rebuilt
     input.cancel()
     input.lastMove = game.moves.last?.move
     updateClockTurn()
   }
 
   private func opponentLeft(claimWinIn: Duration?) {
-    opponentGone = true
-    claimVictoryReady = false
-    claimTask?.cancel()
-    claimTask = nil
+    cancelClaimTimer()
+    perGame.presence = .gone
     guard let claimWinIn else { return }
     guard claimWinIn > .zero else {
-      claimVictoryReady = true
+      perGame.presence = .claimable
       return
     }
     claimTask = Task { [weak self, sleep] in
       try? await sleep(claimWinIn)
       guard let self, !Task.isCancelled else { return }
       self.claimTask = nil
-      self.claimVictoryReady = true
+      self.perGame.presence = .claimable
     }
+  }
+
+  private func cancelClaimTimer() {
+    claimTask?.cancel()
+    claimTask = nil
   }
 
   // MARK: - Clock
@@ -562,7 +591,7 @@ public final class OnlineGameSession {
     savedGameID = start.gameID
     let snapshot = SavedGame(
       id: Self.savedGameID(service: connection.service, gameID: start.gameID),
-      createdAt: createdAt,
+      createdAt: perGame.createdAt,
       updatedAt: Date(),
       mode: .online(service: connection.service, gameID: start.gameID),
       white: white,
@@ -581,15 +610,15 @@ public final class OnlineGameSession {
         try await store.save(snapshot)
         self?.onSave()
       } catch {
-        self?.reportSaveFailure()
+        self?.reportSaveFailure(of: start.gameID)
       }
     }
   }
 
-  private func reportSaveFailure() {
-    guard !hasReportedSaveFailure else { return }
-    hasReportedSaveFailure = true
-    showsSaveFailure = true
+  /// A save that fails after a `.started` for another game is not reported.
+  private func reportSaveFailure(of gameID: String) {
+    guard start?.gameID == gameID, perGame.saveFailure == .none else { return }
+    perGame.saveFailure = .reported
   }
 
   // MARK: - Pure rules

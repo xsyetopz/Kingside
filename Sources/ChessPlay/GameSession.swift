@@ -33,22 +33,56 @@ public struct PlayerSlot: Equatable, Sendable {
   public let info: PlayerInfo
 }
 
+/// A failed save is reported once per game; the screen dismisses the report.
+enum SaveFailure {
+  case none
+  case reported
+  case dismissed
+}
+
 @preconcurrency
 @Observable
 @MainActor
 public final class GameSession {
-  public private(set) var game = ChessGame() { didSet { refreshDerived() } }
-  public private(set) var result: GameResult = .ongoing
-  public private(set) var termination: GameTermination?
+  /// Everything that starts fresh with each game; `rematch` replaces it in one assignment.
+  private struct PerGameState {
+    var id = UUID()
+    var createdAt = Date()
+    var game = ChessGame()
+    var result: GameResult = .ongoing
+    var termination: GameTermination?
+    var hasAnnouncedStart = false
+    var pendingDrawOffer: PieceColor?
+    var botMessage: String?
+    var hint: BoardArrow?
+    var saveFailure = SaveFailure.none
+  }
+
+  private var perGame: PerGameState {
+    didSet { if perGame.game != oldValue.game { refreshDerived() } }
+  }
+
+  public var game: ChessGame { perGame.game }
+  public var result: GameResult { perGame.result }
+  public var termination: GameTermination? { perGame.termination }
   public private(set) var isBotThinking = false
   /// Latest chat line of the bot, localised; nil when there is nothing to show.
-  public private(set) var botMessage: String?
+  public var botMessage: String? { perGame.botMessage }
   public private(set) var isLoadingHint = false
   /// Pass-and-play: the color that offered a draw, waiting for the other side to answer.
-  public private(set) var pendingDrawOffer: PieceColor?
+  public var pendingDrawOffer: PieceColor? { perGame.pendingDrawOffer }
   /// True after a save failed, so the screen can say the game will not resume; the screen
-  /// sets it back to false. Raised once per session, not after every move.
-  public var showsSaveFailure = false
+  /// sets it back to false. Raised once per game, not after every move.
+  public var showsSaveFailure: Bool {
+    get { perGame.saveFailure == .reported }
+    set {
+      if newValue {
+        perGame.saveFailure = .reported
+      } else if perGame.saveFailure == .reported {
+        perGame.saveFailure = .dismissed
+      }
+    }
+  }
   public private(set) var moveRows: [MoveRow] = []
   /// Opponent pieces captured by each color.
   public private(set) var capturedPieces: [PieceColor: [PieceType]] = [.white: [], .black: []]
@@ -61,7 +95,7 @@ public final class GameSession {
   /// Side whose clock runs while the game is ongoing; nil once it has ended.
   public private(set) var activeClockColor: PieceColor?
 
-  public private(set) var id: UUID
+  public var id: UUID { perGame.id }
   public private(set) var mode: GameMode
   public private(set) var white: PlayerInfo
   public private(set) var black: PlayerInfo
@@ -70,7 +104,6 @@ public final class GameSession {
   public let autoFlip: Bool
 
   private var input = MoveInput()
-  private var hint: BoardArrow?
 
   private let engine: ChessEngine
   private let tuning: PlayTuning
@@ -84,11 +117,7 @@ public final class GameSession {
   private let now: @Sendable () -> Duration
   private let sleep: @Sendable (Duration) async throws -> Void
   @ObservationIgnored
-  private var createdAt: Date
-  @ObservationIgnored
   private var isActive = false
-  @ObservationIgnored
-  private var hasAnnouncedStart: Bool
   @ObservationIgnored
   private(set) var botTask: Task<Void, Never>?
   @ObservationIgnored
@@ -98,8 +127,6 @@ public final class GameSession {
   /// The latest save; each save waits for the previous one, so the newest snapshot wins.
   @ObservationIgnored
   private(set) var saveTask: Task<Void, Never>?
-  @ObservationIgnored
-  private var hasReportedSaveFailure = false
 
   /// `catalog` supplies the bots and `tuning`. `onSave` runs on the main actor after each
   /// successful save. `clock` drives the game clock and the bot's minimum think time.
@@ -128,28 +155,28 @@ public final class GameSession {
     let gameClock: GameClock
     switch launch {
     case .new(let setup):
-      id = UUID()
-      createdAt = Date()
+      perGame = PerGameState()
       mode = setup.mode
       white = setup.white
       black = setup.black
       timeControl = setup.timeControl
       autoFlip = setup.autoFlip
       gameClock = GameClock(timeControl: setup.timeControl)
-      hasAnnouncedStart = false
     case .saved(let saved):
-      id = saved.id
-      createdAt = saved.createdAt
+      perGame = PerGameState(
+        id: saved.id,
+        createdAt: saved.createdAt,
+        game: saved.game,
+        result: saved.result,
+        termination: saved.termination,
+        hasAnnouncedStart: true
+      )
       mode = saved.mode
       white = saved.white
       black = saved.black
       timeControl = saved.timeControl
       autoFlip = saved.autoFlip
       gameClock = saved.clock
-      game = saved.game
-      result = saved.result
-      termination = saved.termination
-      hasAnnouncedStart = true
     }
     clockRunner = ClockRunner(
       gameClock,
@@ -224,7 +251,7 @@ public final class GameSession {
   public func isLowTime(_ color: PieceColor) -> Bool { clockRunner.isLow(color) }
 
   public var snapshot: BoardSnapshot {
-    input.snapshot(of: game.position, canMove: canMove, hint: hint)
+    input.snapshot(of: game.position, canMove: canMove, hint: perGame.hint)
   }
 
   // MARK: - Lifecycle
@@ -233,8 +260,8 @@ public final class GameSession {
   public func activate() {
     guard !isActive else { return }
     isActive = true
-    if !hasAnnouncedStart {
-      hasAnnouncedStart = true
+    if !perGame.hasAnnouncedStart {
+      perGame.hasAnnouncedStart = true
       feedback.receive(.gameStarted)
       say(.greeting)
     }
@@ -265,13 +292,13 @@ public final class GameSession {
     case .takeback: takeback()
     case .offerDraw: offerDraw()
     case .acceptDraw: acceptDraw()
-    case .declineDraw: pendingDrawOffer = nil
+    case .declineDraw: perGame.pendingDrawOffer = nil
     case .resign: resign()
     case .flipBoard:
       input.isFlipped.toggle()
       refreshPlayers()
     case .rematch: rematch()
-    case .dismissBotMessage: botMessage = nil
+    case .dismissBotMessage: perGame.botMessage = nil
     }
   }
 
@@ -309,7 +336,7 @@ public final class GameSession {
       self.hintTask = nil
       self.isLoadingHint = false
       guard self.game == game, let move = analysis?.bestMove else { return }
-      self.hint = BoardArrow(from: move.from, to: move.to)
+      self.perGame.hint = BoardArrow(from: move.from, to: move.to)
     }
   }
 
@@ -325,8 +352,8 @@ public final class GameSession {
     botTask = nil
     isBotThinking = false
     cancelHint()
-    pendingDrawOffer = nil
-    for _ in 0..<plies { game.undo() }
+    perGame.pendingDrawOffer = nil
+    for _ in 0..<plies { perGame.game.undo() }
     input.cancel()
     input.lastMove = game.moves.last?.move
     say(.takeback)
@@ -338,7 +365,7 @@ public final class GameSession {
   private func offerDraw() {
     guard !isGameOver else { return }
     guard let humanColor else {
-      pendingDrawOffer = game.position.sideToMove
+      perGame.pendingDrawOffer = game.position.sideToMove
       return
     }
     guard drawTask == nil else { return }
@@ -368,7 +395,7 @@ public final class GameSession {
 
   private func acceptDraw() {
     guard pendingDrawOffer != nil, !isGameOver else { return }
-    pendingDrawOffer = nil
+    perGame.pendingDrawOffer = nil
     tickClock()
     guard !isGameOver else { return }
     finish(.draw, .agreement)
@@ -385,21 +412,12 @@ public final class GameSession {
   private func rematch() {
     cancelTasks()
     swap(&white, &black)
-    id = UUID()
-    createdAt = Date()
-    result = .ongoing
-    termination = nil
-    game = ChessGame()
+    perGame = PerGameState()
     clockRunner.reset(to: GameClock(timeControl: timeControl))
-    botMessage = nil
-    hint = nil
-    pendingDrawOffer = nil
-    input.cancel()
-    input.lastMove = nil
+    input = MoveInput()
     input.isFlipped = initialFlip
     input.resetFocus(for: humanColor ?? .white)
     refreshPlayers()
-    hasAnnouncedStart = false
     if isActive {
       isActive = false
       activate()
@@ -413,14 +431,14 @@ public final class GameSession {
     let before = game.position
     let plyBefore = game.moves.count
     let mover = before.sideToMove
-    do { try game.makeMove(move) } catch {
+    do { try perGame.game.makeMove(move) } catch {
       feedback.receive(.illegalMove)
       return
     }
     clockRunner.recordMove(by: mover, plyBeforeMove: plyBefore)
     input.complete(move)
     cancelHint()
-    pendingDrawOffer = nil
+    perGame.pendingDrawOffer = nil
     if case let (result, termination)? = GameAdjudication.result(for: game.outcome) {
       finish(result, termination)
       return
@@ -492,10 +510,10 @@ public final class GameSession {
   }
 
   private func finish(_ result: GameResult, _ termination: GameTermination) {
-    self.result = result
-    self.termination = termination
+    perGame.result = result
+    perGame.termination = termination
     cancelTasks()
-    pendingDrawOffer = nil
+    perGame.pendingDrawOffer = nil
     input.cancel()
     updateClockTurn()
     feedback.receive(.gameOver(result))
@@ -537,14 +555,14 @@ public final class GameSession {
     guard let key = bot?.chat[event]?.randomElement() else { return }
     let line = localization.string(key)
     guard !line.isEmpty else { return }
-    botMessage = line
+    perGame.botMessage = line
   }
 
   private func cancelHint() {
     hintTask?.cancel()
     hintTask = nil
     isLoadingHint = false
-    hint = nil
+    perGame.hint = nil
   }
 
   private func cancelTasks() {
@@ -593,8 +611,8 @@ public final class GameSession {
   private func save() {
     guard !game.moves.isEmpty else { return }
     let snapshot = SavedGame(
-      id: id,
-      createdAt: createdAt,
+      id: perGame.id,
+      createdAt: perGame.createdAt,
       updatedAt: Date(),
       mode: mode,
       white: white,
@@ -613,7 +631,7 @@ public final class GameSession {
         try await store.save(snapshot)
         self?.onSave()
       } catch {
-        self?.reportSaveFailure()
+        self?.reportSaveFailure(of: snapshot.id)
       }
     }
   }
@@ -624,10 +642,10 @@ public final class GameSession {
     await saveTask?.value
   }
 
-  private func reportSaveFailure() {
-    guard !hasReportedSaveFailure else { return }
-    hasReportedSaveFailure = true
-    showsSaveFailure = true
+  /// A save that fails after a rematch belongs to the previous game and is not reported.
+  private func reportSaveFailure(of gameID: UUID) {
+    guard perGame.id == gameID, perGame.saveFailure == .none else { return }
+    perGame.saveFailure = .reported
   }
 
   // MARK: - Pure rules

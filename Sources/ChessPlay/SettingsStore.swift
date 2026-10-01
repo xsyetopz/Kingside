@@ -110,7 +110,7 @@ public final class SettingsStore {
   }
 
   /// The sound effects switch.
-  public var soundEnabled: Bool {
+  public var soundEffects: Bool {
     get { value.soundEffects }
     set { value.soundEffects = newValue }
   }

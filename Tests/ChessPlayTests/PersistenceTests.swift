@@ -230,11 +230,11 @@ struct PersistenceTests {
     try withTemporaryDefaults { defaults in
       let first = SettingsStore(defaults: defaults)
       first.value.showCoordinates = false
-      first.soundEnabled = false
+      first.soundEffects = false
       first.value.playBotsColor = .random
       let second = SettingsStore(defaults: defaults)
       #expect(!second.value.showCoordinates)
-      #expect(!second.soundEnabled)
+      #expect(!second.soundEffects)
       #expect(!second.value.soundEffects)
       #expect(second.value.playBotsColor == .random)
       #expect(second.value == first.value)
