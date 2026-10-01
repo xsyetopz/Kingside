@@ -157,9 +157,10 @@ public final class GameSession {
   private var hintTask: Task<Void, Never>?
   @ObservationIgnored
   private var drawTask: Task<Void, Never>?
-  /// The latest save; each save waits for the previous one, so the newest snapshot wins.
   @ObservationIgnored
-  private(set) var saveTask: Task<Void, Never>?
+  private lazy var writer = SavedGameWriter(store: store, onSave: onSave) { [weak self] in
+    self?.reportSaveFailure(of: $0)
+  }
 
   /// `catalog` supplies the bots and `tuning`. `onSave` runs on the main actor after each
   /// successful save. `clock` drives the game clock and the bot's minimum think time.
@@ -624,13 +625,11 @@ public final class GameSession {
     topPlayer = PlayerSlot(color: bottom.opponent, info: player(bottom.opponent))
   }
 
-  /// Saves after the previous save finished, so the newest snapshot always wins.
   private func save() {
     guard !game.moves.isEmpty else { return }
-    let snapshot = SavedGame(
+    writer.save(
       id: perGame.id,
       createdAt: perGame.createdAt,
-      updatedAt: Date(),
       mode: mode,
       white: white,
       black: black,
@@ -641,25 +640,16 @@ public final class GameSession {
       termination: termination,
       clock: clock
     )
-    let previous = saveTask
-    saveTask = Task { [weak self, store] in
-      await previous?.value
-      do {
-        try await store.save(snapshot)
-        self?.onSave()
-      } catch {
-        self?.reportSaveFailure(of: snapshot.id)
-      }
-    }
   }
 
   /// Returns once the bot's pending reply and every queued save have finished.
   func flushPendingSave() async {
     await botTask?.value
-    await saveTask?.value
+    await writer.flush()
   }
 
-  /// A save that fails after a rematch belongs to the previous game and is not reported.
+  /// Reports once per game; a save that fails after a rematch belongs to the previous game and is
+  /// not reported.
   private func reportSaveFailure(of gameID: UUID) {
     guard perGame.id == gameID, perGame.saveFailure == .none else { return }
     perGame.saveFailure = .reported

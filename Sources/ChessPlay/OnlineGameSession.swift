@@ -118,9 +118,10 @@ public final class OnlineGameSession {
   private(set) var eventTask: Task<Void, Never>?
   @ObservationIgnored
   private var claimTask: Task<Void, Never>?
-  /// The latest save; each save waits for the previous one.
   @ObservationIgnored
-  private var saveTask: Task<Void, Never>?
+  private lazy var writer = SavedGameWriter(store: store, onSave: onSave) { [weak self] in
+    self?.reportSaveFailure(of: $0)
+  }
 
   /// `catalog` supplies the clock tuning and the chat filter. `onSave` runs on the main actor
   /// after each successful save. `clock` drives the local countdown and the claim-victory delay.
@@ -260,7 +261,7 @@ public final class OnlineGameSession {
   }
 
   /// Waits until every save started so far has finished.
-  func flushPendingSave() async { await saveTask?.value }
+  func flushPendingSave() async { await writer.flush() }
 
   /// Stops reading events, the clock and the claim-victory timer.
   public func deactivate() {
@@ -608,10 +609,9 @@ public final class OnlineGameSession {
       return
     }
     savedGameID = start.gameID
-    let snapshot = SavedGame(
-      id: Self.savedGameID(service: connection.service, gameID: start.gameID),
+    writer.save(
+      id: storedID(of: start),
       createdAt: perGame.createdAt,
-      updatedAt: Date(),
       mode: .online(service: connection.service, gameID: start.gameID),
       white: white,
       black: black,
@@ -622,21 +622,15 @@ public final class OnlineGameSession {
       termination: termination,
       clock: clock
     )
-    let previous = saveTask
-    saveTask = Task { [weak self, store] in
-      await previous?.value
-      do {
-        try await store.save(snapshot)
-        self?.onSave()
-      } catch {
-        self?.reportSaveFailure(of: start.gameID)
-      }
-    }
   }
 
-  /// A save that fails after a `.started` for another game is not reported.
-  private func reportSaveFailure(of gameID: String) {
-    guard start?.gameID == gameID, perGame.saveFailure == .none else { return }
+  private func storedID(of start: OnlineGameStart) -> UUID {
+    Self.savedGameID(service: connection.service, gameID: start.gameID)
+  }
+
+  /// Reports once per game; a save that fails after a `.started` for another game is not reported.
+  private func reportSaveFailure(of gameID: UUID) {
+    guard let start, storedID(of: start) == gameID, perGame.saveFailure == .none else { return }
     perGame.saveFailure = .reported
   }
 

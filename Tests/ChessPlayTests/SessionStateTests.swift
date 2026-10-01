@@ -193,6 +193,26 @@ final class SessionStateTests {
   }
 
   @Test
+  func gameStartedAgainAfterAnotherReportsASaveFailureAgain() async throws {
+    try makeSavesFail()
+    let session = try online()
+    connection.push(.state(OnlineGameState(uciMoves: ["e2e4", "e7e5"], status: .resign)))
+    try await until { session.isGameOver }
+    await session.flushPendingSave()
+    session.showsSaveFailure = false
+
+    connection.push(started("efgh5678", OnlineGameState(uciMoves: ["e2e4"], status: .resign)))
+    try await until { session.start?.gameID == "efgh5678" }
+    await session.flushPendingSave()
+    session.showsSaveFailure = false
+
+    connection.push(started("abcd1234", OnlineGameState(uciMoves: ["e2e4"], status: .resign)))
+    try await until { session.start?.gameID == "abcd1234" }
+    await session.flushPendingSave()
+    #expect(session.showsSaveFailure)
+  }
+
+  @Test
   func saveFailingAfterTheNextGameStartedIsNotReportedForIt() async throws {
     try makeSavesFail()
     let session = try online()
