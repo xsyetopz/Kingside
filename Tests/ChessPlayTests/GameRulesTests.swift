@@ -93,7 +93,7 @@ struct GameAdjudicationTests {
     #expect(Material.points(.white, in: position) == 38)
     #expect(Material.points(.black, in: position) == 8)
     #expect(Material.missing(.white, in: position) == [.pawn])
-    #expect(GameSession.materialAdvantage(in: position) == [.white: 30, .black: 0])
+    #expect(GamePresentation.materialAdvantage(in: position) == [.white: 30, .black: 0])
   }
 }
 
@@ -240,18 +240,22 @@ struct GameSessionRulesTests {
   func resultTitles() {
     let english = Shared.english
     #expect(
-      GameSession.resultTitle(.whiteWon, humanColor: .white, localization: english) == "You Won!"
+      GamePresentation.resultTitle(.whiteWon, humanColor: .white, localization: english)
+        == "You Won!"
     )
     #expect(
-      GameSession.resultTitle(.whiteWon, humanColor: .black, localization: english) == "You Lost"
+      GamePresentation.resultTitle(.whiteWon, humanColor: .black, localization: english)
+        == "You Lost"
     )
     #expect(
-      GameSession.resultTitle(.blackWon, humanColor: nil, localization: english) == "Black Won"
+      GamePresentation.resultTitle(.blackWon, humanColor: nil, localization: english) == "Black Won"
     )
     #expect(
-      GameSession.resultTitle(.whiteWon, humanColor: nil, localization: english) == "White Won"
+      GamePresentation.resultTitle(.whiteWon, humanColor: nil, localization: english) == "White Won"
     )
-    #expect(GameSession.resultTitle(.draw, humanColor: .white, localization: english) == "Draw")
+    #expect(
+      GamePresentation.resultTitle(.draw, humanColor: .white, localization: english) == "Draw"
+    )
   }
 
   @Test
@@ -259,7 +263,7 @@ struct GameSessionRulesTests {
     var game = ChessGame()
     for uci in ["e2e4", "e7e5", "g1f3"] { try game.makeMove(#require(ChessMove(uci: uci))) }
     #expect(
-      GameSession.moveRows(game.moves) == [
+      GamePresentation.moveRows(game.moves) == [
         MoveRow(number: 1, white: "e4", black: "e5"),
         MoveRow(number: 2, white: "Nf3", black: nil),
       ]

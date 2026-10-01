@@ -146,12 +146,12 @@ public final class OnlineGameSession {
     !pendingPromotion.isEmpty || board.selectedSquare != nil
   }
   public var resultTitle: String {
-    GameSession.resultTitle(result, humanColor: humanColor, localization: localization)
+    GamePresentation.resultTitle(result, humanColor: humanColor, localization: localization)
   }
   public var resultReason: String { termination.map { localization.string($0.reasonKey) } ?? "" }
   public var statusText: String {
     if isGameOver { return localization.string("game.status.over", resultTitle, resultReason) }
-    return GameSession.turnText(
+    return GamePresentation.turnText(
       sideToMove: game.position.sideToMove,
       humanColor: humanColor,
       inCheck: game.position.isInCheck(game.position.sideToMove),
@@ -471,8 +471,8 @@ public final class OnlineGameSession {
 
     clock = GameClock(
       timeControl: clock.timeControl,
-      whiteRemaining: state.whiteTime.map(GameSession.seconds) ?? clock.remaining(.white),
-      blackRemaining: state.blackTime.map(GameSession.seconds) ?? clock.remaining(.black)
+      whiteRemaining: state.whiteTime.map(GamePresentation.seconds) ?? clock.remaining(.white),
+      blackRemaining: state.blackTime.map(GamePresentation.seconds) ?? clock.remaining(.black)
     )
     lastTick = now()
 
@@ -580,7 +580,7 @@ public final class OnlineGameSession {
     lastTick = current
     guard start != nil, status == .started, clock.runs(atPly: game.moves.count) else { return }
     let side = game.position.sideToMove
-    clock.consume(GameSession.seconds(elapsed), by: side)
+    clock.consume(GamePresentation.seconds(elapsed), by: side)
     if isLowTime(side), !lowTimeWarned.contains(side) {
       lowTimeWarned.insert(side)
       feedback.receive(.lowTime)
@@ -603,13 +603,13 @@ public final class OnlineGameSession {
   }
 
   private func refreshDerived() {
-    moveRows = GameSession.moveRows(game.moves)
+    moveRows = GamePresentation.moveRows(game.moves)
     let position = game.position
     capturedPieces = [
       .white: Material.missing(.black, in: position),
       .black: Material.missing(.white, in: position),
     ]
-    materialAdvantage = GameSession.materialAdvantage(in: position)
+    materialAdvantage = GamePresentation.materialAdvantage(in: position)
   }
 
   private func refreshPlayers() {

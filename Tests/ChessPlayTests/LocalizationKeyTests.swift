@@ -25,7 +25,9 @@ struct LocalizationKeyTests {
       humans.compactMap { GameSession.resultTitleKey(result, humanColor: $0) }
     }
     let turns = humans.flatMap { human in
-      [PieceColor.white, .black].map { GameSession.turnTextKey(sideToMove: $0, humanColor: human) }
+      [PieceColor.white, .black].map {
+        GamePresentation.turnTextKey(sideToMove: $0, humanColor: human)
+      }
     }
     return titles + turns + ["game.turn.check", "game.status.botThinking", "game.status.over"]
   }
