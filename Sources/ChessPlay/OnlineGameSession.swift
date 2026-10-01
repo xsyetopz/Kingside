@@ -54,7 +54,7 @@ public final class OnlineGameSession {
   public private(set) var topPlayer = PlayerSlot(color: .black, info: PlayerInfo(name: ""))
   public private(set) var bottomPlayer = PlayerSlot(color: .white, info: PlayerInfo(name: ""))
   /// Remaining time of both sides: the server's times, counted down locally for the side to move.
-  public private(set) var clock = GameClock(timeControl: .untimed)
+  public var clock: GameClock { clockRunner.clock }
   /// Side whose clock runs while the game is ongoing; nil before the start and once it has ended.
   public private(set) var activeClockColor: PieceColor?
   private var claimVictoryReady = false
@@ -63,15 +63,13 @@ public final class OnlineGameSession {
 
   private var input = MoveInput()
 
-  private let tuning: PlayTuning
   private let chatFilter: ChatFilter
   private let localization: Localization
   private let settings: SettingsStore
   private let store: GamePersistenceStore
   private let feedback: any FeedbackSink
   private let onSave: @MainActor () -> Void
-  /// Time since the session was created, on the injected clock.
-  private let now: @Sendable () -> Duration
+  private let clockRunner: ClockRunner
   private let sleep: @Sendable (Duration) async throws -> Void
   /// The moves of the latest server state; the board rolls back to them after a failed send.
   @ObservationIgnored
@@ -79,15 +77,9 @@ public final class OnlineGameSession {
   @ObservationIgnored
   private var createdAt = Date()
   @ObservationIgnored
-  private var lowTimeWarned: Set<PieceColor> = []
-  @ObservationIgnored
-  private var lastTick: Duration = .zero
-  @ObservationIgnored
   private var savedGameID: String?
   @ObservationIgnored
   private(set) var eventTask: Task<Void, Never>?
-  @ObservationIgnored
-  private var clockTask: Task<Void, Never>?
   @ObservationIgnored
   private var claimTask: Task<Void, Never>?
   /// The latest save; each save waits for the previous one.
@@ -96,8 +88,8 @@ public final class OnlineGameSession {
   @ObservationIgnored
   private var hasReportedSaveFailure = false
 
-  /// `catalog` supplies `tuning`. `onSave` runs on the main actor after each successful save.
-  /// `clock` drives the local countdown and the claim-victory delay.
+  /// `catalog` supplies the clock tuning and the chat filter. `onSave` runs on the main actor
+  /// after each successful save. `clock` drives the local countdown and the claim-victory delay.
   @preconcurrency
   public init(
     connection: any OnlineGameConnection,
@@ -110,15 +102,19 @@ public final class OnlineGameSession {
     onSave: @escaping @MainActor () -> Void = {}
   ) {
     self.connection = connection
-    tuning = catalog.tuning
     chatFilter = catalog.chatFilter
     self.localization = localization
     self.settings = settings
     self.store = store
     self.feedback = feedback
     self.onSave = onSave
-    let origin = clock.now
-    now = { origin.duration(to: clock.now) }
+    clockRunner = ClockRunner(
+      GameClock(timeControl: .untimed),
+      policy: .showsZero,
+      tuning: catalog.tuning.clock,
+      feedback: feedback,
+      time: clock
+    )
     sleep = { try await clock.sleep(for: $0) }
     refreshDerived()
   }
@@ -200,7 +196,7 @@ public final class OnlineGameSession {
   public func player(_ color: PieceColor) -> PlayerInfo { color == .white ? white : black }
 
   /// True when `color`'s clock is at or below the low-time threshold.
-  public func isLowTime(_ color: PieceColor) -> Bool { clock.isLow(color, tuning: tuning.clock) }
+  public func isLowTime(_ color: PieceColor) -> Bool { clockRunner.isLow(color) }
 
   public var snapshot: BoardSnapshot { input.snapshot(of: game.position, canMove: canMove) }
 
@@ -235,8 +231,7 @@ public final class OnlineGameSession {
   public func deactivate() {
     eventTask?.cancel()
     eventTask = nil
-    clockTask?.cancel()
-    clockTask = nil
+    clockRunner.stop()
     claimTask?.cancel()
     claimTask = nil
   }
@@ -306,7 +301,7 @@ public final class OnlineGameSession {
       feedback.receive(.illegalMove)
       return
     }
-    clock.recordMove(by: before.sideToMove, plyBeforeMove: plyBefore)
+    clockRunner.recordMove(by: before.sideToMove, plyBeforeMove: plyBefore)
     input.complete(move)
     let uci = move.uci
     pendingMove = uci
@@ -398,8 +393,7 @@ public final class OnlineGameSession {
     claimTask = nil
     myDrawOfferPending = false
     pendingDrawOffer = nil
-    lowTimeWarned = []
-    clock = GameClock(timeControl: start.timeControl ?? .untimed)
+    clockRunner.reset(to: GameClock(timeControl: start.timeControl ?? .untimed))
     status = .created
     refreshPlayers()
     // Replayed moves get no move feedback.
@@ -428,12 +422,13 @@ public final class OnlineGameSession {
     }
     serverMoves = incoming
 
-    clock = GameClock(
-      timeControl: clock.timeControl,
-      whiteRemaining: state.whiteTime.map(GamePresentation.seconds) ?? clock.remaining(.white),
-      blackRemaining: state.blackTime.map(GamePresentation.seconds) ?? clock.remaining(.black)
+    clockRunner.resync(
+      to: GameClock(
+        timeControl: clock.timeControl,
+        whiteRemaining: state.whiteTime.map(GamePresentation.seconds) ?? clock.remaining(.white),
+        blackRemaining: state.blackTime.map(GamePresentation.seconds) ?? clock.remaining(.black)
+      )
     )
-    lastTick = now()
 
     let opponent = start.myColor.opponent
     let opponentOffers = opponent == .white ? state.whiteOffersDraw : state.blackOffersDraw
@@ -453,8 +448,7 @@ public final class OnlineGameSession {
     guard status.isFinished else { return }
     pendingMove = nil
     input.cancel()
-    clockTask?.cancel()
-    clockTask = nil
+    clockRunner.stop()
     claimTask?.cancel()
     claimTask = nil
     if announcesEnd && !wasFinished { feedback.receive(.gameOver(result)) }
@@ -514,33 +508,19 @@ public final class OnlineGameSession {
   // MARK: - Clock
 
   private func startClock() {
-    clockTask?.cancel()
-    clockTask = nil
-    lastTick = now()
+    clockRunner.stop()
     updateClockTurn()
     guard !isGameOver else { return }
-    let interval = tuning.clock.tickInterval
-    clockTask = Task { [weak self, sleep] in
-      while !Task.isCancelled {
-        try? await sleep(interval)
-        guard let self, !Task.isCancelled else { return }
-        self.tickClock()
-      }
-    }
+    clockRunner.start { [weak self] in self?.tickClock() }
   }
 
-  /// Charges the side to move for the time since the last tick; never flags.
+  /// Charges the side to move for the time since the last tick; the server decides a flag.
   private func tickClock() {
-    let current = now()
-    let elapsed = current - lastTick
-    lastTick = current
-    guard start != nil, status == .started, clock.runs(atPly: game.moves.count) else { return }
-    let side = game.position.sideToMove
-    clock.consume(GamePresentation.seconds(elapsed), by: side)
-    if isLowTime(side), !lowTimeWarned.contains(side) {
-      lowTimeWarned.insert(side)
-      feedback.receive(.lowTime)
-    }
+    let running = start != nil && status == .started
+    clockRunner.tick(
+      sideToMove: running ? game.position.sideToMove : nil,
+      plyCount: game.moves.count
+    )
   }
 
   private func updateClockTurn() {

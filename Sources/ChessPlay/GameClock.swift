@@ -2,8 +2,8 @@ import ChessContent
 import ChessCore
 import Foundation
 
-/// Remaining time of both sides under a `TimeControl`. A pure value: the game session drives
-/// it with elapsed times from its injected `Clock`.
+/// Remaining time of both sides under a `TimeControl`. A pure value: `ClockRunner` drives it
+/// with elapsed times from the session's injected `Clock`.
 /// Rules (chess.com style):
 /// - The clock runs only after both sides have made their first move (`runs(atPly:)`).
 /// - The increment is added after each move made while the clock runs.

@@ -57,7 +57,7 @@ public final class GameSession {
   public private(set) var topPlayer: PlayerSlot
   public private(set) var bottomPlayer: PlayerSlot
   /// Remaining time of both sides; updated every `tuning.clock.tickMilliseconds` while it runs.
-  public private(set) var clock: GameClock
+  public var clock: GameClock { clockRunner.clock }
   /// Side whose clock runs while the game is ongoing; nil once it has ended.
   public private(set) var activeClockColor: PieceColor?
 
@@ -79,6 +79,7 @@ public final class GameSession {
   private let store: GamePersistenceStore
   private let feedback: any FeedbackSink
   private let onSave: @MainActor () -> Void
+  private let clockRunner: ClockRunner
   /// Time since the session was created, on the injected clock.
   private let now: @Sendable () -> Duration
   private let sleep: @Sendable (Duration) async throws -> Void
@@ -89,17 +90,11 @@ public final class GameSession {
   @ObservationIgnored
   private var hasAnnouncedStart: Bool
   @ObservationIgnored
-  private var lowTimeWarned: Set<PieceColor> = []
-  @ObservationIgnored
-  private var lastTick: Duration = .zero
-  @ObservationIgnored
   private(set) var botTask: Task<Void, Never>?
   @ObservationIgnored
   private var hintTask: Task<Void, Never>?
   @ObservationIgnored
   private var drawTask: Task<Void, Never>?
-  @ObservationIgnored
-  private var clockTask: Task<Void, Never>?
   /// The latest save; each save waits for the previous one, so the newest snapshot wins.
   @ObservationIgnored
   private(set) var saveTask: Task<Void, Never>?
@@ -130,6 +125,7 @@ public final class GameSession {
     let origin = clock.now
     now = { origin.duration(to: clock.now) }
     sleep = { try await clock.sleep(for: $0) }
+    let gameClock: GameClock
     switch launch {
     case .new(let setup):
       id = UUID()
@@ -139,7 +135,7 @@ public final class GameSession {
       black = setup.black
       timeControl = setup.timeControl
       autoFlip = setup.autoFlip
-      self.clock = GameClock(timeControl: setup.timeControl)
+      gameClock = GameClock(timeControl: setup.timeControl)
       hasAnnouncedStart = false
     case .saved(let saved):
       id = saved.id
@@ -149,12 +145,19 @@ public final class GameSession {
       black = saved.black
       timeControl = saved.timeControl
       autoFlip = saved.autoFlip
-      self.clock = saved.clock
+      gameClock = saved.clock
       game = saved.game
       result = saved.result
       termination = saved.termination
       hasAnnouncedStart = true
     }
+    clockRunner = ClockRunner(
+      gameClock,
+      policy: .endsGame,
+      tuning: catalog.tuning.clock,
+      feedback: feedback,
+      time: clock
+    )
     let (launchMode, launchWhite, launchBlack): (GameMode, PlayerInfo, PlayerInfo)
     switch launch {
     case .new(let setup):
@@ -218,7 +221,7 @@ public final class GameSession {
   public func player(_ color: PieceColor) -> PlayerInfo { color == .white ? white : black }
 
   /// True when `color`'s clock is at or below the low-time threshold.
-  public func isLowTime(_ color: PieceColor) -> Bool { clock.isLow(color, tuning: tuning.clock) }
+  public func isLowTime(_ color: PieceColor) -> Bool { clockRunner.isLow(color) }
 
   public var snapshot: BoardSnapshot {
     input.snapshot(of: game.position, canMove: canMove, hint: hint)
@@ -387,8 +390,7 @@ public final class GameSession {
     result = .ongoing
     termination = nil
     game = ChessGame()
-    clock = GameClock(timeControl: timeControl)
-    lowTimeWarned = []
+    clockRunner.reset(to: GameClock(timeControl: timeControl))
     botMessage = nil
     hint = nil
     pendingDrawOffer = nil
@@ -415,7 +417,7 @@ public final class GameSession {
       feedback.receive(.illegalMove)
       return
     }
-    clock.recordMove(by: mover, plyBeforeMove: plyBefore)
+    clockRunner.recordMove(by: mover, plyBeforeMove: plyBefore)
     input.complete(move)
     cancelHint()
     pendingDrawOffer = nil
@@ -506,37 +508,22 @@ public final class GameSession {
   // MARK: - Clock
 
   private func startClock() {
-    clockTask?.cancel()
-    clockTask = nil
-    lastTick = now()
     updateClockTurn()
     guard clock.isTimed, !isGameOver else { return }
-    let interval = tuning.clock.tickInterval
-    clockTask = Task { [weak self, sleep] in
-      while !Task.isCancelled {
-        try? await sleep(interval)
-        guard let self, !Task.isCancelled else { return }
-        self.tickClock()
-      }
-    }
+    clockRunner.start { [weak self] in self?.tickClock() }
   }
 
   /// Charges the side to move for the time since the last tick; ends the game on a flag.
   private func tickClock() {
-    let current = now()
-    let elapsed = current - lastTick
-    lastTick = current
-    guard isActive, !isGameOver, clock.runs(atPly: game.moves.count) else { return }
-    let side = game.position.sideToMove
-    let flagged = clock.consume(GamePresentation.seconds(elapsed), by: side)
-    if isLowTime(side), !lowTimeWarned.contains(side) {
-      lowTimeWarned.insert(side)
-      feedback.receive(.lowTime)
-    }
-    if flagged {
-      let (result, termination) = GameAdjudication.timeout(flagged: side, in: game.position)
-      finish(result, termination)
-    }
+    let running = isActive && !isGameOver
+    guard
+      let flagged = clockRunner.tick(
+        sideToMove: running ? game.position.sideToMove : nil,
+        plyCount: game.moves.count
+      )
+    else { return }
+    let (result, termination) = GameAdjudication.timeout(flagged: flagged, in: game.position)
+    finish(result, termination)
   }
 
   private func updateClockTurn() {
@@ -565,8 +552,7 @@ public final class GameSession {
     botTask = nil
     drawTask?.cancel()
     drawTask = nil
-    clockTask?.cancel()
-    clockTask = nil
+    clockRunner.stop()
     cancelHint()
     isBotThinking = false
   }
