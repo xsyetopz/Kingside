@@ -52,48 +52,6 @@ public struct EngineAnalysis: Equatable, Sendable {
   public let nodes: Int
 }
 
-/// Playing strength on an Elo-like scale from 250 to 2200. All search settings derive from `elo`.
-public struct EngineStrength: Codable, Hashable, Sendable {
-  public static let minimumElo = 250
-  public static let maximumElo = 2200
-
-  public let elo: Int
-
-  public init(elo: Int) {
-    self.elo = min(max(elo, Self.minimumElo), Self.maximumElo)
-  }
-
-  //                            elo:   250   600  1000  1400  1800  2000  2200
-  private static let anchors = [250, 600, 1000, 1400, 1800, 2000, 2200]
-  private static let depths = [1.0, 2, 3, 5, 7, 10, 64]
-  private static let thinkMilliseconds = [150.0, 250, 400, 700, 1200, 1800, 2500]
-  private static let noises = [200.0, 120, 70, 35, 15, 5, 0]
-  private static let mistakes = [0.30, 0.20, 0.12, 0.06, 0.02, 0, 0]
-  private static let temperatures = [250.0, 180, 120, 80, 50, 30, 20]
-
-  private func interpolate(_ values: [Double]) -> Double {
-    let anchors = Self.anchors
-    guard let upper = anchors.firstIndex(where: { $0 >= elo }), upper > 0 else { return values[0] }
-    let fraction = Double(elo - anchors[upper - 1]) / Double(anchors[upper] - anchors[upper - 1])
-    return values[upper - 1] + (values[upper] - values[upper - 1]) * fraction
-  }
-
-  /// Maximum nominal search depth in plies.
-  public var searchDepth: Int { Int(interpolate(Self.depths).rounded()) }
-  /// Time budget for one move; the search stops earlier when it reaches `searchDepth`.
-  public var thinkTime: Duration { .milliseconds(Int(interpolate(Self.thinkMilliseconds))) }
-  /// Scale of the random centipawn noise added to candidate move scores.
-  public var evaluationNoise: Int { Int(interpolate(Self.noises).rounded()) }
-  /// Probability of choosing among candidates by a score-weighted draw instead of the best noisy
-  /// score.
-  public var mistakeChance: Double { interpolate(Self.mistakes) }
-  /// Softmax temperature, in centipawns, of that weighted draw; higher picks worse moves more
-  /// often.
-  public var mistakeTemperature: Int { Int(interpolate(Self.temperatures).rounded()) }
-  /// Root moves that receive exact scores and can be chosen (MultiPV width).
-  public var candidateMoves: Int { elo < 1400 ? 256 : (elo < 2000 ? 4 : 1) }
-}
-
 /// Built-in engine: alpha-beta search over an internal 0x88 board. Searches run on this actor,
 /// never on the main actor, and stop cooperatively when their task is cancelled.
 public actor ChessEngine {
@@ -187,47 +145,5 @@ public actor ChessEngine {
     return white > 0
       ? Evaluation(centipawns: 20_000 - plies, mateIn: moves)
       : Evaluation(centipawns: -(20_000 - plies), mateIn: -moves)
-  }
-
-  /// Picks the move to play from scored root lines. Strong settings play the best move;
-  /// weaker settings add noise to candidate scores and sometimes draw a candidate with
-  /// probability weighted by its score.
-  static func choose<Generator: RandomNumberGenerator>(
-    from lines: [RootLine],
-    strength: EngineStrength,
-    using generator: inout Generator
-  ) -> EngineMove {
-    let candidates = lines.filter(\.exact)
-    guard candidates.count > 1, strength.evaluationNoise > 0 || strength.mistakeChance > 0 else {
-      return lines[0].move
-    }
-    // Clamp mate scores so a mate still dominates without overflowing the weights.
-    let scores = candidates.map { Double(min(max($0.score, -2_000), 2_000)) }
-
-    if Double.random(in: 0..<1, using: &generator) < strength.mistakeChance {
-      let top = scores.max() ?? 0
-      let temperature = Double(max(strength.mistakeTemperature, 1))
-      let weights = scores.map { exp(($0 - top) / temperature) }
-      var draw = Double.random(in: 0..<weights.reduce(0, +), using: &generator)
-      for (index, weight) in weights.enumerated() {
-        draw -= weight
-        if draw < 0 { return candidates[index].move }
-      }
-      return candidates[0].move
-    }
-
-    let noise = Double(strength.evaluationNoise)
-    var bestIndex = 0
-    var bestScore = -Double.infinity
-    for (index, score) in scores.enumerated() {
-      // The sum of three uniform draws approximates a bell curve with standard deviation `noise`.
-      let jitter =
-        (0..<3).reduce(0.0) { sum, _ in sum + Double.random(in: -1...1, using: &generator) } * noise
-      if score + jitter > bestScore {
-        bestScore = score + jitter
-        bestIndex = index
-      }
-    }
-    return candidates[bestIndex].move
   }
 }
