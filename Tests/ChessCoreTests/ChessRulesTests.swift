@@ -1,6 +1,5 @@
+import ChessCore
 import Testing
-
-@testable import ChessCore
 
 func move(_ uci: String) throws -> ChessMove { try #require(ChessMove(uci: uci)) }
 func square(_ name: String) throws -> Square { try #require(Square(algebraic: name)) }
@@ -39,6 +38,22 @@ struct ChessRulesTests {
     let next = try position.applying(move("e1g1"))
     #expect(next[try square("f1")] == Piece(type: .rook, color: .white))
     #expect(next[try square("g1")] == Piece(type: .king, color: .white))
+  }
+
+  @Test(arguments: [
+    // A bishop takes the rook on each corner; only that corner's right is lost.
+    ("4k3/1b6/8/8/8/8/8/R3K2R b KQ - 0 1", "b7h1", CastlingRights.whiteQueenSide),
+    ("4k3/6b1/8/8/8/8/8/R3K2R b KQ - 0 1", "g7a1", CastlingRights.whiteKingSide),
+    ("r3k2r/8/8/8/8/8/1B6/4K3 w kq - 0 1", "b2h8", CastlingRights.blackQueenSide),
+    ("r3k2r/8/8/8/8/8/6B1/4K3 w kq - 0 1", "g2a8", CastlingRights.blackKingSide),
+  ])
+  func capturingRookOnHomeSquareRemovesThatCastlingRight(
+    fen: String,
+    uci: String,
+    remaining: CastlingRights
+  ) throws {
+    let next = try ChessPosition(fen: fen).applying(move(uci))
+    #expect(next.castlingRights == remaining)
   }
 
   @Test

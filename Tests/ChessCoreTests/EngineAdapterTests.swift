@@ -84,8 +84,40 @@ struct EngineAdapterTests {
         fen: "rnb1kbnr/pppp1ppp/8/4p1q1/4P3/3P4/PPP2PPP/RNBQKBNR w KQkq - 0 1"
       )
     )
-    let move = try await ChessEngine().bestMove(game: game, strength: EngineStrength(elo: 2200))
-    #expect(move == ChessMove(uci: "c1g5"))
+    let analysis = try await ChessEngine().analyze(position: game.position, limit: .depth(4))
+    #expect(analysis.bestMove == ChessMove(uci: "c1g5"))
+  }
+
+  @Test
+  func chooseWithFixedSeedIsStableAndLegal() throws {
+    // Refactor pin: the expected move was recorded from the current code, not derived
+    // independently. It detects any change in how `choose` consumes the generator.
+    var board = EngineBoard(.initial)
+    defer { board.deallocate() }
+    let scored = [("e2e4", 30), ("d2d4", 20), ("g1f3", 10), ("a2a3", -40)]
+    var lines: [RootLine] = []
+    for (uci, score) in scored {
+      let found = board.engineMove(for: try move(uci))
+      let engineMove = try #require(found)
+      lines.append(RootLine(move: engineMove, score: score, exact: true, pv: [engineMove]))
+    }
+    // Several seeds, so both the noisy-best and the weighted-draw paths are exercised.
+    let chosen = (1...12).map { seed in
+      var generator = SplitMix(seed: UInt64(seed))
+      let pick = ChessEngine.choose(
+        from: lines,
+        strength: EngineStrength(elo: 250),
+        using: &generator
+      )
+      return pick.chessMove.uci
+    }
+    #expect(
+      chosen == [
+        "e2e4", "e2e4", "g1f3", "e2e4", "g1f3", "e2e4", "a2a3", "e2e4", "g1f3", "a2a3", "g1f3",
+        "e2e4",
+      ]
+    )
+    #expect(Set(chosen).isSubset(of: Set(scored.map(\.0))))
   }
 
   @Test

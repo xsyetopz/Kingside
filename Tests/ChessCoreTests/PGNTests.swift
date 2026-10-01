@@ -1,5 +1,5 @@
+import ChessCore
 import Testing
-@testable import ChessCore
 
 @Suite
 struct PGNTests {
@@ -27,6 +27,38 @@ struct PGNTests {
   func blackMoveNumberPrefixIsParsed() throws {
     let pgn = try PGNParser().parse("1... e5 2. Nf3 *")
     #expect(pgn.moves == ["e5", "Nf3"])
+  }
+
+  @Test
+  func brokenTagLineIsMalformed() {
+    #expect(throws: PGNError.malformedTag) { try PGNParser().parse("[Event Friendly]\n\n1. e4 *") }
+    #expect(throws: PGNError.malformedTag) {
+      try PGNParser().parse("[Event \"Friendly\"\n\n1. e4 *")
+    }
+  }
+
+  @Test
+  func illegalMoveReportsItsPly() throws {
+    // Ply 3 is 2. Ke3, which is impossible: the king on e1 cannot move two squares.
+    let pgn = try PGNParser().parse("1. e4 e5 2. Ke3 *")
+    #expect(throws: PGNError.illegalMove("Ke3", ply: 3)) {
+      try PGNParser().chessGame(from: pgn)
+    }
+  }
+
+  @Test
+  func exportFromFENWritesSetUpAndFENTags() throws {
+    let fen = "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1"
+    var game = ChessGame(position: try ChessPosition(fen: fen))
+    try game.makeMove(try #require(ChessMove(uci: "e2e4")))
+    let expected = """
+      [FEN "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1"]
+      [Result "*"]
+      [SetUp "1"]
+
+      1. e4 *
+      """
+    #expect(PGNExporter().export(game: game) == expected)
   }
 
   @Test
