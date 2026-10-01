@@ -26,10 +26,8 @@ public final class PuzzleBoardSession {
   @ObservationIgnored
   public var onOutcome: ((PuzzleSession.RatedOutcome) -> Void)?
 
-  private var board = BoardInteraction()
+  private var input = MoveInput()
   private var badge: SquareBadge?
-  /// Promotion moves waiting for `.promote`; empty when no picker is shown.
-  private var pendingPromotion: [ChessMove] = []
 
   private let tuning: PuzzleBoardTuning
   private let feedback: any FeedbackSink
@@ -56,28 +54,7 @@ public final class PuzzleBoardSession {
   public var canShowSolution: Bool { [.solverToMove, .opponentToMove, .failed].contains(phase) }
 
   public var snapshot: BoardSnapshot {
-    let side = position.sideToMove
-    let king = Piece(type: .king, color: side)
-    return BoardSnapshot(
-      pieces: position.board,
-      orientation: board.isFlipped ? .black : .white,
-      focusedSquare: board.focusedSquare,
-      selectedSquare: board.selectedSquare,
-      legalTargets: board.legalTargets,
-      lastMove: board.lastMove,
-      checkSquare: position.isInCheck(side) ? position.board.first { $0.value == king }?.key : nil,
-      hint: nil,
-      pendingPromotion: pendingPromotion.first.map { move in
-        PendingPromotion(
-          from: move.from,
-          to: move.to,
-          color: side,
-          choices: pendingPromotion.compactMap(\.promotion)
-        )
-      },
-      isInputEnabled: phase == .solverToMove && pendingPromotion.isEmpty,
-      badge: badge
-    )
+    input.snapshot(of: position, canMove: phase == .solverToMove, badge: badge)
   }
 
   // MARK: - Puzzle actions
@@ -87,9 +64,8 @@ public final class PuzzleBoardSession {
   public func load(_ puzzle: Puzzle) {
     pendingTask?.cancel()
     reportedOutcome = false
-    pendingPromotion = []
     badge = nil
-    board = BoardInteraction()
+    input = MoveInput()
     guard let session = try? PuzzleSession(puzzle: puzzle) else {
       self.session = nil
       position = .initial
@@ -97,8 +73,8 @@ public final class PuzzleBoardSession {
     }
     self.session = session
     position = session.position
-    board.isFlipped = session.solverColor == .black
-    board.resetFocus(for: session.solverColor)
+    input.isFlipped = session.solverColor == .black
+    input.resetFocus(for: session.solverColor)
     schedule(after: tuning.introDelay) { $0.playIntro() }
   }
 
@@ -107,8 +83,8 @@ public final class PuzzleBoardSession {
     guard let session, canRetry else { return }
     session.retry()
     position = session.position
-    board.lastMove = session.lastMove
-    board.cancelSelection()
+    input.lastMove = session.lastMove
+    input.cancel()
     badge = nil
   }
 
@@ -116,11 +92,10 @@ public final class PuzzleBoardSession {
   public func showSolution() {
     guard let session, canShowSolution else { return }
     pendingTask?.cancel()
-    pendingPromotion = []
-    board.cancelSelection()
+    input.cancel()
     badge = nil
     position = session.position
-    board.lastMove = session.lastMove
+    input.lastMove = session.lastMove
     pendingTask = Task { [weak self, sleep, delay = tuning.solutionStepDelay] in
       while !Task.isCancelled {
         try? await sleep(delay)
@@ -139,44 +114,34 @@ public final class PuzzleBoardSession {
 
   public func apply(_ intent: BoardIntent) {
     switch intent {
-    case .moveFocus(let direction): board.moveFocus(direction)
-    case .focus(let square): board.focusedSquare = square
-    case .selectFocused: select(board.focusedSquare)
+    case .moveFocus(let direction): input.moveFocus(direction)
+    case .focus(let square): input.focus(square)
+    case .selectFocused: select(input.focusedSquare)
     case .select(let square): select(square)
-    case .cancel:
-      pendingPromotion = []
-      board.cancelSelection()
-    case .promote(let type): choosePromotion(type)
+    case .cancel: input.cancel()
+    case .promote(let type): if let move = input.promote(type) { submit(move) }
     case .requestHint: requestHint()
-    case .flipBoard: board.isFlipped.toggle()
+    case .flipBoard: input.isFlipped.toggle()
     case .takeback, .offerDraw, .acceptDraw, .declineDraw, .resign, .rematch, .dismissBotMessage:
       break
     }
   }
 
   private func select(_ square: Square) {
-    guard let session, phase == .solverToMove, pendingPromotion.isEmpty else { return }
-    switch board.select(square, in: position, movableColor: session.solverColor) {
+    guard let session, phase == .solverToMove, !input.isChoosingPromotion else { return }
+    switch input.select(square, in: position, movableColor: session.solverColor, autoQueen: false) {
     case .none: break
     case .illegalTarget: feedback.receive(.illegalMove)
-    case .move(let move): submit(move)
-    case .promotion(let moves): pendingPromotion = moves
+    case .play(let move): submit(move)
     }
-  }
-
-  private func choosePromotion(_ type: PieceType) {
-    guard let move = pendingPromotion.first(where: { $0.promotion == type }) else { return }
-    pendingPromotion = []
-    submit(move)
   }
 
   /// Focuses and picks up the piece to move next; using a hint makes the attempt unrated.
   private func requestHint() {
     guard let session, let square = session.hint() else { return }
-    pendingPromotion = []
-    board.cancelSelection()
-    board.focusedSquare = square
-    _ = board.select(square, in: position, movableColor: session.solverColor)
+    input.cancel()
+    input.focus(square)
+    _ = input.select(square, in: position, movableColor: session.solverColor, autoQueen: false)
   }
 
   // MARK: - Moves
@@ -187,17 +152,17 @@ public final class PuzzleBoardSession {
     let result = session.submit(move)
     switch result {
     case .ignored:
-      board.cancelSelection()
+      input.cancel()
       feedback.receive(.illegalMove)
       return
     case .wrong:
       position = (try? before.applying(move)) ?? before
-      board.complete(move)
+      input.complete(move)
       badge = SquareBadge(square: move.to, kind: .incorrect)
       feedback.receive(.puzzleWrong)
     case .correct, .solved:
       position = session.position
-      board.complete(move)
+      input.complete(move)
       badge = SquareBadge(square: move.to, kind: .correct)
       feedback.receive(.puzzleCorrect)
     }
@@ -225,7 +190,7 @@ public final class PuzzleBoardSession {
 
   private func showOpponentMove(_ move: ChessMove, from before: ChessPosition) {
     position = session?.position ?? position
-    board.lastMove = move
+    input.lastMove = move
     feedback.receive(.moved(MoveSound.effect(for: move, before: before, after: position)))
   }
 

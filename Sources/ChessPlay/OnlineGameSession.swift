@@ -61,9 +61,7 @@ public final class OnlineGameSession {
 
   public let connection: any OnlineGameConnection
 
-  private var board = BoardInteraction()
-  /// Promotion moves waiting for `.promote`; empty when no picker is shown.
-  private var pendingPromotion: [ChessMove] = []
+  private var input = MoveInput()
 
   private let tuning: PlayTuning
   private let chatFilter: ChatFilter
@@ -142,9 +140,7 @@ public final class OnlineGameSession {
   /// The opponent left long enough ago that the player may claim the win.
   public var canClaimVictory: Bool { claimVictoryReady && opponentGone && !isGameOver }
   /// True when `.cancel` would close the promotion picker or drop a selection.
-  public var hasCancellableSelection: Bool {
-    !pendingPromotion.isEmpty || board.selectedSquare != nil
-  }
+  public var hasCancellableSelection: Bool { input.hasCancellableSelection }
   public var resultTitle: String {
     GamePresentation.resultTitle(result, humanColor: humanColor, localization: localization)
   }
@@ -206,30 +202,7 @@ public final class OnlineGameSession {
   /// True when `color`'s clock is at or below the low-time threshold.
   public func isLowTime(_ color: PieceColor) -> Bool { clock.isLow(color, tuning: tuning.clock) }
 
-  public var snapshot: BoardSnapshot {
-    let position = game.position
-    let side = position.sideToMove
-    let king = Piece(type: .king, color: side)
-    return BoardSnapshot(
-      pieces: position.board,
-      orientation: board.isFlipped ? .black : .white,
-      focusedSquare: board.focusedSquare,
-      selectedSquare: board.selectedSquare,
-      legalTargets: board.legalTargets,
-      lastMove: board.lastMove,
-      checkSquare: position.isInCheck(side) ? position.board.first { $0.value == king }?.key : nil,
-      hint: nil,
-      pendingPromotion: pendingPromotion.first.map { move in
-        PendingPromotion(
-          from: move.from,
-          to: move.to,
-          color: side,
-          choices: pendingPromotion.compactMap(\.promotion)
-        )
-      },
-      isInputEnabled: canMove && pendingPromotion.isEmpty
-    )
-  }
+  public var snapshot: BoardSnapshot { input.snapshot(of: game.position, canMove: canMove) }
 
   // MARK: - Lifecycle
 
@@ -273,12 +246,12 @@ public final class OnlineGameSession {
   /// Board input, resign, draws and flip. Hint, takeback, rematch and bot messages do nothing.
   public func apply(_ intent: BoardIntent) {
     switch intent {
-    case .moveFocus(let direction): board.moveFocus(direction)
-    case .focus(let square): board.focusedSquare = square
-    case .selectFocused: select(board.focusedSquare)
+    case .moveFocus(let direction): input.moveFocus(direction)
+    case .focus(let square): input.focus(square)
+    case .selectFocused: select(input.focusedSquare)
     case .select(let square): select(square)
-    case .cancel: cancelSelection()
-    case .promote(let type): choosePromotion(type)
+    case .cancel: input.cancel()
+    case .promote(let type): if let move = input.promote(type) { play(move) }
     case .offerDraw: offerDraw()
     case .acceptDraw: answerDraw(accept: true)
     case .declineDraw: answerDraw(accept: false)
@@ -286,7 +259,7 @@ public final class OnlineGameSession {
       guard start != nil, !isGameOver else { return }
       send(.resign)
     case .flipBoard:
-      board.isFlipped.toggle()
+      input.isFlipped.toggle()
       refreshPlayers()
     case .requestHint, .takeback, .rematch, .dismissBotMessage: break
     }
@@ -308,30 +281,17 @@ public final class OnlineGameSession {
 
   private func select(_ square: Square) {
     guard canMove else { return }
-    switch board.select(square, in: game.position, movableColor: game.position.sideToMove) {
+    let outcome = input.select(
+      square,
+      in: game.position,
+      movableColor: game.position.sideToMove,
+      autoQueen: settings.value.autoPromoteToQueen
+    )
+    switch outcome {
     case .none: break
     case .illegalTarget: feedback.receive(.illegalMove)
-    case .move(let move): play(move)
-    case .promotion(let moves):
-      if settings.value.autoPromoteToQueen,
-        let queen = moves.first(where: { $0.promotion == .queen })
-      {
-        play(queen)
-      } else {
-        pendingPromotion = moves
-      }
+    case .play(let move): play(move)
     }
-  }
-
-  private func choosePromotion(_ type: PieceType) {
-    guard let move = pendingPromotion.first(where: { $0.promotion == type }) else { return }
-    pendingPromotion = []
-    play(move)
-  }
-
-  private func cancelSelection() {
-    pendingPromotion = []
-    board.cancelSelection()
   }
 
   // MARK: - Actions
@@ -347,7 +307,7 @@ public final class OnlineGameSession {
       return
     }
     clock.recordMove(by: before.sideToMove, plyBeforeMove: plyBefore)
-    board.complete(move)
+    input.complete(move)
     let uci = move.uci
     pendingMove = uci
     updateClockTurn()
@@ -419,8 +379,8 @@ public final class OnlineGameSession {
     self.start = start
     if isNewGame {
       createdAt = Date()
-      board.isFlipped = initialFlip
-      board.resetFocus(for: start.myColor)
+      input.isFlipped = initialFlip
+      input.resetFocus(for: start.myColor)
       if !start.state.status.isFinished && start.state.uciMoves.isEmpty {
         feedback.receive(.gameStarted)
       }
@@ -428,9 +388,8 @@ public final class OnlineGameSession {
     game = ChessGame(position: position)
     serverMoves = []
     pendingMove = nil
-    pendingPromotion = []
-    board.cancelSelection()
-    board.lastMove = nil
+    input.cancel()
+    input.lastMove = nil
     chat = []
     chatReadCount = 0
     opponentGone = false
@@ -492,9 +451,8 @@ public final class OnlineGameSession {
     )
     updateClockTurn()
     guard status.isFinished else { return }
-    pendingPromotion = []
     pendingMove = nil
-    board.cancelSelection()
+    input.cancel()
     clockTask?.cancel()
     clockTask = nil
     claimTask?.cancel()
@@ -515,8 +473,7 @@ public final class OnlineGameSession {
     }
     game = updated
     if let (move, before) = last {
-      board.complete(move)
-      pendingPromotion = []
+      input.complete(move)
       feedback.receive(.moved(MoveSound.effect(for: move, before: before, after: game.position)))
     }
     return true
@@ -531,9 +488,8 @@ public final class OnlineGameSession {
       else { break }
     }
     game = rebuilt
-    pendingPromotion = []
-    board.cancelSelection()
-    board.lastMove = game.moves.last?.move
+    input.cancel()
+    input.lastMove = game.moves.last?.move
     updateClockTurn()
   }
 
@@ -613,7 +569,7 @@ public final class OnlineGameSession {
   }
 
   private func refreshPlayers() {
-    let bottom: PieceColor = board.isFlipped ? .black : .white
+    let bottom: PieceColor = input.isFlipped ? .black : .white
     bottomPlayer = PlayerSlot(color: bottom, info: player(bottom))
     topPlayer = PlayerSlot(color: bottom.opponent, info: player(bottom.opponent))
   }

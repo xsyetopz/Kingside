@@ -3,6 +3,7 @@ import Foundation
 
 /// Everything the board scene draws, as ids and values. The scene resolves colors and assets
 /// from `ChessContent` and the settings; it never changes chess state and sends `BoardIntent`s.
+/// Sessions build it through `MoveInput.snapshot(of:canMove:hint:badge:)`.
 public struct BoardSnapshot: Equatable, Sendable {
   public var pieces: [Square: Piece]
   /// The color at the bottom of the board.

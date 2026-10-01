@@ -69,10 +69,8 @@ public final class GameSession {
   public let timeControl: TimeControl
   public let autoFlip: Bool
 
-  private var board = BoardInteraction()
+  private var input = MoveInput()
   private var hint: BoardArrow?
-  /// Promotion moves waiting for `.promote`; empty when no picker is shown.
-  private var pendingPromotion: [ChessMove] = []
 
   private let engine: ChessEngine
   private let tuning: PlayTuning
@@ -167,10 +165,10 @@ public final class GameSession {
     opponent = launchMode.botID.flatMap(catalog.bots.bot(id:)).map(Opponent.bot) ?? .human
     topPlayer = PlayerSlot(color: .black, info: launchBlack)
     bottomPlayer = PlayerSlot(color: .white, info: launchWhite)
-    board.lastMove = game.moves.last?.move
-    board.isFlipped = initialFlip
+    input.lastMove = game.moves.last?.move
+    input.isFlipped = initialFlip
     refreshPlayers()
-    board.resetFocus(for: humanColor ?? game.position.sideToMove)
+    input.resetFocus(for: humanColor ?? game.position.sideToMove)
     refreshDerived()
   }
 
@@ -199,9 +197,7 @@ public final class GameSession {
   }
   /// True when `.cancel` would close the promotion picker or drop a selection; otherwise the
   /// UI may use the cancel input for its own navigation.
-  public var hasCancellableSelection: Bool {
-    !pendingPromotion.isEmpty || board.selectedSquare != nil
-  }
+  public var hasCancellableSelection: Bool { input.hasCancellableSelection }
   public var resultTitle: String {
     GamePresentation.resultTitle(result, humanColor: humanColor, localization: localization)
   }
@@ -225,28 +221,7 @@ public final class GameSession {
   public func isLowTime(_ color: PieceColor) -> Bool { clock.isLow(color, tuning: tuning.clock) }
 
   public var snapshot: BoardSnapshot {
-    let position = game.position
-    let side = position.sideToMove
-    let king = Piece(type: .king, color: side)
-    return BoardSnapshot(
-      pieces: position.board,
-      orientation: board.isFlipped ? .black : .white,
-      focusedSquare: board.focusedSquare,
-      selectedSquare: board.selectedSquare,
-      legalTargets: board.legalTargets,
-      lastMove: board.lastMove,
-      checkSquare: position.isInCheck(side) ? position.board.first { $0.value == king }?.key : nil,
-      hint: hint,
-      pendingPromotion: pendingPromotion.first.map { move in
-        PendingPromotion(
-          from: move.from,
-          to: move.to,
-          color: side,
-          choices: pendingPromotion.compactMap(\.promotion)
-        )
-      },
-      isInputEnabled: canMove && pendingPromotion.isEmpty
-    )
+    input.snapshot(of: game.position, canMove: canMove, hint: hint)
   }
 
   // MARK: - Lifecycle
@@ -277,12 +252,12 @@ public final class GameSession {
 
   public func apply(_ intent: BoardIntent) {
     switch intent {
-    case .moveFocus(let direction): board.moveFocus(direction)
-    case .focus(let square): board.focusedSquare = square
-    case .selectFocused: select(board.focusedSquare)
+    case .moveFocus(let direction): input.moveFocus(direction)
+    case .focus(let square): input.focus(square)
+    case .selectFocused: select(input.focusedSquare)
     case .select(let square): select(square)
-    case .cancel: cancelSelection()
-    case .promote(let type): choosePromotion(type)
+    case .cancel: input.cancel()
+    case .promote(let type): if let move = input.promote(type) { play(move) }
     case .requestHint: requestHint()
     case .takeback: takeback()
     case .offerDraw: offerDraw()
@@ -290,7 +265,7 @@ public final class GameSession {
     case .declineDraw: pendingDrawOffer = nil
     case .resign: resign()
     case .flipBoard:
-      board.isFlipped.toggle()
+      input.isFlipped.toggle()
       refreshPlayers()
     case .rematch: rematch()
     case .dismissBotMessage: botMessage = nil
@@ -301,30 +276,17 @@ public final class GameSession {
 
   private func select(_ square: Square) {
     guard canMove else { return }
-    switch board.select(square, in: game.position, movableColor: game.position.sideToMove) {
+    let outcome = input.select(
+      square,
+      in: game.position,
+      movableColor: game.position.sideToMove,
+      autoQueen: settings.value.autoPromoteToQueen
+    )
+    switch outcome {
     case .none: break
     case .illegalTarget: feedback.receive(.illegalMove)
-    case .move(let move): play(move)
-    case .promotion(let moves):
-      if settings.value.autoPromoteToQueen,
-        let queen = moves.first(where: { $0.promotion == .queen })
-      {
-        play(queen)
-      } else {
-        pendingPromotion = moves
-      }
+    case .play(let move): play(move)
     }
-  }
-
-  private func choosePromotion(_ type: PieceType) {
-    guard let move = pendingPromotion.first(where: { $0.promotion == type }) else { return }
-    pendingPromotion = []
-    play(move)
-  }
-
-  private func cancelSelection() {
-    pendingPromotion = []
-    board.cancelSelection()
   }
 
   // MARK: - Actions
@@ -360,11 +322,10 @@ public final class GameSession {
     botTask = nil
     isBotThinking = false
     cancelHint()
-    pendingPromotion = []
     pendingDrawOffer = nil
     for _ in 0..<plies { game.undo() }
-    board.lastMove = game.moves.last?.move
-    board.cancelSelection()
+    input.cancel()
+    input.lastMove = game.moves.last?.move
     say(.takeback)
     applyAutoFlip()
     updateClockTurn()
@@ -430,12 +391,11 @@ public final class GameSession {
     lowTimeWarned = []
     botMessage = nil
     hint = nil
-    pendingPromotion = []
     pendingDrawOffer = nil
-    board.lastMove = nil
-    board.cancelSelection()
-    board.isFlipped = initialFlip
-    board.resetFocus(for: humanColor ?? .white)
+    input.cancel()
+    input.lastMove = nil
+    input.isFlipped = initialFlip
+    input.resetFocus(for: humanColor ?? .white)
     refreshPlayers()
     hasAnnouncedStart = false
     if isActive {
@@ -456,7 +416,7 @@ public final class GameSession {
       return
     }
     clock.recordMove(by: mover, plyBeforeMove: plyBefore)
-    board.complete(move)
+    input.complete(move)
     cancelHint()
     pendingDrawOffer = nil
     if case let (result, termination)? = GameAdjudication.result(for: game.outcome) {
@@ -533,9 +493,8 @@ public final class GameSession {
     self.result = result
     self.termination = termination
     cancelTasks()
-    pendingPromotion = []
     pendingDrawOffer = nil
-    board.cancelSelection()
+    input.cancel()
     updateClockTurn()
     feedback.receive(.gameOver(result))
     if let humanColor {
@@ -623,8 +582,8 @@ public final class GameSession {
 
   private func applyAutoFlip() {
     guard isPassAndPlay, autoFlip else { return }
-    board.isFlipped = game.position.sideToMove == .black
-    board.resetFocus(for: game.position.sideToMove)
+    input.isFlipped = game.position.sideToMove == .black
+    input.resetFocus(for: game.position.sideToMove)
     refreshPlayers()
   }
 
@@ -639,7 +598,7 @@ public final class GameSession {
   }
 
   private func refreshPlayers() {
-    let bottom: PieceColor = board.isFlipped ? .black : .white
+    let bottom: PieceColor = input.isFlipped ? .black : .white
     bottomPlayer = PlayerSlot(color: bottom, info: player(bottom))
     topPlayer = PlayerSlot(color: bottom.opponent, info: player(bottom.opponent))
   }
