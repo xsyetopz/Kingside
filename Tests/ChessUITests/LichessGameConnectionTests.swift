@@ -12,8 +12,18 @@ private actor FakeTransport: LichessTransport {
 
   var paths: [String] { requests.map { $0.httpMethod! + " " + $0.url!.path() } }
 
+  /// Returns once a request `path` ("GET /api/…") has arrived; a cancelled test throws.
+  func waitForRequest(_ path: String) async throws {
+    while !paths.contains(path) {
+      try Task.checkCancellation()
+      await Task.yield()
+    }
+  }
+
+  private func record(_ request: URLRequest) { requests.append(request) }
+
   func data(for request: URLRequest) throws -> (Data, HTTPURLResponse) {
-    requests.append(request)
+    record(request)
     let body =
       request.url!.path() == "/api/account"
       ? Data(#"{"id":"georges","username":"Georges"}"#.utf8) : Data("{}".utf8)
@@ -26,7 +36,7 @@ private actor FakeTransport: LichessTransport {
   func lines(
     for request: URLRequest
   ) throws -> (HTTPURLResponse, AsyncThrowingStream<String, Error>) {
-    requests.append(request)
+    record(request)
     let response = HTTPURLResponse(
       url: request.url!,
       statusCode: 200,
@@ -204,13 +214,11 @@ struct LichessGameConnectionTests {
       makeClient: {
         LichessClient(configuration: configuration, transport: transport, tokenProvider: $0)
       },
-      sleep: { _ in try await Task.sleep(for: .milliseconds(1)) }
+      sleep: { _ in await Task.yield() }
     )
     await model.signIn(token: "good")
     // The account's event stream opens first, so the game stream is the one the fake pushes into.
-    while !(await transport.paths.contains("GET /api/stream/event")) {
-      try await Task.sleep(for: .milliseconds(5))
-    }
+    try await transport.waitForRequest("GET /api/stream/event")
     return (model.gameConnection(id: id), transport)
   }
 
@@ -219,9 +227,7 @@ struct LichessGameConnectionTests {
     let (connection, transport) = try await makeConnection()
     #expect(connection.userID == "georges")
     var iterator = connection.events().makeAsyncIterator()
-    while !(await transport.paths.contains("GET /api/board/game/stream/rCRw1Auv")) {
-      try await Task.sleep(for: .milliseconds(5))
-    }
+    try await transport.waitForRequest("GET /api/board/game/stream/rCRw1Auv")
     await transport.push(gameFullLine)
     await transport.push(
       #"{"type":"gameState","moves":"e2e4 e7e5 g1f3","#

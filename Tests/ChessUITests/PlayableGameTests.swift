@@ -14,6 +14,14 @@ private final class FakeOnlineConnection: OnlineGameConnection, @unchecked Senda
 
   var sent: [OnlineAction] { lock.withLock { sentActions } }
 
+  /// Returns once at least `count` actions have been sent; a cancelled test (time limit) throws.
+  func waitForSends(_ count: Int) async throws {
+    while sent.count < count {
+      try Task.checkCancellation()
+      await Task.yield()
+    }
+  }
+
   func events() -> AsyncThrowingStream<OnlineGameEvent, Error> {
     let (stream, continuation) = AsyncThrowingStream<OnlineGameEvent, Error>.makeStream()
     lock.withLock { self.continuation = continuation }
@@ -25,7 +33,11 @@ private final class FakeOnlineConnection: OnlineGameConnection, @unchecked Senda
     continuation?.yield(event)
   }
 
-  func send(_ action: OnlineAction) throws { lock.withLock { sentActions.append(action) } }
+  /// Main-actor isolated so the unstructured send tasks, which start there, run in order.
+  @MainActor
+  func send(_ action: OnlineAction) throws {
+    lock.withLock { sentActions.append(action) }
+  }
 }
 
 @MainActor
@@ -62,8 +74,13 @@ final class PlayableGameTests {
     )
   }
 
-  private func makeOnline() throws -> OnlineGameSession {
+  private func makeOnline(chatEnabled: Bool = true) throws -> OnlineGameSession {
     let defaults = try #require(UserDefaults(suiteName: suiteName))
+    if !chatEnabled {
+      var settings = AppSettings()
+      settings.chatEnabled = false
+      defaults.set(try JSONEncoder().encode(settings), forKey: SettingsStore.defaultsKey)
+    }
     let session = OnlineGameSession(
       connection: connection,
       catalog: try ContentCatalog.load(),
@@ -152,7 +169,7 @@ final class PlayableGameTests {
   }
 
   @Test
-  func chatOffSendsNothingAndShowsNothing() async throws {
+  func chatOnShowsLinesAndMarkingReadClearsTheUnreadCount() async throws {
     let session = try makeOnline()
     connection.push(.started(start()))
     connection.push(.chat(OnlineChatLine(username: "Bob", text: "hi")))
@@ -160,15 +177,30 @@ final class PlayableGameTests {
     #expect(session.chatMessages.count == 1 && session.unreadChatCount == 1)
     session.markChatRead()
     #expect(session.unreadChatCount == 0)
-    let defaults = try #require(UserDefaults(suiteName: suiteName))
-    var settings = AppSettings()
-    settings.chatEnabled = false
-    defaults.set(try JSONEncoder().encode(settings), forKey: SettingsStore.defaultsKey)
-    let off = try makeOnline()
-    off.sendChat("hi")
-    #expect(!off.isChatEnabled && off.chatMessages.isEmpty)
-    try await Task.sleep(for: .milliseconds(50))
-    #expect(connection.sent.isEmpty)
+  }
+
+  @Test
+  func chatOffSendsNothing() async throws {
+    let session = try makeOnline(chatEnabled: false)
+    connection.push(.started(start()))
+    try await until { session.start != nil }
+    session.sendChat("hi")
+    session.apply(.resign)
+    try await connection.waitForSends(1)
+    // A chat send that slipped past the guard is queued before the resign, so `waitForSends(1)`
+    // would see it first; this empty main-actor task only gives a later-ordered send a chance too.
+    await Task { @MainActor in }.value
+    #expect(connection.sent == [.resign])
+  }
+
+  @Test
+  func chatOffShowsNothing() async throws {
+    let session = try makeOnline(chatEnabled: false)
+    connection.push(.started(start()))
+    connection.push(.chat(OnlineChatLine(username: "Bob", text: "hi")))
+    try await until { !session.chat.isEmpty }
+    #expect(!session.isChatEnabled)
+    #expect(session.chatMessages.isEmpty && session.unreadChatCount == 0)
   }
 
   @Test

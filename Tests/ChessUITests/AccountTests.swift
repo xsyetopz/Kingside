@@ -235,6 +235,42 @@ struct AccountTests {
   }
 
   @Test
+  func loadFailingOnStatsFailsButKeepsTheProfileAndShowsNoGames() async {
+    let client = makeClient { url in
+      switch url.path {
+      case "/pub/player/ann": (200, Data(#"{"username":"Ann","joined":1,"last_online":2}"#.utf8))
+      case "/pub/player/ann/games/archives": (200, Data(#"{"archives":["\#(archiveURL)"]}"#.utf8))
+      case "/pub/player/ann/games/2026/01": (200, Data(#"{"games":[\#(gameJSON(id: 1))]}"#.utf8))
+      default: (500, Data())
+      }
+    }
+    let account = ChessComAccountModel(username: "ann", client: client, gameLimit: 5)
+    await account.load()
+    #expect(account.phase == .failed(.network))
+    #expect(account.profile?.username == "Ann")
+    #expect(account.stats == nil)
+    #expect(account.games.isEmpty)
+  }
+
+  @Test
+  func loadFailingOnTheLatestArchiveFailsButKeepsProfileAndStats() async {
+    let client = makeClient { url in
+      switch url.path {
+      case "/pub/player/ann": (200, Data(#"{"username":"Ann","joined":1,"last_online":2}"#.utf8))
+      case "/pub/player/ann/stats": (200, Data(#"{"chess_rapid":{"last":{"rating":1300}}}"#.utf8))
+      case "/pub/player/ann/games/archives": (200, Data(#"{"archives":["\#(archiveURL)"]}"#.utf8))
+      default: (429, Data())
+      }
+    }
+    let account = ChessComAccountModel(username: "ann", client: client, gameLimit: 5)
+    await account.load()
+    #expect(account.phase == .failed(.rateLimited))
+    #expect(account.profile?.username == "Ann")
+    #expect(account.stats?.rapid?.last?.rating == 1300)
+    #expect(account.games.isEmpty)
+  }
+
+  @Test
   func linkingReportsNotFoundInvalidAndNetworkFailures() async {
     let missing = makeClient { _ in (404, Data()) }
     let down = makeClient { _ in (500, Data()) }
@@ -255,27 +291,5 @@ struct AccountTests {
     }
     let result = await ChessComAccountModel.verify(username: "ann", client: found)
     #expect((try? result.get())?.username == "Ann")
-  }
-
-  @Test
-  func uiTestingTurnsOnlineServicesOffAndWelcomeShowsOnce() throws {
-    #expect(!AppModel.Storage.live(arguments: ["Kingside", "--uitesting"]).usesOnlineServices)
-
-    let defaults = try #require(UserDefaults(suiteName: "AccountTests.\(UUID().uuidString)"))
-    let storage = AppModel.Storage(
-      defaults: defaults,
-      gamesFileURL: FileManager.default.temporaryDirectory.appending(
-        path: "AccountTests-\(UUID().uuidString)/games.json"
-      ),
-      playsFeedback: false
-    )
-    let model = AppModel(catalog: try ContentCatalog.load(), storage: storage)
-    #expect(model.showsWelcome)
-    model.finishWelcome()
-    #expect(!model.showsWelcome)
-
-    var offline = storage
-    offline.usesOnlineServices = false
-    #expect(!AppModel(catalog: try ContentCatalog.load(), storage: offline).showsWelcome)
   }
 }

@@ -11,12 +11,13 @@ struct AppModelTests {
     path: "ChessUITests-\(UUID().uuidString)"
   )
 
-  private func makeModel() throws -> AppModel {
+  private func makeModel(usesOnlineServices: Bool) throws -> AppModel {
     let defaults = try #require(UserDefaults(suiteName: suiteName))
     let storage = AppModel.Storage(
       defaults: defaults,
       gamesFileURL: directory.appending(path: GamePersistenceStore.fileName),
-      playsFeedback: false
+      playsFeedback: false,
+      usesOnlineServices: usesOnlineServices
     )
     return AppModel(catalog: try ContentCatalog.load(), storage: storage)
   }
@@ -31,7 +32,7 @@ struct AppModelTests {
 
   @Test
   func appearanceFollowsSettingsAndFallsBackToDefaults() throws {
-    let model = try makeModel()
+    let model = try makeModel(usesOnlineServices: false)
     #expect(model.boardTheme.id == model.catalog.defaults.boardThemeID)
     #expect(model.pieceSet.id == model.catalog.defaults.pieceSetID)
 
@@ -47,7 +48,7 @@ struct AppModelTests {
 
   @Test
   func freshStoreHasNoGameToContinue() async throws {
-    let model = try makeModel()
+    let model = try makeModel(usesOnlineServices: false)
     await model.reloadGames()
     #expect(model.savedGames.isEmpty)
     #expect(model.unfinishedGame == nil)
@@ -59,7 +60,7 @@ struct AppModelTests {
     defer { try? FileManager.default.removeItem(at: directory) }
     let fileURL = directory.appending(path: GamePersistenceStore.fileName)
     try Data("not json".utf8).write(to: fileURL)
-    let model = try makeModel()
+    let model = try makeModel(usesOnlineServices: false)
     await model.reloadGames()
     #expect(model.savedGamesUnreadable)
     #expect(model.savedGames.isEmpty)
@@ -70,5 +71,31 @@ struct AppModelTests {
     let catalog = try ContentCatalog.load()
     let agent = catalog.services.userAgent(product: "Kingside", version: "1.0")
     #expect(agent.contains(catalog.services.contact))
+  }
+
+  @Test
+  func uiTestingArgumentTurnsOnlineServicesOff() {
+    #expect(!AppModel.Storage.live(arguments: ["Kingside", "--uitesting"]).usesOnlineServices)
+  }
+
+  @Test
+  func welcomeShowsUntilFinished() throws {
+    let model = try makeModel(usesOnlineServices: true)
+    #expect(model.showsWelcome)
+    model.finishWelcome()
+    #expect(!model.showsWelcome)
+  }
+
+  @Test
+  func welcomeNeverShowsWithoutOnlineServices() throws {
+    let model = try makeModel(usesOnlineServices: false)
+    #expect(!model.showsWelcome)
+  }
+
+  @Test
+  func launchSignInIsSkippedWithoutOnlineServices() throws {
+    let model = try makeModel(usesOnlineServices: false)
+    model.signInAtLaunch()
+    #expect(model.gameCenter.state == .signedOut)
   }
 }

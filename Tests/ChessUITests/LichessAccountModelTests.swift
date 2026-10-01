@@ -123,16 +123,16 @@ struct LichessAccountModelTests {
       makeClient: {
         LichessClient(configuration: configuration, transport: transport, tokenProvider: $0)
       },
-      sleep: { _ in try await Task.sleep(for: .milliseconds(1)) }
+      sleep: { _ in await Task.yield() }
     )
     return (model, store, transport)
   }
 
-  /// Polls until `condition` holds; the test's time limit cancels it.
+  /// Yields until `condition` holds; the test's time limit cancels it.
   private func wait(until condition: () async -> Bool) async throws {
     while !(await condition()) {
       try Task.checkCancellation()
-      try await Task.sleep(for: .milliseconds(5))
+      await Task.yield()
     }
   }
 
@@ -262,7 +262,7 @@ struct LichessAccountModelTests {
       },
       sleep: { duration in
         waits.record(duration)
-        try await Task.sleep(for: .milliseconds(1))
+        await Task.yield()
       }
     )
     await model.start()
