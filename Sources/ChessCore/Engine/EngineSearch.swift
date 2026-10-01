@@ -64,13 +64,9 @@ struct EngineSearcher: ~Copyable {
   private static let maxRootDepth = maxPly - 8
   /// Nodes at this ply return a static score so children stay inside the per-ply buffers.
   private static let horizonPly = maxPly - 2
-  /// Room for every pseudo-legal move of one position.
-  private static let moveListCapacity = 256
   /// Time and cancellation are polled once per 1024 nodes.
   private static let limitCheckMask = 1023
   private static let fiftyMoveHalfmoves = 100
-  /// Low 3 bits of a square's piece code: its `EngineKind`.
-  private static let kindMask = 7
 
   private enum Bound {
     static let exact: UInt8 = 1
@@ -178,8 +174,8 @@ struct EngineSearcher: ~Copyable {
     killers.initialize(repeating: 0, count: Self.maxPly * 2)
     butterflyScores = .allocate(capacity: Butterfly.size)
     butterflyScores.initialize(repeating: 0, count: Butterfly.size)
-    moveLists = .allocate(capacity: Self.maxPly * Self.moveListCapacity)
-    moveScores = .allocate(capacity: Self.maxPly * Self.moveListCapacity)
+    moveLists = .allocate(capacity: Self.maxPly * EngineBoard.moveListCapacity)
+    moveScores = .allocate(capacity: Self.maxPly * EngineBoard.moveListCapacity)
     pvTable = .allocate(capacity: Self.maxPly * Self.maxPly)
     pvLength = .allocate(capacity: Self.maxPly + 1)
     pvLength.initialize(repeating: 0, count: Self.maxPly + 1)
@@ -631,8 +627,8 @@ struct EngineSearcher: ~Copyable {
     ttMove: EngineMove,
     capturesOnly: Bool
   ) -> (UnsafeMutablePointer<EngineMove>, UnsafeMutablePointer<Int32>, Int) {
-    let list = moveLists + ply * Self.moveListCapacity
-    let scores = moveScores + ply * Self.moveListCapacity
+    let list = moveLists + ply * EngineBoard.moveListCapacity
+    let scores = moveScores + ply * EngineBoard.moveListCapacity
     let count = board.generateMoves(into: list, capturesOnly: capturesOnly)
     for index in 0..<count {
       scores[index] = orderScore(list[index], ttMove: ttMove, ply: ply)
@@ -642,14 +638,14 @@ struct EngineSearcher: ~Copyable {
 
   @inline(__always)
   private func capturedKind(_ move: EngineMove) -> Int {
-    move.flag == MoveFlag.enPassant ? EngineKind.pawn : board.squares[move.to] & Self.kindMask
+    move.flag == MoveFlag.enPassant ? EngineKind.pawn : board.squares[move.to] & EngineKind.mask
   }
 
   private func orderScore(_ move: EngineMove, ttMove: EngineMove, ply: Int) -> Int32 {
     if move == ttMove { return Ordering.tableMove }
     var score: Int32 = 0
     if move.isCapture {
-      let attacker = board.squares[move.from] & Self.kindMask
+      let attacker = board.squares[move.from] & EngineKind.mask
       score = Ordering.capture + Int32(capturedKind(move) * Ordering.victimWeight - attacker)
     }
     switch move.promotion {
@@ -683,8 +679,8 @@ struct EngineSearcher: ~Copyable {
       index += 1
     }
     if bestIndex != start {
-      list.swapAt(start, bestIndex)
-      scores.swapAt(start, bestIndex)
+      (list[start], list[bestIndex]) = (list[bestIndex], list[start])
+      (scores[start], scores[bestIndex]) = (scores[bestIndex], scores[start])
     }
     return list[start]
   }
@@ -725,14 +721,5 @@ struct EngineSearcher: ~Copyable {
     if score >= mateBound { return score - ply }
     if score <= -mateBound { return score + ply }
     return score
-  }
-}
-
-extension UnsafeMutablePointer {
-  @inline(__always)
-  func swapAt(_ i: Int, _ j: Int) {
-    let temporary = self[i]
-    self[i] = self[j]
-    self[j] = temporary
   }
 }

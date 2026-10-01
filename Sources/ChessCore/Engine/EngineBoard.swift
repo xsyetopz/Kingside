@@ -15,6 +15,8 @@ enum EngineKind {
   static let queen = 5
   static let king = 6
   static let blackBit = 8
+  /// The bits of a piece code that hold its kind; `blackBit` is the only other bit.
+  static let mask = 7
 }
 
 /// Packed move: bits 0-6 from, 7-13 to, 14-16 promotion kind, 17-18 flag, 19 capture.
@@ -81,17 +83,31 @@ final class EngineTables: @unchecked Sendable {
   let castleMask: UnsafePointer<Int>
 
   static let castleKeyBase = 16 * 128
-  static let enPassantKeyBase = castleKeyBase + 16
+  /// One key per `CastlingRights.rawValue`.
+  static let castleKeyCount = 16
+  static let enPassantKeyBase = castleKeyBase + castleKeyCount
   static let sideKeyIndex = enPassantKeyBase + 8
 
   private init() {
+    let (middlegame, endgame) = Self.makePieceSquareTables()
+    offsets = UnsafePointer(Self.makeOffsets())
+    zobrist = UnsafePointer(Self.makeZobrist())
+    self.middlegame = UnsafePointer(middlegame)
+    self.endgame = UnsafePointer(endgame)
+    castleMask = UnsafePointer(Self.makeCastleMask())
+  }
+
+  private static func makeOffsets() -> UnsafeMutablePointer<Int> {
     let offsets = UnsafeMutablePointer<Int>.allocate(capacity: 16)
     for (index, offset) in [-33, -31, -18, -14, 14, 18, 31, 33, -17, -15, 15, 17, -16, -1, 1, 16]
       .enumerated()
     {
       offsets[index] = offset
     }
+    return offsets
+  }
 
+  private static func makeZobrist() -> UnsafeMutablePointer<UInt64> {
     let zobrist = UnsafeMutablePointer<UInt64>.allocate(capacity: Self.sideKeyIndex + 1)
     var seed: UInt64 = 0x5EED_C0DE_1234_5678
     for index in 0...Self.sideKeyIndex {
@@ -102,7 +118,12 @@ final class EngineTables: @unchecked Sendable {
       value = (value ^ (value >> 27)) &* 0x94D0_49BB_1331_11EB
       zobrist[index] = value ^ (value >> 31)
     }
+    return zobrist
+  }
 
+  private static func makePieceSquareTables() -> (
+    middlegame: UnsafeMutablePointer<Int>, endgame: UnsafeMutablePointer<Int>
+  ) {
     let middlegame = UnsafeMutablePointer<Int>.allocate(capacity: 16 * 128)
     let endgame = UnsafeMutablePointer<Int>.allocate(capacity: 16 * 128)
     middlegame.initialize(repeating: 0, count: 16 * 128)
@@ -120,21 +141,26 @@ final class EngineTables: @unchecked Sendable {
         }
       }
     }
+    return (middlegame, endgame)
+  }
 
+  /// Rights kept when a move starts or ends on each square: all of them, except on the king and
+  /// rook home squares, where moving or capturing loses the matching rights.
+  private static func makeCastleMask() -> UnsafeMutablePointer<Int> {
     let castleMask = UnsafeMutablePointer<Int>.allocate(capacity: 128)
-    castleMask.initialize(repeating: 15, count: 128)
-    castleMask[0x00] = 15 & ~2  // a1: white queen side
-    castleMask[0x07] = 15 & ~1  // h1: white king side
-    castleMask[0x04] = 15 & ~3  // e1: both white rights
-    castleMask[0x70] = 15 & ~8  // a8: black queen side
-    castleMask[0x77] = 15 & ~4  // h8: black king side
-    castleMask[0x74] = 15 & ~12  // e8: both black rights
-
-    self.offsets = UnsafePointer(offsets)
-    self.zobrist = UnsafePointer(zobrist)
-    self.middlegame = UnsafePointer(middlegame)
-    self.endgame = UnsafePointer(endgame)
-    self.castleMask = UnsafePointer(castleMask)
+    castleMask.initialize(repeating: CastlingRights.all.rawValue, count: 128)
+    let losses: [(square: Int, lost: CastlingRights)] = [
+      (0x00, .whiteQueenSide),  // a1
+      (0x07, .whiteKingSide),  // h1
+      (0x04, [.whiteKingSide, .whiteQueenSide]),  // e1
+      (0x70, .blackQueenSide),  // a8
+      (0x77, .blackKingSide),  // h8
+      (0x74, [.blackKingSide, .blackQueenSide]),  // e8
+    ]
+    for (square, lost) in losses {
+      castleMask[square] = CastlingRights.all.subtracting(lost).rawValue
+    }
+    return castleMask
   }
 }
 
@@ -153,6 +179,9 @@ struct EngineUndo {
 /// Mutable 0x88 board with make/unmake. Owns its buffers and frees them in `deinit`.
 struct EngineBoard: ~Copyable {
   static let maxGamePly = 2048
+  /// Room for the pseudo-legal moves of one position. Enough for every supported position,
+  /// because `isSupported` rejects more promoted pieces than missing pawns.
+  static let moveListCapacity = 256
 
   let squares: UnsafeMutablePointer<Int>
   /// Number of pieces on the board per piece code (0..<16).
@@ -326,7 +355,7 @@ struct EngineBoard: ~Copyable {
     }
     side = sideToMove == .white ? 0 : 1
     if side == 1 { hash ^= zobrist[EngineTables.sideKeyIndex] }
-    castling = castlingRights.rawValue & 15
+    castling = castlingRights.intersection(.all).rawValue
     hash ^= zobrist[EngineTables.castleKeyBase + castling]
     enPassant = -1
     if let target = enPassantTarget, target.isValid,
@@ -352,7 +381,9 @@ struct EngineBoard: ~Copyable {
     let black = EngineKind.blackBit
     guard counts[EngineKind.king] == 1, counts[EngineKind.king | black] == 1 else { return false }
     for file in 0..<8
-    where squares[file] & 7 == EngineKind.pawn || squares[0x70 + file] & 7 == EngineKind.pawn {
+    where squares[file] & EngineKind.mask == EngineKind.pawn
+      || squares[0x70 + file] & EngineKind.mask == EngineKind.pawn
+    {
       return false
     }
     for colorBit in [0, black]
@@ -385,8 +416,8 @@ struct EngineBoard: ~Copyable {
     hash ^= zobrist[key]
     middlegame += pstMiddlegame[key]
     endgame += pstEndgame[key]
-    phase += EngineEvaluation.phaseWeight(piece & 7)
-    if piece & 7 == EngineKind.king { kings[piece >> 3] = square }
+    phase += EngineEvaluation.phaseWeight(piece & EngineKind.mask)
+    if piece & EngineKind.mask == EngineKind.king { kings[piece >> 3] = square }
   }
 
   @inline(__always)
@@ -398,7 +429,7 @@ struct EngineBoard: ~Copyable {
     hash ^= zobrist[key]
     middlegame -= pstMiddlegame[key]
     endgame -= pstEndgame[key]
-    phase -= EngineEvaluation.phaseWeight(piece & 7)
+    phase -= EngineEvaluation.phaseWeight(piece & EngineKind.mask)
   }
 
   /// Records an en-passant target only when a pawn of the side to move can actually
@@ -420,18 +451,31 @@ struct EngineBoard: ~Copyable {
   /// Whether `square` is attacked by pieces of `color` (0 white, 1 black).
   func isAttacked(_ square: Int, by color: Int) -> Bool {
     let colorBit = color << 3
-    // Pawns.
+    return isAttackedByPawn(square, colorBit: colorBit)
+      || isAttackedByKnight(square, colorBit: colorBit)
+      || isAttackedByKingOrSlider(square, colorBit: colorBit)
+  }
+
+  @inline(__always)
+  private func isAttackedByPawn(_ square: Int, colorBit: Int) -> Bool {
     let pawn = EngineKind.pawn | colorBit
-    let pawnFrom = color == 0 ? square - 16 : square + 16
+    let pawnFrom = colorBit == 0 ? square - 16 : square + 16
     if (pawnFrom - 1) & 0x88 == 0 && squares[pawnFrom - 1] == pawn { return true }
-    if (pawnFrom + 1) & 0x88 == 0 && squares[pawnFrom + 1] == pawn { return true }
-    // Knights.
+    return (pawnFrom + 1) & 0x88 == 0 && squares[pawnFrom + 1] == pawn
+  }
+
+  @inline(__always)
+  private func isAttackedByKnight(_ square: Int, colorBit: Int) -> Bool {
     let knight = EngineKind.knight | colorBit
     for index in 0..<8 {
       let from = square + offsets[index]
       if from & 0x88 == 0 && squares[from] == knight { return true }
     }
-    // King and sliders.
+    return false
+  }
+
+  @inline(__always)
+  private func isAttackedByKingOrSlider(_ square: Int, colorBit: Int) -> Bool {
     let king = EngineKind.king | colorBit
     let bishop = EngineKind.bishop | colorBit
     let rook = EngineKind.rook | colorBit
@@ -462,92 +506,152 @@ struct EngineBoard: ~Copyable {
   /// `capturesOnly` mode it emits captures and queen promotions for quiescence search.
   func generateMoves(into list: UnsafeMutablePointer<EngineMove>, capturesOnly: Bool) -> Int {
     var count = 0
-    let us = side
-    let usBit = us << 3
-    let themBit = usBit ^ EngineKind.blackBit
-    let forward = us == 0 ? 16 : -16
-    let startRank = us == 0 ? 1 : 6
-    let lastRank = us == 0 ? 7 : 0
-
-    @inline(__always)
-    func addPawnMove(_ from: Int, _ to: Int, capture: Bool) {
-      if to >> 4 == lastRank {
-        list[count] = .pack(from, to, promotion: EngineKind.queen, capture: capture)
-        count += 1
-        if !capturesOnly || capture {
-          list[count] = .pack(from, to, promotion: EngineKind.knight, capture: capture)
-          list[count + 1] = .pack(from, to, promotion: EngineKind.rook, capture: capture)
-          list[count + 2] = .pack(from, to, promotion: EngineKind.bishop, capture: capture)
-          count += 3
-        }
-      } else if capture || !capturesOnly {
-        list[count] = .pack(from, to, capture: capture)
-        count += 1
-      }
-    }
-
+    let usBit = side << 3
     var from = 0
     while from < 128 {
       if from & 0x88 != 0 { from += 8; continue }
       let piece = squares[from]
-      if piece == 0 || piece & EngineKind.blackBit != usBit { from += 1; continue }
-      let kind = piece & 7
+      guard piece != 0 && piece & EngineKind.blackBit == usBit else { from += 1; continue }
+      let kind = piece & EngineKind.mask
       if kind == EngineKind.pawn {
-        let one = from + forward
-        if one & 0x88 != 0 { from += 1; continue }
-        if squares[one] == 0 {
-          addPawnMove(from, one, capture: false)
-          if !capturesOnly && from >> 4 == startRank && squares[one + forward] == 0 {
-            list[count] = .pack(from, one + forward, flag: MoveFlag.doublePush)
-            count += 1
-          }
-        }
-        for to in stride(from: one - 1, through: one + 1, by: 2) where to & 0x88 == 0 {
-          let target = squares[to]
-          if target != 0 && target & EngineKind.blackBit == themBit {
-            addPawnMove(from, to, capture: true)
-          } else if to == enPassant {
-            list[count] = .pack(from, to, flag: MoveFlag.enPassant, capture: true)
-            count += 1
-          }
-        }
+        generatePawnMoves(from: from, into: list, count: &count, capturesOnly: capturesOnly)
       } else {
-        let slides =
-          kind == EngineKind.bishop || kind == EngineKind.rook || kind == EngineKind.queen
-        let first: Int, last: Int
-        switch kind {
-        case EngineKind.knight: first = 0; last = 8
-        case EngineKind.bishop: first = 8; last = 12
-        case EngineKind.rook: first = 12; last = 16
-        default: first = 8; last = 16
-        }
-        for index in first..<last {
-          let step = offsets[index]
-          var to = from + step
-          while to & 0x88 == 0 {
-            let target = squares[to]
-            guard target == 0 else {
-              if target & EngineKind.blackBit == themBit {
-                list[count] = .pack(from, to, capture: true)
-                count += 1
-              }
-              break
-            }
-            if !capturesOnly {
-              list[count] = .pack(from, to)
-              count += 1
-            }
-            if !slides { break }
-            to += step
-          }
-        }
-        if kind == EngineKind.king && !capturesOnly {
-          generateCastling(from: from, into: list, count: &count)
-        }
+        generatePieceMoves(kind, from: from, into: list, count: &count, capturesOnly: capturesOnly)
       }
       from += 1
     }
     return count
+  }
+
+  @inline(__always)
+  private func generatePawnMoves(
+    from: Int,
+    into list: UnsafeMutablePointer<EngineMove>,
+    count: inout Int,
+    capturesOnly: Bool
+  ) {
+    let forward = side == 0 ? 16 : -16
+    let one = from + forward
+    guard one & 0x88 == 0 else { return }
+    if squares[one] == 0 {
+      addPawnMove(from, one, capture: false, into: list, count: &count, capturesOnly: capturesOnly)
+      let startRank = side == 0 ? 1 : 6
+      if !capturesOnly && from >> 4 == startRank && squares[one + forward] == 0 {
+        list[count] = .pack(from, one + forward, flag: MoveFlag.doublePush)
+        count += 1
+      }
+    }
+    addPawnCaptures(from: from, one: one, into: list, count: &count, capturesOnly: capturesOnly)
+  }
+
+  /// Adds the diagonal captures, including en passant, of the pawn on `from` whose one-step
+  /// push square is `one`.
+  @inline(__always)
+  private func addPawnCaptures(
+    from: Int,
+    one: Int,
+    into list: UnsafeMutablePointer<EngineMove>,
+    count: inout Int,
+    capturesOnly: Bool
+  ) {
+    let themBit = (side ^ 1) << 3
+    for to in stride(from: one - 1, through: one + 1, by: 2) where to & 0x88 == 0 {
+      let target = squares[to]
+      if target != 0 && target & EngineKind.blackBit == themBit {
+        addPawnMove(from, to, capture: true, into: list, count: &count, capturesOnly: capturesOnly)
+      } else if to == enPassant {
+        list[count] = .pack(from, to, flag: MoveFlag.enPassant, capture: true)
+        count += 1
+      }
+    }
+  }
+
+  /// Adds a pawn move to `to`, as four promotions on the last rank. In `capturesOnly` mode only
+  /// captures and the queen promotion of a push are added.
+  @inline(__always)
+  private func addPawnMove(
+    _ from: Int,
+    _ to: Int,
+    capture: Bool,
+    into list: UnsafeMutablePointer<EngineMove>,
+    count: inout Int,
+    capturesOnly: Bool
+  ) {
+    let lastRank = side == 0 ? 7 : 0
+    if to >> 4 == lastRank {
+      list[count] = .pack(from, to, promotion: EngineKind.queen, capture: capture)
+      count += 1
+      if !capturesOnly || capture {
+        list[count] = .pack(from, to, promotion: EngineKind.knight, capture: capture)
+        list[count + 1] = .pack(from, to, promotion: EngineKind.rook, capture: capture)
+        list[count + 2] = .pack(from, to, promotion: EngineKind.bishop, capture: capture)
+        count += 3
+      }
+    } else if capture || !capturesOnly {
+      list[count] = .pack(from, to, capture: capture)
+      count += 1
+    }
+  }
+
+  @inline(__always)
+  private func generatePieceMoves(
+    _ kind: Int,
+    from: Int,
+    into list: UnsafeMutablePointer<EngineMove>,
+    count: inout Int,
+    capturesOnly: Bool
+  ) {
+    let slides = kind == EngineKind.bishop || kind == EngineKind.rook || kind == EngineKind.queen
+    let first: Int, last: Int
+    switch kind {
+    case EngineKind.knight: first = 0; last = 8
+    case EngineKind.bishop: first = 8; last = 12
+    case EngineKind.rook: first = 12; last = 16
+    default: first = 8; last = 16
+    }
+    for index in first..<last {
+      addStepMoves(
+        from: from,
+        step: offsets[index],
+        slides: slides,
+        into: list,
+        count: &count,
+        capturesOnly: capturesOnly
+      )
+    }
+    if kind == EngineKind.king && !capturesOnly {
+      generateCastling(from: from, into: list, count: &count)
+    }
+  }
+
+  /// Adds moves along one direction: a single step, or every step up to a blocker for a slider.
+  @inline(__always)
+  private func addStepMoves(
+    from: Int,
+    step: Int,
+    slides: Bool,
+    into list: UnsafeMutablePointer<EngineMove>,
+    count: inout Int,
+    capturesOnly: Bool
+  ) {
+    let themBit = (side ^ 1) << 3
+    var to = from + step
+    while to & 0x88 == 0 {
+      let target = squares[to]
+      guard target == 0 else {
+        if target & EngineKind.blackBit == themBit {
+          list[count] = .pack(from, to, capture: true)
+          count += 1
+        }
+        break
+      }
+      if !capturesOnly {
+        list[count] = .pack(from, to)
+        count += 1
+      }
+      if !slides { break }
+      to += step
+    }
   }
 
   private func generateCastling(
@@ -557,8 +661,8 @@ struct EngineBoard: ~Copyable {
   ) {
     let home = side == 0 ? 0x00 : 0x70
     guard king == home + 4 else { return }
-    let kingSide = side == 0 ? 1 : 4
-    let queenSide = side == 0 ? 2 : 8
+    let kingSide = (side == 0 ? CastlingRights.whiteKingSide : .blackKingSide).rawValue
+    let queenSide = (side == 0 ? CastlingRights.whiteQueenSide : .blackQueenSide).rawValue
     guard castling & (kingSide | queenSide) != 0 else { return }
     let rook = EngineKind.rook | side << 3
     let them = side ^ 1
@@ -590,7 +694,35 @@ struct EngineBoard: ~Copyable {
     let piece = squares[from]
     let captured = flag == MoveFlag.enPassant ? (EngineKind.pawn | (us ^ 1) << 3) : squares[to]
     // FEN validation guarantees the side not to move is not in check, so no king is capturable.
-    assert(captured & 7 != EngineKind.king, "pseudo-legal move captures a king")
+    assert(captured & EngineKind.mask != EngineKind.king, "pseudo-legal move captures a king")
+    pushUndo(move: move, captured: captured)
+    clearEnPassant()
+
+    removeCaptured(captured, to: to, flag: flag)
+    remove(at: from)
+    let promotion = move.promotion
+    place(promotion != 0 ? promotion | us << 3 : piece, at: to)
+    if flag == MoveFlag.castle { moveCastlingRook(kingFrom: from, kingTo: to) }
+    updateCastlingRights(from: from, to: to)
+
+    halfmove = (piece & EngineKind.mask == EngineKind.pawn || captured != 0) ? 0 : halfmove + 1
+    side = us ^ 1
+    hash ^= zobrist[EngineTables.sideKeyIndex]
+    if flag == MoveFlag.doublePush { setEnPassantIfCapturable((from + to) / 2) }
+
+    hashHistory[historyCount] = hash
+    historyCount += 1
+
+    if isAttacked(kings[us], by: us ^ 1) {
+      unmake()
+      return false
+    }
+    return true
+  }
+
+  /// Saves the state that `unmake` and `unmakeNull` cannot recompute.
+  @inline(__always)
+  private mutating func pushUndo(move: EngineMove, captured: Int) {
     assert(undoCount < plyCapacity, "more made moves than plyCapacity")
     undoStack[undoCount] = EngineUndo(
       move: move,
@@ -604,47 +736,46 @@ struct EngineBoard: ~Copyable {
       phase: phase
     )
     undoCount += 1
+  }
 
-    if enPassant >= 0 { hash ^= zobrist[EngineTables.enPassantKeyBase + (enPassant & 7)] }
-    enPassant = -1
-
+  /// Takes the piece captured by the mover's move to `to` off the board, if there is one. An en
+  /// passant capture takes the pawn behind `to`. Call it before `side` changes.
+  @inline(__always)
+  private mutating func removeCaptured(_ captured: Int, to: Int, flag: Int) {
     if flag == MoveFlag.enPassant {
-      remove(at: us == 0 ? to - 16 : to + 16)
+      remove(at: side == 0 ? to - 16 : to + 16)
     } else if captured != 0 {
       remove(at: to)
     }
-    remove(at: from)
-    let promotion = move.promotion
-    place(promotion != 0 ? promotion | us << 3 : piece, at: to)
-    if flag == MoveFlag.castle {
-      if to > from {
-        let rook = squares[from + 3]
-        remove(at: from + 3)
-        place(rook, at: from + 1)
-      } else {
-        let rook = squares[from - 4]
-        remove(at: from - 4)
-        place(rook, at: from - 1)
-      }
-    }
+  }
 
+  @inline(__always)
+  private mutating func clearEnPassant() {
+    if enPassant >= 0 { hash ^= zobrist[EngineTables.enPassantKeyBase + (enPassant & 7)] }
+    enPassant = -1
+  }
+
+  /// Moves the rook of a castling move whose king went from `kingFrom` to `kingTo`.
+  @inline(__always)
+  private mutating func moveCastlingRook(kingFrom: Int, kingTo: Int) {
+    let (rookFrom, rookTo) = Self.castlingRookSquares(kingFrom: kingFrom, kingTo: kingTo)
+    let rook = squares[rookFrom]
+    remove(at: rookFrom)
+    place(rook, at: rookTo)
+  }
+
+  /// The rook's start and end squares for a castling king move from `kingFrom` to `kingTo`.
+  @inline(__always)
+  private static func castlingRookSquares(kingFrom: Int, kingTo: Int) -> (from: Int, to: Int) {
+    kingTo > kingFrom ? (kingFrom + 3, kingFrom + 1) : (kingFrom - 4, kingFrom - 1)
+  }
+
+  /// Drops the castling rights that a move between `from` and `to` loses.
+  @inline(__always)
+  private mutating func updateCastlingRights(from: Int, to: Int) {
     hash ^= zobrist[EngineTables.castleKeyBase + castling]
     castling &= castleMask[from] & castleMask[to]
     hash ^= zobrist[EngineTables.castleKeyBase + castling]
-
-    halfmove = (piece & 7 == EngineKind.pawn || captured != 0) ? 0 : halfmove + 1
-    side = us ^ 1
-    hash ^= zobrist[EngineTables.sideKeyIndex]
-    if flag == MoveFlag.doublePush { setEnPassantIfCapturable((from + to) / 2) }
-
-    hashHistory[historyCount] = hash
-    historyCount += 1
-
-    if isAttacked(kings[us], by: us ^ 1) {
-      unmake()
-      return false
-    }
-    return true
   }
 
   mutating func unmake() {
@@ -663,7 +794,7 @@ struct EngineBoard: ~Copyable {
     } else {
       squares[from] = moved
     }
-    if moved & 7 == EngineKind.king { kings[us] = from }
+    if moved & EngineKind.mask == EngineKind.king { kings[us] = from }
     if flag == MoveFlag.enPassant {
       squares[to] = 0
       squares[us == 0 ? to - 16 : to + 16] = undo.captured
@@ -671,15 +802,7 @@ struct EngineBoard: ~Copyable {
       squares[to] = undo.captured
     }
     if undo.captured != 0 { counts[undo.captured] += 1 }
-    if flag == MoveFlag.castle {
-      if to > from {
-        squares[from + 3] = squares[from + 1]
-        squares[from + 1] = 0
-      } else {
-        squares[from - 4] = squares[from - 1]
-        squares[from - 1] = 0
-      }
-    }
+    if flag == MoveFlag.castle { restoreCastlingRook(kingFrom: from, kingTo: to) }
     castling = undo.castling
     enPassant = undo.enPassant
     halfmove = undo.halfmove
@@ -689,24 +812,20 @@ struct EngineBoard: ~Copyable {
     phase = undo.phase
   }
 
+  /// Puts back the rook of a castling move. Only `squares` changes: `unmake` restores the
+  /// incremental sums from the undo record.
+  @inline(__always)
+  private func restoreCastlingRook(kingFrom: Int, kingTo: Int) {
+    let (rookFrom, rookTo) = Self.castlingRookSquares(kingFrom: kingFrom, kingTo: kingTo)
+    squares[rookFrom] = squares[rookTo]
+    squares[rookTo] = 0
+  }
+
   /// Passes the turn (null-move pruning). The halfmove clock is reset so repetition
   /// detection never looks across a null move.
   mutating func makeNull() {
-    assert(undoCount < plyCapacity, "more made moves than plyCapacity")
-    undoStack[undoCount] = EngineUndo(
-      move: 0,
-      captured: 0,
-      castling: castling,
-      enPassant: enPassant,
-      halfmove: halfmove,
-      hash: hash,
-      middlegame: middlegame,
-      endgame: endgame,
-      phase: phase
-    )
-    undoCount += 1
-    if enPassant >= 0 { hash ^= zobrist[EngineTables.enPassantKeyBase + (enPassant & 7)] }
-    enPassant = -1
+    pushUndo(move: 0, captured: 0)
+    clearEnPassant()
     halfmove = 0
     side ^= 1
     hash ^= zobrist[EngineTables.sideKeyIndex]
@@ -762,7 +881,9 @@ struct EngineBoard: ~Copyable {
     var square = 0
     while square < 128 {
       if square & 0x88 != 0 { square += 8; continue }
-      if squares[square] & 7 == EngineKind.bishop { parity ^= ((square >> 4) + square) & 1 }
+      if squares[square] & EngineKind.mask == EngineKind.bishop {
+        parity ^= ((square >> 4) + square) & 1
+      }
       square += 1
     }
     return parity == 0
@@ -797,7 +918,7 @@ struct EngineBoard: ~Copyable {
     guard square.isValid else { return nil }
     let code = squares[Self.index(square)]
     let type: PieceType
-    switch code & 7 {
+    switch code & EngineKind.mask {
     case EngineKind.pawn: type = .pawn
     case EngineKind.knight: type = .knight
     case EngineKind.bishop: type = .bishop
@@ -823,7 +944,7 @@ struct EngineBoard: ~Copyable {
   /// Legal moves at the current node.
   mutating func legalMoves() -> [EngineMove] {
     guard isSupported else { return [] }
-    let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: 256)
+    let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: Self.moveListCapacity)
     defer { buffer.deallocate() }
     let count = generateMoves(into: buffer, capturesOnly: false)
     var result: [EngineMove] = []
@@ -846,7 +967,7 @@ struct EngineBoard: ~Copyable {
   mutating func play(_ move: ChessMove) -> Bool {
     precondition(undoCount == 0, "play with an outstanding make")
     guard isSupported else { return false }
-    let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: 256)
+    let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: Self.moveListCapacity)
     defer { buffer.deallocate() }
     let count = generateMoves(into: buffer, capturesOnly: false)
     guard let index = (0..<count).first(where: { buffer[$0].chessMove == move }),
@@ -864,7 +985,9 @@ struct EngineBoard: ~Copyable {
     guard isSupported else { return 0 }
     // Depth 0 still makes one move per legal move, like depth 1.
     precondition(undoCount + max(depth, 1) <= plyCapacity, "perft depth exceeds plyCapacity")
-    let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: 256 * max(depth, 1))
+    let buffer = UnsafeMutablePointer<EngineMove>.allocate(
+      capacity: Self.moveListCapacity * max(depth, 1)
+    )
     defer { buffer.deallocate() }
     return perft(depth, buffer: buffer)
   }
@@ -873,7 +996,7 @@ struct EngineBoard: ~Copyable {
     let count = generateMoves(into: buffer, capturesOnly: false)
     var nodes = 0
     for index in 0..<count where make(buffer[index]) {
-      nodes += depth <= 1 ? 1 : perft(depth - 1, buffer: buffer + 256)
+      nodes += depth <= 1 ? 1 : perft(depth - 1, buffer: buffer + Self.moveListCapacity)
       unmake()
     }
     return nodes
