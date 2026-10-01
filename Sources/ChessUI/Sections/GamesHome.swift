@@ -145,7 +145,8 @@ private struct GameCard: View {
       subtitle: GamesLayout.detail(game, localization: localization, locale: locale),
       // It wraps only between its three parts, so it is at most three lines.
       subtitleLineLimit: nil,
-      detail: game.isFinished ? nil : localization("games.action.continue")
+      detail: game.isFinished ? nil : localization("games.action.continue"),
+      style: style
     ) {
       BoardThumbnail(
         position: game.game.position,

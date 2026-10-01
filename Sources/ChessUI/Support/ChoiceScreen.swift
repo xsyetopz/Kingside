@@ -16,6 +16,8 @@ struct ChoiceScreen<Option: Identifiable, Artwork: View>: View {
   @ViewBuilder
   let artwork: (Option) -> Artwork
 
+  @Environment(AppModel.self)
+  private var model
   @Environment(\.dismiss)
   private var dismiss
 
@@ -44,8 +46,12 @@ struct ChoiceScreen<Option: Identifiable, Artwork: View>: View {
           Button {
             pick(option)
           } label: {
-            CardLabel(title: name(option), isSelected: option.id == selection, isCompact: isCompact)
-            {
+            CardLabel(
+              title: name(option),
+              isSelected: option.id == selection,
+              isCompact: isCompact,
+              style: model.catalog.interface
+            ) {
               artwork(option)
             }
           }

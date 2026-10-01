@@ -92,9 +92,10 @@ struct PlayHome: View {
         CardLabel(
           title: localization("play.continue.title"),
           subtitle: GamesLayout.title(game, localization: localization),
-          isCompact: true
+          isCompact: true,
+          style: model.catalog.interface
         ) {
-          SymbolBadge(systemImage: "play.fill")
+          SymbolBadge(systemImage: "play.fill", style: model.catalog.interface)
         }
       }
       .cardButtonStyle()
@@ -104,12 +105,13 @@ struct PlayHome: View {
         title: localization("play.bots.title"),
         subtitle: nextBot.map { localization($0.nameKey) },
         detail: nextBot.map { localization.string("playBots.elo", $0.elo) },
-        isCompact: true
+        isCompact: true,
+        style: model.catalog.interface
       ) {
         if let bot = nextBot {
           AvatarView(symbol: bot.avatar.symbol, name: localization(bot.nameKey), scale: 2)
         } else {
-          SymbolBadge(systemImage: "cpu")
+          SymbolBadge(systemImage: "cpu", style: model.catalog.interface)
         }
       }
     }
@@ -119,9 +121,10 @@ struct PlayHome: View {
       CardLabel(
         title: localization("play.passAndPlay.title"),
         subtitle: localization("play.passAndPlay.detail"),
-        isCompact: true
+        isCompact: true,
+        style: model.catalog.interface
       ) {
-        SymbolBadge(systemImage: "person.2")
+        SymbolBadge(systemImage: "person.2", style: model.catalog.interface)
       }
     }
     .cardButtonStyle()
@@ -131,9 +134,10 @@ struct PlayHome: View {
         CardLabel(
           title: localization("play.online.title"),
           subtitle: localization("play.online.detail"),
-          isCompact: true
+          isCompact: true,
+          style: model.catalog.interface
         ) {
-          SymbolBadge(systemImage: "globe")
+          SymbolBadge(systemImage: "globe", style: model.catalog.interface)
         }
       }
       .cardButtonStyle()

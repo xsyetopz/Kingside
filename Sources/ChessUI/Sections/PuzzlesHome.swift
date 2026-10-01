@@ -54,7 +54,12 @@ struct PuzzlesHome: View {
     } wide: {
       CardGrid {
         NavigationLink(value: AppRoute.dailyPuzzle(today)) {
-          CardLabel(title: localization("puzzleDaily.title"), subtitle: date, detail: dailyStatus) {
+          CardLabel(
+            title: localization("puzzleDaily.title"),
+            subtitle: date,
+            detail: dailyStatus,
+            style: model.catalog.interface
+          ) {
             if let daily = dailyPosition {
               BoardThumbnail(
                 position: daily.position,
@@ -63,14 +68,19 @@ struct PuzzlesHome: View {
                   * model.catalog.interface.platformScale
               )
             } else {
-              SymbolBadge(systemImage: "calendar")
+              SymbolBadge(systemImage: "calendar", style: model.catalog.interface)
             }
           }
         }
         .cardButtonStyle()
         NavigationLink(value: AppRoute.ratedPuzzles) {
-          CardLabel(title: localization("puzzles.rated.title"), subtitle: streak, detail: rating) {
-            SymbolBadge(systemImage: "chart.line.uptrend.xyaxis")
+          CardLabel(
+            title: localization("puzzles.rated.title"),
+            subtitle: streak,
+            detail: rating,
+            style: model.catalog.interface
+          ) {
+            SymbolBadge(systemImage: "chart.line.uptrend.xyaxis", style: model.catalog.interface)
           }
         }
         .cardButtonStyle()
@@ -78,9 +88,10 @@ struct PuzzlesHome: View {
           CardLabel(
             title: localization("puzzleRush.title"),
             subtitle: localization("puzzleRush.detail"),
-            detail: rushBest
+            detail: rushBest,
+            style: model.catalog.interface
           ) {
-            SymbolBadge(systemImage: "bolt")
+            SymbolBadge(systemImage: "bolt", style: model.catalog.interface)
           }
         }
         .cardButtonStyle()
