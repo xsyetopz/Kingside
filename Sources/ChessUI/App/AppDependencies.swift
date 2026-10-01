@@ -108,20 +108,7 @@ struct AppDependencies {
     bundle: Bundle = .main
   ) -> Self {
     if arguments.contains("--uitesting") {
-      let name = "Kingside.UITests.\(ProcessInfo.processInfo.processIdentifier)"
-      return Self(
-        catalog: catalog,
-        localization: localization,
-        defaults: UserDefaults(suiteName: name) ?? .standard,
-        gamesFileURL: FileManager.default.temporaryDirectory.appending(
-          components: name,
-          GamePersistenceStore.fileName
-        ),
-        transport: URLSessionTransport(),
-        tokenStore: InMemoryTokenStore(),
-        signsInAtLaunch: false,
-        bundle: bundle
-      )
+      return uiTesting(catalog: catalog, localization: localization, bundle: bundle)
     }
     let url =
       (try? GamePersistenceStore.defaultFileURL())
@@ -147,6 +134,28 @@ struct AppDependencies {
       )
     }
     return dependencies
+  }
+
+  /// A throwaway defaults suite and games file per process, so each UI test run starts clean.
+  private static func uiTesting(
+    catalog: ContentCatalog,
+    localization: Localization,
+    bundle: Bundle
+  ) -> Self {
+    let name = "Kingside.UITests.\(ProcessInfo.processInfo.processIdentifier)"
+    return Self(
+      catalog: catalog,
+      localization: localization,
+      defaults: UserDefaults(suiteName: name) ?? .standard,
+      gamesFileURL: FileManager.default.temporaryDirectory.appending(
+        components: name,
+        GamePersistenceStore.fileName
+      ),
+      transport: URLSessionTransport(),
+      tokenStore: InMemoryTokenStore(),
+      signsInAtLaunch: false,
+      bundle: bundle
+    )
   }
 
   /// Plays every session event on `audio` and `haptics`, and lets the settings switch them.

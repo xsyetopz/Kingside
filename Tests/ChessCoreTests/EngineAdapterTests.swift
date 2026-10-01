@@ -98,7 +98,6 @@ struct EngineAdapterTests {
   ])
   func perft(_ test: PerftCase) throws {
     var board = EngineBoard(try ChessPosition(fen: test.fen))
-    defer { board.deallocate() }
     #expect(board.perft(test.depth) == test.nodes)
   }
 
@@ -106,14 +105,12 @@ struct EngineAdapterTests {
   func internalLegalMovesMatchChessPosition(fen: String) throws {
     let position = try ChessPosition(fen: fen)
     var board = EngineBoard(position)
-    defer { board.deallocate() }
     #expect(Set(board.legalMoves().map(\.chessMove)) == Set(position.legalMoves()))
   }
 
   @Test
   func incrementalHashMatchesRecomputedHash() throws {
     var board = EngineBoard(try ChessPosition(fen: kiwipete))
-    defer { board.deallocate() }
     var generator = SplitMix(seed: 7)
     for _ in 0..<200 {
       let moves = board.legalMoves()
@@ -157,7 +154,6 @@ struct EngineAdapterTests {
     // Refactor pin: the expected move was recorded from the current code, not derived
     // independently. It detects any change in how `choose` consumes the generator.
     var board = EngineBoard(.initial)
-    defer { board.deallocate() }
     let scored = [("e2e4", 30), ("d2d4", 20), ("g1f3", 10), ("a2a3", -40)]
     var lines: [RootLine] = []
     for (uci, score) in scored {

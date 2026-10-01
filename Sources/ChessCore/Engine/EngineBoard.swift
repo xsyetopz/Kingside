@@ -315,10 +315,6 @@ struct EngineBoard: ~Copyable {
     hashHistory.deallocate()
   }
 
-  /// Does nothing: `deinit` frees the buffers. Kept only because a protected test file still
-  /// calls it.
-  func deallocate() {}
-
   static func square(_ index: Int) -> Square { Square(file: index & 7, rank: index >> 4) }
   static func index(_ square: Square) -> Int { square.rank * 16 + square.file }
 
