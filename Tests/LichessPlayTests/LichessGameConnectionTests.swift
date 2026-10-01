@@ -5,16 +5,11 @@ import Foundation
 import HTTPSupportTests
 import LichessLink
 import Testing
-@testable import ChessUI
+@testable import LichessPlay
 
-/// Signs in as Georges, answers every other request with `{}`, and keeps streams open.
+/// Answers every request with `{}` and keeps streams open.
 private func makeTransport() -> FakeTransport {
-  FakeTransport(keepStreamsOpen: true) { request in
-    let body =
-      request.url!.path() == "/api/account"
-      ? Data(#"{"id":"georges","username":"Georges"}"#.utf8) : Data("{}".utf8)
-    return (200, [:], body)
-  }
+  FakeTransport(keepStreamsOpen: true) { _ in (200, [:], Data("{}".utf8)) }
 }
 
 private let gameFullLine =
@@ -184,11 +179,8 @@ struct LichessGameConnectionMappingTests {
   }
 }
 
-@MainActor
 struct LichessGameConnectionTests {
-  private func makeConnection(
-    id: String = "rCRw1Auv"
-  ) async throws -> (LichessGameConnection, FakeTransport) {
+  private func makeConnection(id: String = "rCRw1Auv") -> (LichessGameConnection, FakeTransport) {
     let transport = makeTransport()
     let configuration = LichessConfiguration(
       baseURL: URL(string: "https://lichess.example.test")!,
@@ -196,22 +188,13 @@ struct LichessGameConnectionTests {
       clientID: "kingside-tests",
       redirectURI: URL(string: "kingside://oauth")!
     )
-    let model = LichessAccountModel(
-      store: InMemoryTokenStore(token: nil),
-      makeClient: {
-        LichessClient(configuration: configuration, transport: transport, tokenProvider: $0)
-      },
-      sleep: { _ in await Task.yield() }
-    )
-    await model.signIn(token: "good")
-    try await transport.waitForRequest("GET /api/stream/event")
-    return (model.gameConnection(id: id), transport)
+    let client = LichessClient(configuration: configuration, transport: transport) { "good" }
+    return (LichessGameConnection(client: client, gameID: id, userID: "georges"), transport)
   }
 
   @Test(.timeLimit(.minutes(1)))
   func streamsStartedThenStateAndStopsOnCancel() async throws {
-    let (connection, transport) = try await makeConnection()
-    #expect(connection.userID == "georges")
+    let (connection, transport) = makeConnection()
     var iterator = connection.events().makeAsyncIterator()
     let stream = "/api/board/game/stream/rCRw1Auv"
     try await transport.waitForRequest("GET \(stream)")
@@ -233,7 +216,7 @@ struct LichessGameConnectionTests {
 
   @Test(.timeLimit(.minutes(1)))
   func actionsCallTheBoardApi() async throws {
-    let (connection, transport) = try await makeConnection()
+    let (connection, transport) = makeConnection()
     let actions: [OnlineAction] = [
       .move("e2e4"), .resign, .abort, .claimVictory, .offerDraw, .acceptDraw,
       .declineDraw, .chat("hello"),
@@ -241,7 +224,7 @@ struct LichessGameConnectionTests {
     for action in actions { try await connection.send(action) }
     let game = "/api/board/game/rCRw1Auv"
     #expect(
-      await transport.paths.suffix(actions.count) == [
+      await transport.paths == [
         "POST \(game)/move/e2e4", "POST \(game)/resign", "POST \(game)/abort",
         "POST \(game)/claim-victory",
         "POST \(game)/draw/yes", "POST \(game)/draw/yes",
@@ -249,24 +232,5 @@ struct LichessGameConnectionTests {
         "POST \(game)/chat",
       ]
     )
-  }
-
-  @Test(.timeLimit(.minutes(1)))
-  func signedOutModelGivesAConnectionThatMatchesNoPlayer() {
-    let model = LichessAccountModel(
-      store: InMemoryTokenStore(token: nil)
-    ) {
-      LichessClient(
-        configuration: .init(
-          baseURL: URL(string: "https://lichess.example.test")!,
-          userAgent: "KingsideTests/1.0 (+tests)",
-          clientID: "kingside-tests",
-          redirectURI: URL(string: "kingside://oauth")!
-        ),
-        transport: makeTransport(),
-        tokenProvider: $0
-      )
-    }
-    #expect(model.gameConnection(id: "rCRw1Auv").userID.isEmpty)
   }
 }

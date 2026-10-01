@@ -78,6 +78,29 @@
 				"ChessPlay"
 			]
 		},
+		"LichessPlay": {
+			"path": "Sources/LichessPlay",
+			"allow": [
+				"Foundation",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay",
+				"LichessLink"
+			]
+		},
+		"LichessPlayTests": {
+			"path": "Tests/LichessPlayTests",
+			"allow": [
+				"Foundation",
+				"Testing",
+				"ChessCore",
+				"ChessContent",
+				"ChessPlay",
+				"HTTPSupportTests",
+				"LichessLink",
+				"LichessPlay"
+			]
+		},
 		"ChessContentTests": {
 			"path": "Tests/ChessContentTests",
 			"allow": ["Foundation", "Testing", "ChessCore", "ChessContent"]
@@ -145,6 +168,7 @@
 				"HTTPSupport",
 				"ChessComLink",
 				"LichessLink",
+				"LichessPlay",
 				"ChessOnline"
 			]
 		},
@@ -160,6 +184,7 @@
 				"HTTPSupportTests",
 				"ChessComLink",
 				"LichessLink",
+				"LichessPlay",
 				"ChessOnline"
 			]
 		}

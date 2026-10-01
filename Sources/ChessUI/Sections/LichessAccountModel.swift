@@ -1,5 +1,6 @@
 import Foundation
 import LichessLink
+import LichessPlay
 import Observation
 
 /// Why a Lichess request failed.

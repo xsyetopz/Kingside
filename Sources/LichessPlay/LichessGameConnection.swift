@@ -6,7 +6,7 @@ import LichessLink
 
 /// One Lichess game as an `OnlineGameConnection`: maps the Board API's game stream to
 /// `OnlineGameEvent`s and the player's actions to Board API calls.
-struct LichessGameConnection: OnlineGameConnection {
+public struct LichessGameConnection: OnlineGameConnection {
   /// The signed-in user is neither player of the game.
   struct NotAPlayer: Error, Equatable {}
 
@@ -16,9 +16,15 @@ struct LichessGameConnection: OnlineGameConnection {
   let userID: String
   var localization = Localization()
 
-  var service: String { "lichess" }
+  public init(client: LichessClient, gameID: String, userID: String) {
+    self.client = client
+    self.gameID = gameID
+    self.userID = userID
+  }
 
-  func events() -> AsyncThrowingStream<OnlineGameEvent, Error> {
+  public var service: String { "lichess" }
+
+  public func events() -> AsyncThrowingStream<OnlineGameEvent, Error> {
     let (client, gameID, userID, localization) = (client, gameID, userID, localization)
     return AsyncThrowingStream { continuation in
       let task = Task {
@@ -46,7 +52,7 @@ struct LichessGameConnection: OnlineGameConnection {
     }
   }
 
-  func send(_ action: OnlineAction) async throws {
+  public func send(_ action: OnlineAction) async throws {
     switch action {
     case .move(let uci): try await client.move(gameID: gameID, uci: uci)
     case .resign: try await client.resign(gameID: gameID)

@@ -16,6 +16,7 @@ let package = Package(
     .library(name: "LichessLink", targets: ["LichessLink"]),
     .library(name: "ChessOnline", targets: ["ChessOnline"]),
     .library(name: "ChessPlay", targets: ["ChessPlay"]),
+    .library(name: "LichessPlay", targets: ["LichessPlay"]),
     .library(name: "ChessBoardScene", targets: ["ChessBoardScene"]),
     .library(name: "ChessFeedback", targets: ["ChessFeedback"]),
     .library(name: "ChessUI", targets: ["ChessUI"]),
@@ -29,13 +30,17 @@ let package = Package(
     .target(name: "LichessLink", dependencies: ["ChessCore", "HTTPSupport"]),
     .target(name: "ChessOnline"),
     .target(name: "ChessPlay", dependencies: ["ChessCore", "ChessContent"]),
+    .target(
+      name: "LichessPlay",
+      dependencies: ["ChessCore", "ChessContent", "ChessPlay", "LichessLink"]
+    ),
     .target(name: "ChessBoardScene", dependencies: ["ChessCore", "ChessContent", "ChessPlay"]),
     .target(name: "ChessFeedback", dependencies: ["ChessCore", "ChessContent", "ChessPlay"]),
     .target(
       name: "ChessUI",
       dependencies: [
         "ChessCore", "ChessContent", "ChessPlay", "ChessBoardScene", "ChessFeedback",
-        "HTTPSupport", "ChessComLink", "LichessLink", "ChessOnline",
+        "HTTPSupport", "ChessComLink", "LichessLink", "LichessPlay", "ChessOnline",
       ]
     ),
     .executableTarget(name: "ChessBench", dependencies: ["ChessCore"], path: "Tools/ChessBench"),
@@ -59,6 +64,12 @@ let package = Package(
       resources: [.copy("Fixtures")]
     ),
     .testTarget(
+      name: "LichessPlayTests",
+      dependencies: [
+        "LichessPlay", "ChessCore", "ChessContent", "ChessPlay", "HTTPSupportTests", "LichessLink",
+      ]
+    ),
+    .testTarget(
       name: "ChessBoardSceneTests",
       dependencies: ["ChessBoardScene", "ChessPlay", "ChessCore", "ChessContent"]
     ),
@@ -70,7 +81,7 @@ let package = Package(
       name: "ChessUITests",
       dependencies: [
         "ChessUI", "ChessPlay", "ChessCore", "ChessContent", "HTTPSupportTests", "ChessComLink",
-        "LichessLink", "ChessOnline",
+        "LichessLink", "LichessPlay", "ChessOnline",
       ]
     ),
   ]

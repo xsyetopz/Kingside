@@ -3,6 +3,7 @@ import HTTPSupportTests
 import LichessLink
 import Testing
 @testable import ChessUI
+@testable import LichessPlay
 
 private let accountJSON = Data(#"{"id":"georges","username":"Georges"}"#.utf8)
 private let playingJSON = Data(
@@ -417,6 +418,24 @@ struct LichessAccountModelTests {
     #expect(LichessFailure(LichessError.http(status: 500)) == .network)
     #expect(LichessFailure(LichessError.rateLimited) == .rateLimited)
     #expect(LichessFailure(URLError(.notConnectedToInternet)) == .network)
+  }
+
+  @Test(.timeLimit(.minutes(1)))
+  func signedInModelGivesAnAuthorizedConnectionForTheGameAndLowercasedUsername() async throws {
+    let (model, _, transport) = makeModel()
+    await model.signIn(token: "good")
+    try await transport.waitForRequest("GET /api/stream/event")
+    let connection = model.gameConnection(id: "rCRw1Auv")
+    #expect(connection.userID == "georges")
+    try await connection.send(.resign)
+    #expect(await transport.paths.last == "POST /api/board/game/rCRw1Auv/resign")
+    await model.signOut()
+  }
+
+  @Test(.timeLimit(.minutes(1)))
+  func signedOutModelGivesAConnectionThatMatchesNoPlayer() {
+    let (model, _, _) = makeModel()
+    #expect(model.gameConnection(id: "rCRw1Auv").userID.isEmpty)
   }
 }
 
