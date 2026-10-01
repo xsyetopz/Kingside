@@ -25,19 +25,17 @@ struct OnlineChatControls: View {
 
   var body: some View {
     if session.isChatEnabled {
-      #if os(tvOS)
-        sheetButton
-      #else
-        if isWide {
-          OnlineChatPanel(session: session).frame(height: Self.inlineHeight)
-        } else {
-          sheetButton
-        }
-      #endif
+      chat
     }
   }
 
   private var sheetButton: some View {
+    styledOpenButton
+      .accessibilityIdentifier("chat.open")
+      .sheet(isPresented: $showsSheet) { sheet }
+  }
+
+  private var openButton: some View {
     Button {
       showsSheet = true
     } label: {
@@ -53,29 +51,62 @@ struct OnlineChatControls: View {
         }
       }
     }
-    #if os(tvOS)
-      .buttonStyle(.bordered)
-    #endif
-    .accessibilityIdentifier("chat.open")
-    .sheet(isPresented: $showsSheet) {
-      NavigationStack {
-        OnlineChatPanel(session: session)
-          .padding()
-          .navigationTitle(localization("chat.title"))
-          #if !os(tvOS)
-            .toolbar {
-              ToolbarItem(placement: .confirmationAction) {
-                Button(localization("common.done")) { showsSheet = false }
-              }
-            }
-          #endif
-      }
-      #if os(macOS)
-        .frame(minWidth: 360, minHeight: 420)
-      #endif
-    }
+  }
+
+  private var sheetPanel: some View {
+    OnlineChatPanel(session: session)
+      .padding()
+      .navigationTitle(localization("chat.title"))
   }
 }
+
+#if os(tvOS)
+  extension OnlineChatControls {
+    /// tvOS has no side panel, so the chat always opens as a sheet.
+    private var chat: some View { sheetButton }
+
+    private var styledOpenButton: some View { openButton.buttonStyle(.bordered) }
+
+    /// The remote's Back button closes the sheet, so there is no Done button.
+    private var sheet: some View {
+      NavigationStack { sheetPanel }
+    }
+  }
+#else
+  extension OnlineChatControls {
+    @ViewBuilder
+    private var chat: some View {
+      if isWide {
+        OnlineChatPanel(session: session).frame(height: Self.inlineHeight)
+      } else {
+        sheetButton
+      }
+    }
+
+    private var styledOpenButton: some View { openButton }
+
+    private var doneSheet: some View {
+      NavigationStack {
+        sheetPanel
+          .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+              Button(localization("common.done")) { showsSheet = false }
+            }
+          }
+      }
+    }
+  }
+
+  #if os(macOS)
+    extension OnlineChatControls {
+      private var sheet: some View { doneSheet.frame(minWidth: 360, minHeight: 420) }
+    }
+  #else
+    extension OnlineChatControls {
+      private var sheet: some View { doneSheet }
+    }
+  #endif
+#endif
 
 /// The message list with the mute and report controls and the text field.
 private struct OnlineChatPanel: View {
@@ -122,31 +153,17 @@ private struct OnlineChatPanel: View {
   @ViewBuilder
   private var safetyControls: some View {
     if session.opponentName != nil {
-      VStack(alignment: .leading, spacing: 4) {
-        HStack {
-          Button(localization(session.isOpponentMuted ? "chat.unmute" : "chat.mute")) {
-            session.setOpponentMuted(!session.isOpponentMuted)
-          }
-          .accessibilityIdentifier("chat.mute")
-          #if !os(tvOS)
-            if let reportURL {
-              Button(localization("chat.report")) { openURL(reportURL) }
-                .accessibilityIdentifier("chat.report")
-            }
-          #endif
-        }
-        #if os(tvOS)
-          // tvOS cannot open a web page, so the address is shown to open on another device.
-          if let reportURL {
-            Text(localization.string("chat.report.tv", reportURL.absoluteString))
-              .font(.footnote)
-              .accessibilityIdentifier("chat.reportURL")
-          }
-        #endif
-      }
-      .buttonStyle(.borderless)
-      .font(.footnote)
+      VStack(alignment: .leading, spacing: 4) { safetyRows }
+        .buttonStyle(.borderless)
+        .font(.footnote)
     }
+  }
+
+  private var muteButton: some View {
+    Button(localization(session.isOpponentMuted ? "chat.unmute" : "chat.mute")) {
+      session.setOpponentMuted(!session.isOpponentMuted)
+    }
+    .accessibilityIdentifier("chat.mute")
   }
 
   private var messages: some View {
@@ -181,3 +198,30 @@ private struct OnlineChatPanel: View {
     }
   }
 }
+
+#if os(tvOS)
+  extension OnlineChatPanel {
+    /// tvOS cannot open a web page, so the address is shown to open on another device.
+    @ViewBuilder
+    private var safetyRows: some View {
+      HStack { muteButton }
+      if let reportURL {
+        Text(localization.string("chat.report.tv", reportURL.absoluteString))
+          .font(.footnote)
+          .accessibilityIdentifier("chat.reportURL")
+      }
+    }
+  }
+#else
+  extension OnlineChatPanel {
+    private var safetyRows: some View {
+      HStack {
+        muteButton
+        if let reportURL {
+          Button(localization("chat.report")) { openURL(reportURL) }
+            .accessibilityIdentifier("chat.report")
+        }
+      }
+    }
+  }
+#endif

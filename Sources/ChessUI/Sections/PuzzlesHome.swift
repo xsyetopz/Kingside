@@ -98,7 +98,15 @@ struct PuzzlesHome: View {
       }
     }
     .screenTitle(localization("section.puzzles.title"))
-    .onAppear { today = PuzzleDay(date: Date()) }
+    .task { await followToday() }
+  }
+
+  /// Sets `today` now and again at each midnight while the tab stays on screen.
+  private func followToday() async {
+    today = PuzzleDay(date: Date())
+    for await _ in NotificationCenter.default.notifications(named: .NSCalendarDayChanged) {
+      today = PuzzleDay(date: Date())
+    }
   }
 
   /// Today's puzzle as the solver first sees it: after the opponent's move, from the

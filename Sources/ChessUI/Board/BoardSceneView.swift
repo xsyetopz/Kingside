@@ -134,9 +134,11 @@ private struct BoardInputModifier: ViewModifier {
     @State
     private var holdsFocus = false
   #endif
+}
 
-  func body(content: Content) -> some View {
-    #if os(tvOS)
+#if os(tvOS)
+  extension BoardInputModifier {
+    func body(content: Content) -> some View {
       content
         .focusable()
         .focused(isFocused)
@@ -161,7 +163,27 @@ private struct BoardInputModifier: ViewModifier {
         .onTapGesture { send(.selectFocused) }
         // Without a selection, Back is left to navigation.
         .onExitCommand(perform: canCancel ? { send(.cancel) } : nil)
-    #else
+    }
+
+    /// Whether the focused square is on the board's side toward `direction`, as seen on screen.
+    private func isAtEdge(_ direction: BoardDirection) -> Bool {
+      let square = snapshot.focusedSquare
+      let flipped = snapshot.orientation == .black
+      switch direction {
+      case .left: return square.file == (flipped ? 7 : 0)
+      case .right: return square.file == (flipped ? 0 : 7)
+      case .up: return square.rank == (flipped ? 0 : 7)
+      case .down: return square.rank == (flipped ? 7 : 0)
+      }
+    }
+  }
+#else
+  extension BoardInputModifier {
+    private static let handledKeys: Set<KeyEquivalent> = [
+      .upArrow, .downArrow, .leftArrow, .rightArrow, .return, .space, .escape,
+    ]
+
+    func body(content: Content) -> some View {
       content
         // A container, so the square elements stay reachable and the board has an identifier.
         .accessibilityElement(children: .contain)
@@ -169,13 +191,7 @@ private struct BoardInputModifier: ViewModifier {
         .focused(isFocused)
         .focusEffectDisabled()
         .onKeyPress(keys: Self.handledKeys, action: handleKey)
-    #endif
-  }
-
-  #if !os(tvOS)
-    private static let handledKeys: Set<KeyEquivalent> = [
-      .upArrow, .downArrow, .leftArrow, .rightArrow, .return, .space, .escape,
-    ]
+    }
 
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
       switch press.key {
@@ -190,19 +206,5 @@ private struct BoardInputModifier: ViewModifier {
       }
       return .handled
     }
-  #endif
-
-  #if os(tvOS)
-    /// Whether the focused square is on the board's side toward `direction`, as seen on screen.
-    private func isAtEdge(_ direction: BoardDirection) -> Bool {
-      let square = snapshot.focusedSquare
-      let flipped = snapshot.orientation == .black
-      switch direction {
-      case .left: return square.file == (flipped ? 7 : 0)
-      case .right: return square.file == (flipped ? 0 : 7)
-      case .up: return square.rank == (flipped ? 0 : 7)
-      case .down: return square.rank == (flipped ? 7 : 0)
-      }
-    }
-  #endif
-}
+  }
+#endif
