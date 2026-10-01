@@ -178,26 +178,29 @@ enum ChessComImporting {
   }
 
   /// Chess.com gives each side a result code; the side with `win` won and any other pair is a draw.
-  static func result(white: String, black: String) -> GameResult {
-    if white == "win" { return .whiteWon }
-    if black == "win" { return .blackWon }
+  static func result(white: ChessComPlayerResult, black: ChessComPlayerResult) -> GameResult {
+    if white == .win { return .whiteWon }
+    if black == .win { return .blackWon }
     return .draw
   }
 
   /// From the code of the side that did not win, or of White in a draw; nil for codes with no
   /// match.
-  static func termination(white: String, black: String) -> GameTermination? {
-    switch white == "win" ? black : white {
-    case "checkmated": .checkmate
-    case "timeout": .timeout
-    case "resigned": .resignation
-    case "stalemate": .stalemate
-    case "repetition": .repetition
-    case "insufficient": .insufficientMaterial
-    case "agreed": .agreement
-    case "50move": .fiftyMoveRule
-    case "timevsinsufficient": .timeoutVsInsufficientMaterial
-    default: nil
+  static func termination(
+    white: ChessComPlayerResult,
+    black: ChessComPlayerResult
+  ) -> GameTermination? {
+    switch white == .win ? black : white {
+    case .checkmated: .checkmate
+    case .timeout: .timeout
+    case .resigned: .resignation
+    case .stalemate: .stalemate
+    case .repetition: .repetition
+    case .insufficient: .insufficientMaterial
+    case .agreed: .agreement
+    case .fiftyMove: .fiftyMoveRule
+    case .timeVsInsufficient: .timeoutVsInsufficientMaterial
+    case .win, .other: nil
     }
   }
 }

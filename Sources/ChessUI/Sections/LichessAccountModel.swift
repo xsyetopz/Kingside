@@ -306,7 +306,9 @@ public final class LichessAccountModel {
     case .challenge(let challenge):
       // Challenges the user sent arrive too; only incoming ones are for the user to answer.
       // Lichess user ids are the lowercased usernames.
-      guard challenge.direction != "out", !isSignedInUser(challenge.challenger.id) else { return }
+      guard challenge.direction != .outgoing, !isSignedInUser(challenge.challenger.id) else {
+        return
+      }
       incomingChallenges.removeAll { $0.id == challenge.id }
       incomingChallenges.append(challenge)
     case .challengeCanceled(let challenge):

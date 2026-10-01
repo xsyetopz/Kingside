@@ -27,8 +27,44 @@ struct ChessComImportTests {
   @Test
   func skipsVariants() async throws {
     let source = try await loadGame("games-variant")
-    #expect(source.rules == "chess960")
+    #expect(source.rules == .chess960)
     #expect(try ChessComGameImporter().importGame(source) == .skipped(source))
+  }
+
+  private func player(result: String) throws -> ChessComGame.Player {
+    let json = #"{"username":"hikaru","rating":2800,"result":"\#(result)"}"#
+    return try JSONDecoder().decode(ChessComGame.Player.self, from: Data(json.utf8))
+  }
+
+  @Test(arguments: [
+    ("win", ChessComPlayerResult.win), ("checkmated", .checkmated), ("timeout", .timeout),
+    ("resigned", .resigned), ("stalemate", .stalemate), ("repetition", .repetition),
+    ("insufficient", .insufficient), ("agreed", .agreed), ("50move", .fiftyMove),
+    ("timevsinsufficient", .timeVsInsufficient),
+  ])
+  func knownResultCodeDecodesToItsCase(code: String, result: ChessComPlayerResult) throws {
+    #expect(try player(result: code).result == result)
+  }
+
+  @Test
+  func unknownResultCodeDecodesToOther() throws {
+    #expect(try player(result: "abandoned").result == .other("abandoned"))
+  }
+
+  private func rules(_ name: String) throws -> ChessComRules {
+    try JSONDecoder().decode(ChessComRules.self, from: Data(#""\#(name)""#.utf8))
+  }
+
+  @Test(arguments: [
+    ("chess", ChessComRules.chess), ("Chess", .chess), ("chess960", .chess960),
+  ])
+  func knownRulesDecodeToTheirCase(name: String, expected: ChessComRules) throws {
+    #expect(try rules(name) == expected)
+  }
+
+  @Test
+  func unknownRulesDecodeToOtherWithTheNameAsSent() throws {
+    #expect(try rules("Bughouse") == .other("Bughouse"))
   }
 
   @Test

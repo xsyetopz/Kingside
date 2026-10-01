@@ -18,7 +18,7 @@ public struct ChessComGameImporter: Sendable {
 
   /// Throws the `PGNParser` error when a standard game's PGN cannot be parsed or replayed.
   public func importGame(_ source: ChessComGame) throws -> ChessComImportResult {
-    guard source.rules.lowercased() == "chess" else { return .skipped(source) }
+    guard source.rules == .chess else { return .skipped(source) }
     let parser = PGNParser()
     let pgn = try parser.parse(source.pgn)
     let game = try parser.chessGame(from: pgn)

@@ -91,7 +91,7 @@ struct LichessClientTests {
       color: .random
     )
     #expect(result.id == "VU0nyvsW")
-    #expect(result.direction == "out")
+    #expect(result.direction == .outgoing)
     let request = try #require(await transport.requests.first)
     #expect(request.url?.path == "/api/challenge/Philippe_1")
     #expect(bodyString(request) == "rated=true&clock.limit=300&clock.increment=3&color=random")

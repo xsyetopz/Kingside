@@ -138,22 +138,22 @@ struct LichessGameConnection: OnlineGameConnection {
     )
   }
 
-  static func status(_ name: String) -> OnlineGameStatus {
-    switch name {
-    case "created": .created
-    case "started": .started
-    case "aborted": .aborted
-    case "mate": .mate
-    case "resign": .resign
-    case "stalemate": .stalemate
-    case "timeout": .timeout
-    case "draw": .draw
-    case "outoftime": .outoftime
-    case "cheat": .cheat
-    case "noStart": .noStart
-    case "unknownFinish": .unknownFinish
-    case "variantEnd": .variantEnd
-    default: .other(name)
+  static func status(_ status: LichessGameStatus) -> OnlineGameStatus {
+    switch status {
+    case .created: .created
+    case .started: .started
+    case .aborted: .aborted
+    case .mate: .mate
+    case .resign: .resign
+    case .stalemate: .stalemate
+    case .timeout: .timeout
+    case .draw: .draw
+    case .outoftime: .outoftime
+    case .cheat: .cheat
+    case .noStart: .noStart
+    case .unknownFinish: .unknownFinish
+    case .variantEnd: .variantEnd
+    case .other(let name): .other(name)
     }
   }
 }

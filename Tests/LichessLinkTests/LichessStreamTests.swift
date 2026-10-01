@@ -20,6 +20,50 @@ struct LichessStreamTests {
     #expect(throws: LichessError.self) { try LichessGameEvent.parse(line: "not json") }
   }
 
+  private func stateStatus(_ name: String) throws -> LichessGameStatus? {
+    let line =
+      #"{"type":"gameState","moves":"","wtime":1,"btime":1,"winc":0,"binc":0,"status":"\#(name)"}"#
+    guard case .gameState(let state)? = try LichessGameEvent.parse(line: line) else { return nil }
+    return state.status
+  }
+
+  @Test(arguments: [
+    ("created", LichessGameStatus.created), ("started", .started), ("aborted", .aborted),
+    ("mate", .mate), ("resign", .resign), ("stalemate", .stalemate), ("timeout", .timeout),
+    ("draw", .draw), ("outoftime", .outoftime), ("cheat", .cheat), ("noStart", .noStart),
+    ("unknownFinish", .unknownFinish), ("variantEnd", .variantEnd),
+  ])
+  func knownGameStatusDecodesToItsCase(name: String, status: LichessGameStatus) throws {
+    #expect(try stateStatus(name) == status)
+  }
+
+  @Test
+  func unknownGameStatusDecodesToOther() throws {
+    #expect(try stateStatus("newThing") == .other("newThing"))
+  }
+
+  private func decoded<Value: Decodable>(_ name: String, as type: Value.Type) throws -> Value {
+    try JSONDecoder().decode(type, from: Data(#""\#(name)""#.utf8))
+  }
+
+  @Test(arguments: [
+    ("created", LichessChallengeStatus.created), ("offline", .offline),
+    ("canceled", .canceled), ("declined", .declined), ("accepted", .accepted),
+  ])
+  func knownChallengeStatusDecodesToItsCase(name: String, status: LichessChallengeStatus) throws {
+    #expect(try decoded(name, as: LichessChallengeStatus.self) == status)
+  }
+
+  @Test
+  func unknownChallengeStatusDecodesToOther() throws {
+    #expect(try decoded("expired", as: LichessChallengeStatus.self) == .other("expired"))
+  }
+
+  @Test
+  func unknownChallengeDirectionDecodesToOther() throws {
+    #expect(try decoded("sideways", as: LichessChallengeDirection.self) == .other("sideways"))
+  }
+
   @Test
   func decodesEveryAccountEventType() throws {
     let events = try fixtureLines("events").compactMap { try LichessEvent.parse(line: $0) }
@@ -56,12 +100,12 @@ struct LichessStreamTests {
         == LichessTimeControl(type: "clock", limit: 300, increment: 3, daysPerTurn: nil)
     )
     #expect(challenge.color == .white)
-    #expect(challenge.direction == "in")
+    #expect(challenge.direction == .incoming)
     guard case .challengeCanceled(let canceled) = events[3] else {
       Issue.record("expected challengeCanceled")
       return
     }
-    #expect(canceled.status == "canceled")
+    #expect(canceled.status == .canceled)
     guard case .challengeDeclined(let declined) = events[4] else {
       Issue.record("expected challengeDeclined")
       return
@@ -106,7 +150,7 @@ struct LichessStreamTests {
       Issue.record("expected gameState")
       return
     }
-    #expect(last.status == "resign")
+    #expect(last.status == .resign)
     #expect(last.winner == .white)
     guard case .gameFull(let ai) = events[6] else {
       Issue.record("expected gameFull")

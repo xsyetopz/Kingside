@@ -146,13 +146,13 @@ struct AccountTests {
       ChessComImporting.timeControl("600") == TimeControl(initialSeconds: 600, incrementSeconds: 0)
     )
     #expect(ChessComImporting.timeControl("1/86400") == .untimed)
-    #expect(ChessComImporting.result(white: "win", black: "checkmated") == .whiteWon)
-    #expect(ChessComImporting.result(white: "timeout", black: "win") == .blackWon)
-    #expect(ChessComImporting.result(white: "agreed", black: "agreed") == .draw)
-    #expect(ChessComImporting.termination(white: "win", black: "checkmated") == .checkmate)
-    #expect(ChessComImporting.termination(white: "resigned", black: "win") == .resignation)
-    #expect(ChessComImporting.termination(white: "50move", black: "50move") == .fiftyMoveRule)
-    #expect(ChessComImporting.termination(white: "win", black: "abandoned") == nil)
+    #expect(ChessComImporting.result(white: .win, black: .checkmated) == .whiteWon)
+    #expect(ChessComImporting.result(white: .timeout, black: .win) == .blackWon)
+    #expect(ChessComImporting.result(white: .agreed, black: .agreed) == .draw)
+    #expect(ChessComImporting.termination(white: .win, black: .checkmated) == .checkmate)
+    #expect(ChessComImporting.termination(white: .resigned, black: .win) == .resignation)
+    #expect(ChessComImporting.termination(white: .fiftyMove, black: .fiftyMove) == .fiftyMoveRule)
+    #expect(ChessComImporting.termination(white: .win, black: .other("abandoned")) == nil)
   }
 
   @Test

@@ -180,18 +180,17 @@ struct LichessGameConnectionMappingTests {
   }
 
   @Test
-  func statusNamesMapToStatuses() {
-    let names = [
-      "created", "started", "aborted", "mate", "resign", "stalemate", "timeout", "draw",
-      "outoftime",
-      "cheat", "noStart", "unknownFinish", "variantEnd",
+  func statusesMapToOnlineStatuses() {
+    let statuses: [LichessGameStatus] = [
+      .created, .started, .aborted, .mate, .resign, .stalemate, .timeout, .draw,
+      .outoftime, .cheat, .noStart, .unknownFinish, .variantEnd,
     ]
     let expected: [OnlineGameStatus] = [
       .created, .started, .aborted, .mate, .resign, .stalemate, .timeout, .draw,
       .outoftime, .cheat, .noStart, .unknownFinish, .variantEnd,
     ]
-    #expect(names.map(LichessGameConnection.status) == expected)
-    #expect(LichessGameConnection.status("newThing") == .other("newThing"))
+    #expect(statuses.map(LichessGameConnection.status) == expected)
+    #expect(LichessGameConnection.status(.other("newThing")) == .other("newThing"))
   }
 
   @Test

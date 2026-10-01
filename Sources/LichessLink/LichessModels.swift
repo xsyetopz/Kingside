@@ -74,17 +74,71 @@ public struct LichessTimeControl: Decodable, Sendable, Equatable {
   public var daysPerTurn: Int?
 }
 
+/// Lichess adds statuses over time, so a name this enum does not list decodes to `other`.
+enum LichessChallengeStatus: Sendable, Equatable {
+  case created, offline, canceled, declined, accepted
+  case other(String)
+}
+
+extension LichessChallengeStatus: RawRepresentable, Decodable {
+  init(rawValue: String) {
+    switch rawValue {
+    case "created": self = .created
+    case "offline": self = .offline
+    case "canceled": self = .canceled
+    case "declined": self = .declined
+    case "accepted": self = .accepted
+    default: self = .other(rawValue)
+    }
+  }
+
+  var rawValue: String {
+    switch self {
+    case .created: "created"
+    case .offline: "offline"
+    case .canceled: "canceled"
+    case .declined: "declined"
+    case .accepted: "accepted"
+    case .other(let name): name
+    }
+  }
+}
+
+/// Whether the signed-in user received the challenge or sent it.
+public enum LichessChallengeDirection: Sendable, Equatable {
+  case incoming, outgoing
+  case other(String)
+}
+
+extension LichessChallengeDirection: RawRepresentable, Decodable {
+  public init(rawValue: String) {
+    switch rawValue {
+    case "in": self = .incoming
+    case "out": self = .outgoing
+    default: self = .other(rawValue)
+    }
+  }
+
+  public var rawValue: String {
+    switch self {
+    case .incoming: "in"
+    case .outgoing: "out"
+    case .other(let name): name
+    }
+  }
+}
+
 public struct LichessChallenge: Decodable, Sendable, Equatable {
   public var id: String
-  public var status: String
+  var status: LichessChallengeStatus
   public var challenger: LichessChallengeUser
   var destUser: LichessChallengeUser?
   public var rated: Bool
   public var speed: String
   public var timeControl: LichessTimeControl
   public var color: LichessChallengeColor
-  /// `in` or `out`; present on challenge events.
-  public var direction: String?
+  /// Present on challenge events.
+  public var direction: LichessChallengeDirection?
 }
 
 /// An element of `GET /api/stream/event`. Unknown event types are dropped by `parse(line:)`.
@@ -130,6 +184,53 @@ public struct LichessGameClock: Decodable, Sendable, Equatable {
   public var increment: Int
 }
 
+/// Lichess adds statuses over time, so a name this enum does not list decodes to `other`.
+public enum LichessGameStatus: Sendable, Equatable {
+  case created, started, aborted, mate, resign, stalemate, timeout, draw, outoftime, cheat
+  case noStart, unknownFinish, variantEnd
+  case other(String)
+}
+
+extension LichessGameStatus: RawRepresentable, Decodable {
+  public init(rawValue: String) {
+    switch rawValue {
+    case "created": self = .created
+    case "started": self = .started
+    case "aborted": self = .aborted
+    case "mate": self = .mate
+    case "resign": self = .resign
+    case "stalemate": self = .stalemate
+    case "timeout": self = .timeout
+    case "draw": self = .draw
+    case "outoftime": self = .outoftime
+    case "cheat": self = .cheat
+    case "noStart": self = .noStart
+    case "unknownFinish": self = .unknownFinish
+    case "variantEnd": self = .variantEnd
+    default: self = .other(rawValue)
+    }
+  }
+
+  public var rawValue: String {
+    switch self {
+    case .created: "created"
+    case .started: "started"
+    case .aborted: "aborted"
+    case .mate: "mate"
+    case .resign: "resign"
+    case .stalemate: "stalemate"
+    case .timeout: "timeout"
+    case .draw: "draw"
+    case .outoftime: "outoftime"
+    case .cheat: "cheat"
+    case .noStart: "noStart"
+    case .unknownFinish: "unknownFinish"
+    case .variantEnd: "variantEnd"
+    case .other(let name): name
+    }
+  }
+}
+
 public struct LichessGameState: Decodable, Sendable, Equatable {
   /// Space-separated UCI moves.
   public var moves: String
@@ -138,8 +239,7 @@ public struct LichessGameState: Decodable, Sendable, Equatable {
   public var btime: Int
   var winc: Int
   var binc: Int
-  /// Lichess status name, for example `started`, `mate`, `resign`.
-  public var status: String
+  public var status: LichessGameStatus
   public var winner: LichessColor?
   public var wdraw: Bool?
   public var bdraw: Bool?
