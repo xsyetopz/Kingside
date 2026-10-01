@@ -86,8 +86,9 @@ public enum Material {
 
   /// Pieces of `color` missing from a standard starting set (captured by the opponent).
   public static func missing(_ color: PieceColor, in position: ChessPosition) -> [PieceType] {
-    startingCounts.keys.sorted { value($0) < value($1) }.flatMap { type -> [PieceType] in
-      let onBoard = position.board.values.filter { $0 == Piece(type: type, color: color) }.count
+    let pieces = position.board.values
+    return startingCounts.keys.sorted { value($0) < value($1) }.flatMap { type -> [PieceType] in
+      let onBoard = pieces.filter { $0 == Piece(type: type, color: color) }.count
       return Array(repeating: type, count: max(0, startingCounts[type, default: 0] - onBoard))
     }
   }

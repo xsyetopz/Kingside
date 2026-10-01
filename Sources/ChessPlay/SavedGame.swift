@@ -3,8 +3,8 @@ import ChessCore
 import Foundation
 
 // Stored game model shared by the game screen, Resume, the archive, and Game Review.
-// The Codable shapes are those of `saved-games-v2.json`; data written by older builds must
-// keep decoding.
+// The Codable shapes are those of `saved-games-v2.json`, with each position stored as its FEN
+// string. No build with another shape has shipped, so there is no migration.
 
 /// How a game is played.
 public enum GameMode: Codable, Hashable, Sendable {

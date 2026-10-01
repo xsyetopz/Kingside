@@ -2,7 +2,27 @@ import Foundation
 
 public enum ChessNotation {
   public static func san(for move: ChessMove, in position: ChessPosition) throws -> String {
-    guard let piece = position[move.from], position.legalMoves().contains(move) else {
+    try san(for: move, in: position, legalMoves: position.legalMoves())
+  }
+
+  public static func move(fromSAN san: String, in position: ChessPosition) -> ChessMove? {
+    let normalized = normalize(san)
+    let legalMoves = position.legalMoves()
+    return legalMoves.first { move in
+      guard let generated = try? self.san(for: move, in: position, legalMoves: legalMoves) else {
+        return false
+      }
+      return normalize(generated) == normalized
+    }
+  }
+
+  /// `legalMoves` are the legal moves of `position`.
+  private static func san(
+    for move: ChessMove,
+    in position: ChessPosition,
+    legalMoves: [ChessMove]
+  ) throws -> String {
+    guard let piece = position[move.from], legalMoves.contains(move) else {
       throw ChessRuleError.illegalMove
     }
     if piece.type == .king && abs(move.to.file - move.from.file) == 2 {
@@ -15,7 +35,7 @@ public enum ChessNotation {
     if piece.type == .pawn {
       if isCapture { result += fileName(move.from.file) }
     } else {
-      let competitors = position.legalMoves().filter {
+      let competitors = legalMoves.filter {
         $0.to == move.to && $0.from != move.from && position[$0.from]?.type == piece.type
       }
       if !competitors.isEmpty {
@@ -32,14 +52,6 @@ public enum ChessNotation {
     result += move.to.algebraic
     if let promotion = move.promotion { result += "=\(promotion.sanLetter)" }
     return try suffix(result, after: move, in: position)
-  }
-
-  public static func move(fromSAN san: String, in position: ChessPosition) -> ChessMove? {
-    let normalized = normalize(san)
-    return position.legalMoves().first { move in
-      guard let generated = try? self.san(for: move, in: position) else { return false }
-      return normalize(generated) == normalized
-    }
   }
 
   private static func suffix(

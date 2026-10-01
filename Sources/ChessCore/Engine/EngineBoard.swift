@@ -186,6 +186,10 @@ struct EngineBoard: ~Copyable {
   var phase = 0
   var undoCount = 0
   var historyCount = 0
+  /// Whether the loaded position is one the move generator can index safely: one king per side,
+  /// no pawn on a back rank, no more promoted pieces than missing pawns, and no king capturable.
+  /// When false, `legalMoves()` and `perft` find nothing.
+  private(set) var isSupported = false
 
   /// A board with room for a whole game of moves, for search.
   init(_ position: ChessPosition, history: [ChessPosition] = []) {
@@ -195,6 +199,35 @@ struct EngineBoard: ~Copyable {
   /// A board for rules queries such as `legalMoves()`: it can hold `plyCapacity` made moves
   /// (at least `depth` for `perft(depth)`), so it does not allocate search-size buffers.
   init(_ position: ChessPosition, history: [ChessPosition] = [], plyCapacity: Int) {
+    let earlierHashes = history.map(\.engineHash)
+    self.init(plyCapacity: plyCapacity, historyCapacity: earlierHashes.count + 1 + plyCapacity)
+    position.copyEngineState(into: &self, earlierHashes: earlierHashes)
+  }
+
+  /// A board at the given position with no earlier history, holding `plyCapacity` made moves.
+  /// Pieces on off-board squares are dropped.
+  init(
+    board: [Square: Piece],
+    sideToMove: PieceColor,
+    castlingRights: CastlingRights,
+    enPassantTarget: Square?,
+    halfmoveClock: Int,
+    plyCapacity: Int
+  ) {
+    self.init(plyCapacity: plyCapacity, historyCapacity: 1 + plyCapacity)
+    load(
+      board: board,
+      sideToMove: sideToMove,
+      castlingRights: castlingRights,
+      enPassantTarget: enPassantTarget,
+      halfmoveClock: halfmoveClock
+    )
+    hashHistory[0] = hash
+    historyCount = 1
+  }
+
+  /// Allocates the buffers; the caller fills the position.
+  private init(plyCapacity: Int, historyCapacity: Int) {
     precondition(plyCapacity >= 1, "a board must hold at least one made move")
     let tables = EngineTables.shared
     offsets = tables.offsets
@@ -207,13 +240,40 @@ struct EngineBoard: ~Copyable {
     kings = .allocate(capacity: 2)
     self.plyCapacity = plyCapacity
     undoStack = .allocate(capacity: plyCapacity)
-    hashHistory = .allocate(capacity: history.count + 1 + plyCapacity)
-    for earlier in history {
-      load(earlier)
-      hashHistory[historyCount] = hash
+    hashHistory = .allocate(capacity: historyCapacity)
+  }
+
+  /// A board at the current position with no made moves, holding `plyCapacity` made moves, whose
+  /// repetition history is `earlierHashes` (oldest first) followed by the current position.
+  func copy(plyCapacity: Int, earlierHashes: [UInt64] = []) -> Self {
+    var board = Self(
+      plyCapacity: plyCapacity,
+      historyCapacity: earlierHashes.count + 1 + plyCapacity
+    )
+    board.copyState(from: self, earlierHashes: earlierHashes)
+    return board
+  }
+
+  /// Sets this board, which has no made moves and no history, to `source`'s current position
+  /// with `earlierHashes` as its repetition history; its buffers must hold that history.
+  mutating func copyState(from source: borrowing Self, earlierHashes: [UInt64]) {
+    precondition(undoCount == 0 && historyCount == 0, "copyState needs a board with no moves")
+    squares.initialize(from: source.squares, count: 128)
+    counts.initialize(from: source.counts, count: 16)
+    kings.initialize(from: source.kings, count: 2)
+    side = source.side
+    castling = source.castling
+    enPassant = source.enPassant
+    halfmove = clampedClock(source.halfmove)
+    hash = source.hash
+    middlegame = source.middlegame
+    endgame = source.endgame
+    phase = source.phase
+    isSupported = source.isSupported
+    for earlier in earlierHashes {
+      hashHistory[historyCount] = earlier
       historyCount += 1
     }
-    load(position)
     hashHistory[historyCount] = hash
     historyCount += 1
   }
@@ -246,26 +306,73 @@ struct EngineBoard: ~Copyable {
     return piece.color == .white ? kind : kind | EngineKind.blackBit
   }
 
-  private mutating func load(_ position: ChessPosition) {
+  private mutating func load(
+    board: [Square: Piece],
+    sideToMove: PieceColor,
+    castlingRights: CastlingRights,
+    enPassantTarget: Square?,
+    halfmoveClock: Int
+  ) {
     squares.initialize(repeating: 0, count: 128)
     counts.initialize(repeating: 0, count: 16)
+    // A missing king leaves a valid square here, never uninitialized memory.
+    kings.initialize(repeating: 0, count: 2)
     hash = 0
     middlegame = 0
     endgame = 0
     phase = 0
-    for (square, piece) in position.board where square.isValid {
+    for (square, piece) in board where square.isValid {
       place(Self.code(piece), at: Self.index(square))
     }
-    side = position.sideToMove == .white ? 0 : 1
+    side = sideToMove == .white ? 0 : 1
     if side == 1 { hash ^= zobrist[EngineTables.sideKeyIndex] }
-    castling = position.castlingRights.rawValue & 15
+    castling = castlingRights.rawValue & 15
     hash ^= zobrist[EngineTables.castleKeyBase + castling]
     enPassant = -1
-    if let target = position.enPassantTarget, target.isValid {
+    if let target = enPassantTarget, target.isValid,
+      isSkippedSquare(Self.index(target))
+    {
       setEnPassantIfCapturable(Self.index(target))
     }
-    halfmove = position.halfmoveClock
+    halfmove = clampedClock(halfmoveClock)
     undoCount = 0
+    isSupported = computeIsSupported()
+  }
+
+  /// Whether `target` is the square an opponent pawn just skipped with a double push: it is on
+  /// the skipped rank, it and the pawn's starting square are empty, and the pawn stands beyond it.
+  private func isSkippedSquare(_ target: Int) -> Bool {
+    let forward = side == 0 ? 16 : -16
+    let opponentPawn = EngineKind.pawn | (side ^ 1) << 3
+    return target >> 4 == (side == 0 ? 5 : 2) && squares[target] == 0
+      && squares[target + forward] == 0 && squares[target - forward] == opponentPawn
+  }
+
+  private func computeIsSupported() -> Bool {
+    let black = EngineKind.blackBit
+    guard counts[EngineKind.king] == 1, counts[EngineKind.king | black] == 1 else { return false }
+    for file in 0..<8
+    where squares[file] & 7 == EngineKind.pawn || squares[0x70 + file] & 7 == EngineKind.pawn {
+      return false
+    }
+    for colorBit in [0, black]
+    where promotedPieces(colorBit) > 8 - counts[EngineKind.pawn | colorBit] {
+      return false
+    }
+    return !isAttacked(kings[side ^ 1], by: side)
+  }
+
+  /// `clock`, lowered so that `make` can add 1 once per made move the board holds without
+  /// overflow. The engine only compares the clock with 100 and with the length of its repetition
+  /// history, both far below the bound, so the lowered clock gives the same results.
+  private func clampedClock(_ clock: Int) -> Int { min(clock, Int.max - plyCapacity) }
+
+  /// Pieces of one color beyond the starting count of their kind, which only promotion makes.
+  private func promotedPieces(_ colorBit: Int) -> Int {
+    max(0, counts[EngineKind.knight | colorBit] - 2)
+      + max(0, counts[EngineKind.bishop | colorBit] - 2)
+      + max(0, counts[EngineKind.rook | colorBit] - 2)
+      + max(0, counts[EngineKind.queen | colorBit] - 1)
   }
 
   // MARK: - Piece bookkeeping
@@ -685,8 +792,37 @@ struct EngineBoard: ~Copyable {
     return value
   }
 
+  /// The piece on `square`, or nil when it is empty or off the board.
+  func piece(at square: Square) -> Piece? {
+    guard square.isValid else { return nil }
+    let code = squares[Self.index(square)]
+    let type: PieceType
+    switch code & 7 {
+    case EngineKind.pawn: type = .pawn
+    case EngineKind.knight: type = .knight
+    case EngineKind.bishop: type = .bishop
+    case EngineKind.rook: type = .rook
+    case EngineKind.queen: type = .queen
+    case EngineKind.king: type = .king
+    default: return nil
+    }
+    return Piece(type: type, color: code & EngineKind.blackBit == 0 ? .white : .black)
+  }
+
+  /// Whether the king of `color` (0 white, 1 black) is attacked; false when it has no king.
+  func isKingAttacked(_ color: Int) -> Bool {
+    counts[EngineKind.king | color << 3] > 0 && isAttacked(kings[color], by: color ^ 1)
+  }
+
+  /// Whether both boards hold the same pieces on the same squares.
+  func hasSamePieces(as other: borrowing Self) -> Bool {
+    for square in 0..<128 where squares[square] != other.squares[square] { return false }
+    return true
+  }
+
   /// Legal moves at the current node.
   mutating func legalMoves() -> [EngineMove] {
+    guard isSupported else { return [] }
     let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: 256)
     defer { buffer.deallocate() }
     let count = generateMoves(into: buffer, capturesOnly: false)
@@ -703,8 +839,29 @@ struct EngineBoard: ~Copyable {
     legalMoves().first { $0.chessMove == move }
   }
 
+  /// Plays a legal move for good: the board forgets its undo and repetition history, so it keeps
+  /// playing moves at any `plyCapacity`. Returns false, leaving the board unchanged, when the move
+  /// is not legal here. The board must have no outstanding `make`: play stops the program
+  /// otherwise, because its own `make` could write past the undo stack.
+  mutating func play(_ move: ChessMove) -> Bool {
+    precondition(undoCount == 0, "play with an outstanding make")
+    guard isSupported else { return false }
+    let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: 256)
+    defer { buffer.deallocate() }
+    let count = generateMoves(into: buffer, capturesOnly: false)
+    guard let index = (0..<count).first(where: { buffer[$0].chessMove == move }),
+      make(buffer[index])
+    else { return false }
+    undoCount = 0
+    hashHistory[0] = hash
+    historyCount = 1
+    halfmove = clampedClock(halfmove)
+    return true
+  }
+
   /// Counts leaf nodes of the legal move tree to `depth` (move generator validation).
   mutating func perft(_ depth: Int) -> Int {
+    guard isSupported else { return 0 }
     // Depth 0 still makes one move per legal move, like depth 1.
     precondition(undoCount + max(depth, 1) <= plyCapacity, "perft depth exceeds plyCapacity")
     let buffer = UnsafeMutablePointer<EngineMove>.allocate(capacity: 256 * max(depth, 1))

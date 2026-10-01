@@ -5,9 +5,6 @@ public enum PieceColor: String, Codable, Sendable, CaseIterable {
 
   public var opponent: Self { self == .white ? .black : .white }
   public var pawnDirection: Int { self == .white ? 1 : -1 }
-  public var homeRank: Int { self == .white ? 0 : 7 }
-  public var pawnStartRank: Int { self == .white ? 1 : 6 }
-  public var promotionRank: Int { self == .white ? 7 : 0 }
 }
 
 public enum PieceType: String, Codable, Sendable, CaseIterable {

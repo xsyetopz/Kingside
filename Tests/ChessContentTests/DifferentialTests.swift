@@ -4,27 +4,19 @@ import Testing
 @testable import ChessContent
 @testable import ChessCore
 
-/// `ChessPosition` is the rules reference; the search engine's board must agree with it.
+/// Every catalog position reached by `apply` must equal the same position parsed from its FEN,
+/// with the same legal moves.
 @Suite
 struct DifferentialTests {
-  private static func engineMoves(in position: ChessPosition) -> Set<ChessMove> {
-    var board = EngineBoard(position, plyCapacity: 1)
-    return Set(board.legalMoves().map(\.chessMove))
-  }
-
-  private static func engineInsufficientMaterial(in position: ChessPosition) -> Bool {
-    let board = EngineBoard(position, plyCapacity: 1)
-    return board.hasInsufficientMaterial
-  }
-
-  /// FENs of every disagreement between the two implementations at `position`.
-  private static func disagreements(at position: ChessPosition) -> [String] {
+  /// FENs of every mismatch between `position` and `ChessPosition(fen: position.fen)`.
+  private static func disagreements(at position: ChessPosition) throws -> [String] {
+    let parsed = try ChessPosition(fen: position.fen)
     var found: [String] = []
-    if Set(position.legalMoves()) != engineMoves(in: position) {
-      found.append("legal moves differ at \(position.fen)")
+    if position != parsed {
+      found.append("position differs from its FEN at \(position.fen)")
     }
-    if position.hasInsufficientMaterial != engineInsufficientMaterial(in: position) {
-      found.append("insufficient material differs at \(position.fen)")
+    if Set(position.legalMoves()) != Set(parsed.legalMoves()) {
+      found.append("legal moves differ from its FEN at \(position.fen)")
     }
     return found
   }
@@ -36,7 +28,7 @@ struct DifferentialTests {
     from start: ChessPosition
   ) throws -> [String] {
     var position = start
-    var found = disagreements(at: position)
+    var found = try disagreements(at: position)
     for move in moves {
       let isDoublePush =
         position[move.from]?.type == .pawn && abs(move.to.rank - move.from.rank) == 2
@@ -47,7 +39,7 @@ struct DifferentialTests {
       if position.enPassantTarget != expected {
         found.append("en-passant target is not FEN-style at \(position.fen)")
       }
-      found += disagreements(at: position)
+      found += try disagreements(at: position)
     }
     return found
   }
@@ -83,26 +75,6 @@ struct DifferentialTests {
 
   @Test(
     arguments: [
-      // En passant available, available to a pawn of each side, and not capturable.
-      "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2",
-      "4k3/8/8/8/3Pp3/8/8/4K3 b - d3 0 1",
-      "4k3/8/8/8/4P3/8/8/4K3 b - e3 0 1",
-      // The capture would expose the black king to the queen along the fourth rank.
-      "8/8/8/8/k2Pp2Q/8/8/4K3 b - d3 0 1",
-      // Castling with and without the right, and through an attacked square.
-      "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
-      "r3k2r/8/8/8/8/5q2/8/R3K2R w KQkq - 0 1",
-      "r3k2r/8/8/8/8/8/8/R3K2R b Kq - 0 1",
-      // Promotions with capture.
-      "1n2k3/P7/8/8/8/8/p7/1N2K3 w - - 0 1",
-    ]
-  )
-  func handWrittenPositionsAgree(fen: String) throws {
-    #expect(Self.disagreements(at: try ChessPosition(fen: fen)).isEmpty)
-  }
-
-  @Test(
-    arguments: [
       ("4k3/8/8/8/8/8/8/4K3 w - - 0 1", true),
       ("4k3/8/8/8/8/8/8/3BK3 w - - 0 1", true),
       ("4k3/8/8/8/8/8/8/3NK3 w - - 0 1", true),
@@ -119,8 +91,6 @@ struct DifferentialTests {
     ]
   )
   func insufficientMaterialMatchesTheRules(fen: String, insufficient: Bool) throws {
-    let position = try ChessPosition(fen: fen)
-    #expect(Self.engineInsufficientMaterial(in: position) == insufficient)
-    #expect(position.hasInsufficientMaterial == insufficient)
+    #expect(try ChessPosition(fen: fen).hasInsufficientMaterial == insufficient)
   }
 }

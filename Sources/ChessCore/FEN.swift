@@ -62,34 +62,11 @@ public extension ChessPosition {
     guard isSupportedByEngine else { throw ChessRuleError.invalidFEN }
   }
 
-  /// Whether the engine can load and search this position. Its board drops off-board squares
-  /// and has no king-less case, either clock must survive adding 1, its per-ply move lists only
-  /// fit the material of a reachable game, and a side not to move in check would let it capture
-  /// a king.
+  /// Whether the engine can load and search this position: either clock must survive adding 1,
+  /// and the engine's board must support it (`EngineBoard.isSupported`).
   var isSupportedByEngine: Bool {
-    guard board.keys.allSatisfy(\.isValid),
-      (0..<Int.max).contains(halfmoveClock),
-      (1..<Int.max).contains(fullmoveNumber),
-      PieceColor.allCases.allSatisfy(hasReachableMaterial)
-    else { return false }
-    return !isInCheck(sideToMove.opponent)
-  }
-
-  /// One king, no pawn on its first or last rank, and no more promoted pieces than missing pawns.
-  /// That bound also limits the side to 8 pawns and 16 pieces.
-  private func hasReachableMaterial(_ color: PieceColor) -> Bool {
-    let pieces = board.filter { $0.value.color == color }
-    let pawnOnBackRank = pieces.contains { square, piece in
-      piece.type == .pawn && (square.rank == 0 || square.rank == 7)
-    }
-    let counts = Dictionary(grouping: pieces.values, by: \.type).mapValues(\.count)
-    func extra(_ type: PieceType, beyond initial: Int) -> Int {
-      max(0, counts[type, default: 0] - initial)
-    }
-    let promoted =
-      extra(.queen, beyond: 1) + extra(.rook, beyond: 2) + extra(.bishop, beyond: 2)
-      + extra(.knight, beyond: 2)
-    return counts[.king] == 1 && !pawnOnBackRank && promoted <= 8 - counts[.pawn, default: 0]
+    (0..<Int.max).contains(halfmoveClock) && (1..<Int.max).contains(fullmoveNumber)
+      && EngineBoard(self, plyCapacity: 1).isSupported
   }
 
   var fen: String {
@@ -98,7 +75,7 @@ public extension ChessPosition {
       var row = ""
       var empty = 0
       for file in 0..<8 {
-        if let piece = board[Square(file: file, rank: rank)] {
+        if let piece = self[Square(file: file, rank: rank)] {
           if empty > 0 { row += String(empty); empty = 0 }
           row.append(piece.fenCharacter)
         } else {

@@ -102,7 +102,9 @@ struct MoveInput: Equatable {
           from: move.from,
           to: move.to,
           color: side,
-          choices: promotionMoves.compactMap(\.promotion)
+          choices: [.queen, .rook, .bishop, .knight].filter { piece in
+            promotionMoves.contains { $0.promotion == piece }
+          }
         )
       },
       isInputEnabled: canMove && promotionMoves.isEmpty,

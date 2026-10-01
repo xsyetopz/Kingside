@@ -125,9 +125,9 @@ public actor ChessEngine {
 
   /// Searches `position` and reports the best line and the runner-up score (MultiPV 2).
   /// `history` holds the earlier positions of the game, oldest first; repeats count as draws.
-  /// A position the engine does not support has no best move: one with an off-board square, not
-  /// exactly one king per side, a clock outside 0 (1 for the move number) ..< `Int.max`, more
-  /// material than a game can reach, or the side not to move in check.
+  /// A position the engine does not support has no best move: one without exactly one king per
+  /// side, with a clock outside 0 (1 for the move number) ..< `Int.max`, with more material than
+  /// a game can reach, or with the side not to move in check.
   public func analyze(
     position: ChessPosition,
     history: [ChessPosition] = [],

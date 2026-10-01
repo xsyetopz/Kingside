@@ -31,7 +31,7 @@ struct MoveInputTests {
     #expect(pending.from == (try square("a7")))
     #expect(pending.to == (try square("a8")))
     #expect(pending.color == .white)
-    #expect(Set(pending.choices) == [.queen, .rook, .bishop, .knight])
+    #expect(pending.choices == [.queen, .rook, .bishop, .knight])
     #expect(!snapshot.isInputEnabled)
   }
 

@@ -10,6 +10,7 @@ import Foundation
 /// - A file that exists but does not decode is never overwritten; reads and writes throw.
 public actor GamePersistenceStore {
   public static let archiveLimit = 200
+  /// Only a name: no build has shipped another format, so nothing reads or migrates older files.
   public static let fileName = "saved-games-v2.json"
 
   public let fileURL: URL

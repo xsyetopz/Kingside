@@ -60,21 +60,41 @@ public struct ChessGame: Codable, Equatable, Sendable {
 /// Positions are the same when placement, side to move, castling rights and en-passant
 /// availability match. The en-passant target only counts when an en-passant capture is legal.
 private struct RepetitionKey: Equatable {
-  let board: [Square: Piece]
-  let sideToMove: PieceColor
-  let castlingRights: CastlingRights
+  let position: ChessPosition
   let enPassantTarget: Square?
 
   init(_ position: ChessPosition) {
-    board = position.board
-    sideToMove = position.sideToMove
-    castlingRights = position.castlingRights
-    if let target = position.enPassantTarget,
-      position.legalMoves().contains(where: { $0.to == target && position[$0.from]?.type == .pawn })
-    {
-      enPassantTarget = target
-    } else {
-      enPassantTarget = nil
-    }
+    self.position = position
+    enPassantTarget = Self.capturableEnPassantTarget(in: position)
+  }
+
+  static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.position.sideToMove == rhs.position.sideToMove
+      && lhs.position.castlingRights == rhs.position.castlingRights
+      && lhs.enPassantTarget == rhs.enPassantTarget
+      && (0..<8).allSatisfy { rank in
+        (0..<8).allSatisfy { file in
+          let square = Square(file: file, rank: rank)
+          return lhs.position[square] == rhs.position[square]
+        }
+      }
+  }
+
+  /// Only a pawn one rank behind the target, or two on its file, can move there, so a position
+  /// without one skips move generation.
+  private static func capturableEnPassantTarget(in position: ChessPosition) -> Square? {
+    guard let target = position.enPassantTarget else { return nil }
+    let pawn = Piece(type: .pawn, color: position.sideToMove)
+    let behind = target.rank - position.sideToMove.pawnDirection
+    let origins = [
+      Square(file: target.file - 1, rank: behind),
+      Square(file: target.file, rank: behind),
+      Square(file: target.file + 1, rank: behind),
+      Square(file: target.file, rank: behind - position.sideToMove.pawnDirection),
+    ]
+    guard origins.contains(where: { position[$0] == pawn }),
+      position.legalMoves().contains(where: { $0.to == target && position[$0.from] == pawn })
+    else { return nil }
+    return target
   }
 }
