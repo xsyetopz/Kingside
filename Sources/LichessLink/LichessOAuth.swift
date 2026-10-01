@@ -7,6 +7,15 @@ import Security
 public struct LichessOAuth: Sendable {
   public static let scope = "board:play challenge:read challenge:write"
 
+  /// Why an OAuth callback gives no authorization code.
+  public enum CallbackFailure: Error, Equatable, Sendable {
+    /// `state` is missing or differs from the one the app sent.
+    case stateMismatch
+    /// Lichess answered with an `error` parameter, such as `access_denied`.
+    case denied
+    case missingCode
+  }
+
   private let configuration: LichessConfiguration
   private let transport: any HTTPTransport
   private let decoder = JSONBodyDecoder(failure: LichessError.decoding)
@@ -49,6 +58,19 @@ public struct LichessOAuth: Sendable {
       URLQueryItem(name: "state", value: state),
     ]
     return components.url!
+  }
+
+  /// The authorization code in the callback `url`, once `state` is checked against `expectedState`.
+  public static func code(
+    from url: URL,
+    expectedState: String
+  ) -> Result<String, CallbackFailure> {
+    let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+    guard value("state") == expectedState else { return .failure(.stateMismatch) }
+    if value("error") != nil { return .failure(.denied) }
+    guard let code = value("code"), !code.isEmpty else { return .failure(.missingCode) }
+    return .success(code)
   }
 
   /// Trades the authorization code for an access token.

@@ -96,6 +96,40 @@ struct LichessOAuthTests {
     }
   }
 
+  private func code(
+    _ query: String,
+    state: String = "s1"
+  ) -> Result<String, LichessOAuth.CallbackFailure> {
+    LichessOAuth.code(
+      from: URL(string: "io.github.xsyetopz.kingside://oauth?\(query)")!,
+      expectedState: state
+    )
+  }
+
+  @Test
+  func callbackCodeIsReturnedWhenStateMatches() {
+    #expect(code("code=abc&state=s1") == .success("abc"))
+  }
+
+  @Test
+  func callbackWithAWrongOrMissingStateIsRejected() {
+    #expect(code("code=abc&state=other") == .failure(.stateMismatch))
+    #expect(code("code=abc") == .failure(.stateMismatch))
+  }
+
+  @Test
+  func callbackErrorParameterIsDenied() {
+    #expect(code("error=access_denied&state=s1") == .failure(.denied))
+    // A forged error does not get past the state check.
+    #expect(code("error=access_denied&state=x") == .failure(.stateMismatch))
+  }
+
+  @Test
+  func callbackWithAMissingOrEmptyCodeIsRejected() {
+    #expect(code("state=s1") == .failure(.missingCode))
+    #expect(code("code=&state=s1") == .failure(.missingCode))
+  }
+
   @Test
   func inMemoryTokenStoreRoundTrips() throws {
     let store = InMemoryTokenStore()

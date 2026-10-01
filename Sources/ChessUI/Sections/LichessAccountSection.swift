@@ -1,6 +1,7 @@
 import AuthenticationServices
 import ChessContent
 import LichessLink
+import LichessPlay
 import SwiftUI
 
 /// The Lichess sign-in on the Account screen.
@@ -110,34 +111,36 @@ struct LichessAccountSection: View {
       }
     }
 
-    /// Opens Lichess in the system browser session, then trades the returned code for a token.
+    /// Opens Lichess in the system browser session, then signs in with the token it returns.
     private func signIn() {
       guard !isAuthorizing else { return }
       isAuthorizing = true
       flowFailure = nil
+      let flow = LichessSignInFlow(
+        oauth: model.lichessOAuth,
+        callbackScheme: model.catalog.services.lichess.redirectURI.scheme ?? ""
+      )
+      let session = webAuthenticationSession
       Task {
         defer { isAuthorizing = false }
         do {
-          let oauth = model.lichessOAuth
-          let verifier = try LichessOAuth.makeVerifier()
-          let state = try LichessOAuth.makeState()
-          let url = oauth.authorizeURL(
-            state: state,
-            challenge: LichessOAuth.challenge(for: verifier)
-          )
-          let callback = try await webAuthenticationSession.authenticate(
-            using: url,
-            callbackURLScheme: model.catalog.services.lichess.redirectURI.scheme ?? "",
-            preferredBrowserSession: .shared
-          )
-          switch LichessSignIn.code(from: callback, expectedState: state) {
-          case .success(let code):
-            await account.signIn(token: try await oauth.exchange(code: code, verifier: verifier))
-          case .failure:
-            flowFailure = .unauthorized
+          let token = try await flow.run { url, scheme in
+            do {
+              return try await session.authenticate(
+                using: url,
+                callbackURLScheme: scheme,
+                preferredBrowserSession: .shared
+              )
+            } catch let error as ASWebAuthenticationSessionError
+              where error.code == .canceledLogin
+            {
+              return nil
+            }
           }
-        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
-          // The player closed the sign-in: back to signed out, with no message.
+          // A nil token means the player closed the sign-in: back to signed out, no message.
+          if let token { await account.signIn(token: token) }
+        } catch is LichessOAuth.CallbackFailure {
+          flowFailure = .unauthorized
         } catch {
           flowFailure = LichessFailure(error)
         }
