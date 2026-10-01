@@ -461,6 +461,8 @@ struct EngineBoard {
     let us = side
     let piece = squares[from]
     let captured = flag == MoveFlag.enPassant ? (EngineKind.pawn | (us ^ 1) << 3) : squares[to]
+    // FEN validation guarantees the side not to move is not in check, so no king is capturable.
+    assert(captured & 7 != EngineKind.king, "pseudo-legal move captures a king")
     undoStack[undoCount] = EngineUndo(
       move: move,
       captured: captured,
@@ -607,7 +609,8 @@ struct EngineBoard {
     return false
   }
 
-  /// Bare kings, or a single minor piece against a bare king.
+  /// Bare kings, a single minor piece against a bare king, or one bishop each on squares of
+  /// the same color.
   var hasInsufficientMaterial: Bool {
     let black = EngineKind.blackBit
     let heavy =
@@ -618,7 +621,21 @@ struct EngineBoard {
     let minors =
       counts[EngineKind.knight] + counts[EngineKind.knight | black]
       + counts[EngineKind.bishop] + counts[EngineKind.bishop | black]
-    return minors <= 1
+    if minors <= 1 { return true }
+    return minors == 2 && counts[EngineKind.bishop] == 1 && counts[EngineKind.bishop | black] == 1
+      && bishopsShareSquareColor
+  }
+
+  /// Whether the two bishops (one per side) stand on squares of one color.
+  private var bishopsShareSquareColor: Bool {
+    var parity = 0
+    var square = 0
+    while square < 128 {
+      if square & 0x88 != 0 { square += 8; continue }
+      if squares[square] & 7 == EngineKind.bishop { parity ^= ((square >> 4) + square) & 1 }
+      square += 1
+    }
+    return parity == 0
   }
 
   /// Whether `color` has any piece besides pawns and king (null-move safety).
