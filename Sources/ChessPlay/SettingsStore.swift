@@ -24,8 +24,8 @@ public enum BotColorChoice: String, Codable, CaseIterable, Identifiable, Sendabl
 
 /// Per-device settings, stored as JSON under `Kingside.settings.v1`.
 public struct AppSettings: Codable, Equatable, Sendable {
-  /// `BoardTheme.id`; nil means `ContentDefaults.boardThemeID`. Older builds stored the names
-  /// `green`, `brown`, `blue`, and `purple`; they are kept as stored and resolve to the default.
+  /// `BoardTheme.id`; nil means `ContentDefaults.boardThemeID`. An id with no catalog entry is
+  /// kept as stored and resolves to the default.
   public var boardTheme: String?
   /// `PieceSet.id`; nil means `ContentDefaults.pieceSetID`.
   public var pieceSet: String?
@@ -52,8 +52,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
 
   public init() {}
 
-  /// Missing keys and values this build does not know keep their defaults, so saved
-  /// settings from older or newer builds never reset everything.
+  /// Missing keys and values this build does not know keep their defaults, so settings
+  /// saved by a newer build never reset everything.
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     func value<T: Decodable>(_ key: CodingKeys, _ fallback: T) -> T {

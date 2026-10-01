@@ -1,7 +1,7 @@
 import ChessCore
 import Foundation
 
-/// Stores local games as one JSON file, by default `Kingside/saved-games-v2.json` in
+/// Stores local games as one JSON file, by default `Kingside/saved-games.json` in
 /// Application Support. It is the only writer of that file on a device.
 /// - At most one game is unfinished: saving an ongoing game drops any other ongoing game.
 /// - Finished games form the archive; only the newest `archiveLimit` are kept.
@@ -11,7 +11,7 @@ import Foundation
 public actor GamePersistenceStore {
   public static let archiveLimit = 200
   /// Only a name: no build has shipped another format, so nothing reads or migrates older files.
-  public static let fileName = "saved-games-v2.json"
+  public static let fileName = "saved-games.json"
 
   public let fileURL: URL
   private let encoder = JSONEncoder()
@@ -24,7 +24,7 @@ public actor GamePersistenceStore {
     decoder.dateDecodingStrategy = .iso8601
   }
 
-  /// `Kingside/saved-games-v2.json` in the user's Application Support directory.
+  /// `Kingside/saved-games.json` in the user's Application Support directory.
   public static func defaultFileURL(fileManager: FileManager = .default) throws -> URL {
     try fileManager.url(
       for: .applicationSupportDirectory,

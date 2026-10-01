@@ -3,8 +3,8 @@ import ChessCore
 import Foundation
 
 // Stored game model shared by the game screen, Resume, the archive, and Game Review.
-// The Codable shapes are those of `saved-games-v2.json`, with each position stored as its FEN
-// string. No build with another shape has shipped, so there is no migration.
+// The synthesized Codable shapes are the stored format of `GamePersistenceStore`, with each
+// position stored as its FEN string. `Tests/ChessPlayTests/Fixtures/saved-games.json` pins it.
 
 /// How a game is played.
 public enum GameMode: Codable, Hashable, Sendable {
@@ -38,13 +38,8 @@ public struct PlayerInfo: Codable, Hashable, Sendable {
   public var rating: Int?
   /// `Bot.id` when this side is played by a bot, nil for a human.
   public var botID: String?
-  /// Online games: true on the side the signed-in player played. Not stored when false, so
-  /// bot and pass-and-play games keep their old encoding.
-  public var isLocalUser: Bool {
-    get { localUser ?? false }
-    set { localUser = newValue ? true : nil }
-  }
-  private var localUser: Bool?
+  /// Online games: true on the side the signed-in player played.
+  public var isLocalUser: Bool
 
   public init(name: String, rating: Int? = nil, botID: String? = nil, isLocalUser: Bool = false) {
     self.name = name
@@ -157,7 +152,7 @@ public struct SavedGame: Codable, Identifiable, Equatable, Sendable {
   public var timeControl: TimeControl
   /// Pass-and-play option: the board turns to the side to move after each move.
   public var autoFlip: Bool
-  /// Moves and positions, starting from the standard initial position.
+  /// Moves and positions, starting from `initialPosition`.
   public var game: ChessGame
   public var result: GameResult
   /// Set once the game has ended; nil while it is ongoing.

@@ -164,19 +164,29 @@ struct PersistenceTests {
     }
   }
 
+  // MARK: Stored format
+
+  private func storedFormatCoders() -> (JSONEncoder, JSONDecoder) {
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    return (encoder, decoder)
+  }
+
   @Test
-  func legacyArchiveFileLoads() async throws {
+  func storedFormatFixtureLoads() async throws {
     try await withTemporaryDirectory { directory in
       let fileURL = directory.appending(component: GamePersistenceStore.fileName)
-      try FileManager.default.copyItem(at: fixtureURL("saved-games-v2.json"), to: fileURL)
+      try FileManager.default.copyItem(at: fixtureURL("saved-games.json"), to: fileURL)
       let store = GamePersistenceStore(fileURL: fileURL)
 
       let all = try await store.allGames()
-      #expect(all.count == 2)
       // Newest first.
       #expect(
         all.map(\.id.uuidString) == [
-          "5B1C3F0E-3333-4A2B-9C3D-000000000003", "5B1C3F0E-1111-4A2B-9C3D-000000000001",
+          "5B1C3F0E-6666-4A2B-9C3D-000000000006", "5B1C3F0E-3333-4A2B-9C3D-000000000003",
+          "5B1C3F0E-1111-4A2B-9C3D-000000000001",
         ]
       )
 
@@ -184,32 +194,88 @@ struct PersistenceTests {
       #expect(passAndPlay.humanColor == nil)
       #expect(passAndPlay.white.name == "Anna")
       #expect(passAndPlay.black.name == "Ben")
+      #expect(passAndPlay.autoFlip)
       #expect(passAndPlay.result == .draw)
       #expect(passAndPlay.termination == .agreement)
       #expect(passAndPlay.timeControl == TimeControl(initialSeconds: 180, incrementSeconds: 2))
       #expect(passAndPlay.clock.remaining(.white) == 170.5)
       #expect(passAndPlay.clock.remaining(.black) == 95)
-      #expect(passAndPlay.game.moves.map(\.san) == ["Ra8+"])
+      #expect(passAndPlay.game.moves.map(\.move.uci) == ["a7a8q"])
+      #expect(passAndPlay.game.moves.map(\.san) == ["a8=Q+"])
+      #expect(passAndPlay.game.position.fen == "Q3k3/8/8/8/8/8/8/4K3 b - - 0 50")
+
+      let online = try #require(
+        all.first { $0.mode == .online(service: "lichess", gameID: "abcd1234") }
+      )
+      #expect(online.humanColor == .black)
+      #expect(!online.white.isLocalUser && online.black.isLocalUser)
+      #expect(online.white.rating == 1720)
+      #expect(online.result == .blackWon)
+      #expect(online.termination == .timeout)
+      #expect(online.clock.remaining(.black) == 41.25)
+      #expect(online.game.moves.map(\.san) == ["d5", "exd6"])
+      #expect(online.game.moves[1].positionBefore.fen == "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 31")
+      #expect(online.game.position.fen == "4k3/8/3P4/8/8/8/8/4K3 b - - 0 31")
 
       let botGame = try #require(all.first { $0.mode == .bot(id: "martin") })
-      #expect(botGame.humanColor == .black)
-      #expect(botGame.white.rating == 250)
+      #expect(botGame.humanColor == .white)
+      #expect(botGame.black.botID == "martin")
+      #expect(botGame.black.rating == 250)
       #expect(botGame.result == .ongoing)
       #expect(botGame.termination == nil)
+      #expect(botGame.game.initialPosition == .initial)
 
       let unfinished = try await store.unfinishedGame()
       #expect(unfinished?.id == botGame.id)
     }
   }
 
+  /// The fixture's positions and SAN are the ones the rules produce for its moves.
+  @Test
+  func storedFormatFixtureReplays() throws {
+    let (_, decoder) = storedFormatCoders()
+    let games = try decoder.decode(
+      [SavedGame].self,
+      from: Data(contentsOf: fixtureURL("saved-games.json"))
+    )
+    for saved in games {
+      var replayed = ChessGame(position: saved.game.initialPosition)
+      for played in saved.game.moves {
+        #expect(replayed.position.fen == played.positionBefore.fen)
+        #expect(try replayed.makeMove(played.move).san == played.san)
+      }
+      #expect(replayed.position.fen == saved.game.position.fen)
+    }
+  }
+
+  @Test
+  func storedFormatFixtureRoundTrips() throws {
+    let (encoder, decoder) = storedFormatCoders()
+    let fixture = try Data(contentsOf: fixtureURL("saved-games.json"))
+    let games = try decoder.decode([SavedGame].self, from: fixture)
+    let encoded = try encoder.encode(games)
+    #expect(try decoder.decode([SavedGame].self, from: encoded) == games)
+    // Same keys and values as the hand-written file, so the format is defined once.
+    func canonical(_ data: Data) throws -> Data {
+      try JSONSerialization.data(
+        withJSONObject: JSONSerialization.jsonObject(with: data),
+        options: .sortedKeys
+      )
+    }
+    #expect(try canonical(encoded) == canonical(fixture))
+  }
+
   // MARK: Settings
 
   @Test
-  func legacySettingsDecode() throws {
+  func storedSettingsDecodeAndRoundTrip() throws {
     let catalog = try Shared.catalog
     let settings = try JSONDecoder().decode(
       AppSettings.self,
       from: Data(contentsOf: fixtureURL("settings-v1.json"))
+    )
+    #expect(
+      try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(settings)) == settings
     )
     #expect(settings.boardTheme == "green")
     #expect(settings.pieceSet == "cburnett")
@@ -219,7 +285,7 @@ struct PersistenceTests {
     #expect(settings.autoPromoteToQueen)
     #expect(settings.playBotsBotID == nil)
     #expect(settings.playBotsColor == .white)
-    // "green" is an old theme name with no catalog entry, so it resolves to the default.
+    // "green" has no catalog entry, so it resolves to the default.
     #expect(catalog.boardTheme(id: "green") == nil)
     #expect(settings.boardTheme(in: catalog)?.id == catalog.defaults.boardThemeID)
   }

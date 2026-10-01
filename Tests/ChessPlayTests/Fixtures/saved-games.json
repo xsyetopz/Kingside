@@ -1,0 +1,107 @@
+[
+	{
+		"id": "5B1C3F0E-1111-4A2B-9C3D-000000000001",
+		"createdAt": "2025-05-01T10:00:00Z",
+		"updatedAt": "2025-05-01T10:05:00Z",
+		"mode": { "passAndPlay": {} },
+		"white": { "name": "Anna", "isLocalUser": false },
+		"black": { "name": "Ben", "isLocalUser": false },
+		"timeControl": { "initialSeconds": 180, "incrementSeconds": 2 },
+		"autoFlip": true,
+		"game": {
+			"position": "Q3k3/8/8/8/8/8/8/4K3 b - - 0 50",
+			"moves": [
+				{
+					"id": "5B1C3F0E-2222-4A2B-9C3D-000000000002",
+					"move": {
+						"from": { "file": 0, "rank": 6 },
+						"to": { "file": 0, "rank": 7 },
+						"promotion": "queen"
+					},
+					"san": "a8=Q+",
+					"positionBefore": "4k3/P7/8/8/8/8/8/4K3 w - - 0 50"
+				}
+			],
+			"initialPosition": "4k3/P7/8/8/8/8/8/4K3 w - - 0 50"
+		},
+		"result": "draw",
+		"termination": "agreement",
+		"clock": {
+			"timeControl": { "initialSeconds": 180, "incrementSeconds": 2 },
+			"whiteRemaining": 170.5,
+			"blackRemaining": 95
+		}
+	},
+	{
+		"id": "5B1C3F0E-3333-4A2B-9C3D-000000000003",
+		"createdAt": "2025-05-02T09:00:00Z",
+		"updatedAt": "2025-05-02T09:20:00Z",
+		"mode": { "online": { "service": "lichess", "gameID": "abcd1234" } },
+		"white": { "name": "Alice", "rating": 1720, "isLocalUser": false },
+		"black": { "name": "Bob", "rating": 1600, "isLocalUser": true },
+		"timeControl": { "initialSeconds": 300, "incrementSeconds": 0 },
+		"autoFlip": false,
+		"game": {
+			"position": "4k3/8/3P4/8/8/8/8/4K3 b - - 0 31",
+			"moves": [
+				{
+					"id": "5B1C3F0E-4444-4A2B-9C3D-000000000004",
+					"move": {
+						"from": { "file": 3, "rank": 6 },
+						"to": { "file": 3, "rank": 4 }
+					},
+					"san": "d5",
+					"positionBefore": "4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 30"
+				},
+				{
+					"id": "5B1C3F0E-5555-4A2B-9C3D-000000000005",
+					"move": {
+						"from": { "file": 4, "rank": 4 },
+						"to": { "file": 3, "rank": 5 }
+					},
+					"san": "exd6",
+					"positionBefore": "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 31"
+				}
+			],
+			"initialPosition": "4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 30"
+		},
+		"result": "blackWon",
+		"termination": "timeout",
+		"clock": {
+			"timeControl": { "initialSeconds": 300, "incrementSeconds": 0 },
+			"whiteRemaining": 0,
+			"blackRemaining": 41.25
+		}
+	},
+	{
+		"id": "5B1C3F0E-6666-4A2B-9C3D-000000000006",
+		"createdAt": "2025-05-03T08:00:00Z",
+		"updatedAt": "2025-05-03T08:01:00Z",
+		"mode": { "bot": { "id": "martin" } },
+		"white": { "name": "You", "isLocalUser": false },
+		"black": { "name": "Martin", "rating": 250, "botID": "martin", "isLocalUser": false },
+		"timeControl": { "initialSeconds": 0, "incrementSeconds": 0 },
+		"autoFlip": false,
+		"game": {
+			"position": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+			"moves": [
+				{
+					"id": "5B1C3F0E-7777-4A2B-9C3D-000000000007",
+					"move": {
+						"from": { "file": 4, "rank": 1 },
+						"to": { "file": 4, "rank": 3 }
+					},
+					"san": "e4",
+					"positionBefore": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+				}
+			],
+			"initialPosition": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+		},
+		"result": "ongoing",
+		"clock": {
+			"timeControl": { "initialSeconds": 0, "incrementSeconds": 0 },
+			"whiteRemaining": 0,
+			"blackRemaining": 0
+		}
+	}
+]

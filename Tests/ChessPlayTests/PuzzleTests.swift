@@ -247,18 +247,18 @@ struct PuzzleTests {
     }
   }
 
-  /// JSON the app wrote under `Kingside.puzzleProgress.v1` before `ChessPlay` existed.
+  /// Progress JSON in the stored format under `Kingside.puzzleProgress.v1`.
   @MainActor
   @Test
-  func legacyProgressStillDecodes() throws {
+  func storedProgressDecodes() throws {
     let tuning = try Shared.catalog.tuning.puzzleRating
-    let legacy = """
+    let stored = """
       {"rating":1234,"ratedPlayed":57,"streak":3,"bestStreak":9,\
       "rushBest":{"threeMinutes":14,"survival":22},"seenIDs":["00sHx","01Qwe"],\
       "dailySolved":["2026-09-28"]}
       """
     try withTemporaryDefaults { defaults in
-      defaults.set(Data(legacy.utf8), forKey: "Kingside.puzzleProgress.v1")
+      defaults.set(Data(stored.utf8), forKey: "Kingside.puzzleProgress.v1")
       let store = PuzzleProgressStore(defaults: defaults, rating: tuning)
       #expect(store.progress.rating == 1234)
       #expect(store.progress.ratedPlayed == 57)
