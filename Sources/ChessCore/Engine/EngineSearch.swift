@@ -15,8 +15,12 @@ final class TranspositionTable {
   let mask: Int
   private(set) var generation: UInt8 = 0
 
+  private static let bytesPerMegabyte = 1_048_576
+  /// Generations fit the 6 high bits of `TranspositionEntry.info`.
+  private static let generationMask: UInt8 = 63
+
   init(megabytes: Int) {
-    let wanted = max(1, megabytes) * 1_048_576 / MemoryLayout<TranspositionEntry>.stride
+    let wanted = max(1, megabytes) * Self.bytesPerMegabyte / MemoryLayout<TranspositionEntry>.stride
     var count = 1
     while count * 2 <= wanted { count *= 2 }
     entries = .allocate(capacity: count)
@@ -26,7 +30,7 @@ final class TranspositionTable {
 
   deinit { entries.deallocate() }
 
-  func startSearch() { generation = (generation &+ 1) & 63 }
+  func startSearch() { generation = (generation &+ 1) & Self.generationMask }
 }
 
 /// One root move with its latest score (side to move's point of view).
@@ -53,14 +57,94 @@ struct SearchResult {
 struct EngineSearcher: ~Copyable {
   static let maxPly = 96
   static let infinity = 32_000
+  /// Score of a side mated at the root; a mate at ply `n` scores `mate - n`.
   static let mate = 31_000
   static let mateBound = mate - maxPly
+  /// Iterative deepening stops this many plies short of `maxPly` to leave room for extensions.
+  private static let maxRootDepth = maxPly - 8
+  /// Nodes at this ply return a static score so children stay inside the per-ply buffers.
+  private static let horizonPly = maxPly - 2
+  /// Room for every pseudo-legal move of one position.
+  private static let moveListCapacity = 256
+  /// Time and cancellation are polled once per 1024 nodes.
+  private static let limitCheckMask = 1023
+  private static let fiftyMoveHalfmoves = 100
+  /// Low 3 bits of a square's piece code: its `EngineKind`.
+  private static let kindMask = 7
 
   private enum Bound {
     static let exact: UInt8 = 1
     static let lower: UInt8 = 2
     static let upper: UInt8 = 3
+    /// `TranspositionEntry.info` keeps the bound in its low 2 bits and the generation above.
+    static let mask: UInt8 = 3
+    static let generationShift: UInt8 = 2
   }
+
+  /// A deeper entry from the current search survives unless the new result is at most this
+  /// many plies shallower.
+  private static let tableReplaceDepthSlack = 2
+
+  /// Move-ordering scores, from first searched to last. Butterfly scores stay below
+  /// `butterflyCap`, so every quiet move without a killer slot sorts below `secondKiller`;
+  /// late-move reductions rely on that to reduce only those moves.
+  private enum Ordering {
+    static let tableMove: Int32 = 2_000_000
+    static let capture: Int32 = 1_000_000
+    /// Captures are ranked most valuable victim first, then least valuable attacker.
+    static let victimWeight = 16
+    static let queenPromotion: Int32 = 900_000
+    static let firstKiller: Int32 = 800_000
+    static let secondKiller: Int32 = 790_000
+    static let butterflyCap: Int32 = 700_000
+    static let underpromotionPenalty: Int32 = 500_000
+  }
+
+  /// Butterfly table: one score per side, from-square and to-square (0x88 squares).
+  private enum Butterfly {
+    static let squareCount = 128
+    static let sideStride = squareCount * squareCount
+    static let size = 2 * sideStride
+  }
+
+  private enum ReverseFutility {
+    static let maxDepth = 3
+    static let marginPerDepth = 110
+  }
+
+  private enum NullMove {
+    static let minDepth = 3
+    static let deepDepth = 7
+    static let reduction = 2
+    static let deepReduction = 3
+  }
+
+  private enum Futility {
+    static let maxDepth = 2
+    static let marginPerDepth = 120
+    static let baseMargin = 60
+  }
+
+  private enum LateMoveReduction {
+    static let minDepth = 3
+    /// The first moves in order are searched at full depth.
+    static let fullDepthMoves = 3
+    /// Moves after this many get the larger reduction.
+    static let deeperReductionAfter = 10
+    static let reduction = 1
+    static let deeperReduction = 2
+    /// Non-PV nodes at least this deep reduce one more ply.
+    static let extraReductionDepth = 8
+    /// A reduced search keeps at least this much depth below the node.
+    static let minRemainingDepth = 2
+  }
+
+  /// Quiescence skips a capture whose victim plus this margin cannot reach alpha.
+  private static let deltaMargin = 200
+  /// A found mate ends deepening once depth passes its distance by this many plies.
+  private static let mateDepthSlack = 2
+  /// An iteration that took over half the time budget would not finish another.
+  private static let iterationTimeDivisor = 2
 
   var board: EngineBoard
   private let table: TranspositionTable
@@ -68,7 +152,7 @@ struct EngineSearcher: ~Copyable {
   private let tableMask: Int
   private var generation: UInt8 = 0
   private let killers: UnsafeMutablePointer<EngineMove>
-  private let history: UnsafeMutablePointer<Int32>
+  private let butterflyScores: UnsafeMutablePointer<Int32>
   private let moveLists: UnsafeMutablePointer<EngineMove>
   private let moveScores: UnsafeMutablePointer<Int32>
   private let pvTable: UnsafeMutablePointer<EngineMove>
@@ -92,10 +176,10 @@ struct EngineSearcher: ~Copyable {
     tableMask = table.mask
     killers = .allocate(capacity: Self.maxPly * 2)
     killers.initialize(repeating: 0, count: Self.maxPly * 2)
-    history = .allocate(capacity: 2 * 128 * 128)
-    history.initialize(repeating: 0, count: 2 * 128 * 128)
-    moveLists = .allocate(capacity: Self.maxPly * 256)
-    moveScores = .allocate(capacity: Self.maxPly * 256)
+    butterflyScores = .allocate(capacity: Butterfly.size)
+    butterflyScores.initialize(repeating: 0, count: Butterfly.size)
+    moveLists = .allocate(capacity: Self.maxPly * Self.moveListCapacity)
+    moveScores = .allocate(capacity: Self.maxPly * Self.moveListCapacity)
     pvTable = .allocate(capacity: Self.maxPly * Self.maxPly)
     pvLength = .allocate(capacity: Self.maxPly + 1)
     pvLength.initialize(repeating: 0, count: Self.maxPly + 1)
@@ -103,7 +187,7 @@ struct EngineSearcher: ~Copyable {
 
   deinit {
     killers.deallocate()
-    history.deallocate()
+    butterflyScores.deallocate()
     moveLists.deallocate()
     moveScores.deallocate()
     pvTable.deallocate()
@@ -121,59 +205,22 @@ struct EngineSearcher: ~Copyable {
     let start = ContinuousClock.now
     deadline = timeLimit.map { start.advanced(by: $0) }
     let inCheck = board.inCheck
-    var lines = orderedRootMoves().map {
+    let lines = orderedRootMoves().map {
       RootLine(move: $0, score: -Self.infinity, exact: false, pv: [$0])
     }
     var result = SearchResult(lines: lines, depth: 0, nodes: 0, cancelled: false, inCheck: inCheck)
     guard !lines.isEmpty else { return result }
     let wanted = min(max(1, multiPV), lines.count)
 
-    for depth in 1...max(1, min(maxDepth, Self.maxPly - 8)) {
+    for depth in 1...max(1, min(maxDepth, Self.maxRootDepth)) {
       canStopOnTime = depth > 1
-      var exactScores: [Int] = []
-      var iteration = lines
-      for index in iteration.indices {
-        let threshold = exactScores.count >= wanted ? exactScores[wanted - 1] : -Self.infinity
-        let move = iteration[index].move
-        board.make(move)
-        var score: Int
-        if threshold == -Self.infinity {
-          score = -negamax(depth - 1, ply: 1, alpha: -Self.infinity, beta: Self.infinity)
-        } else {
-          score = -negamax(depth - 1, ply: 1, alpha: -threshold - 1, beta: -threshold)
-          if !stopped && score > threshold {
-            score = -negamax(depth - 1, ply: 1, alpha: -Self.infinity, beta: -threshold)
-          }
-        }
-        let childPV = Array(
-          UnsafeBufferPointer(start: pvTable + Self.maxPly + 1, count: max(0, pvLength[1] - 1))
-        )
-        board.unmake()
-        if stopped { break }
-        let exact = score > threshold
-        iteration[index].score = score
-        iteration[index].exact = exact
-        if exact {
-          iteration[index].pv = [move] + childPV
-          exactScores.append(score)
-          exactScores.sort(by: >)
-        }
-      }
-      if stopped { break }
-
-      // Exact scores first (best first), then bounded moves; ties keep the previous order.
-      iteration = iteration.enumerated().sorted { lhs, rhs in
-        if lhs.element.exact != rhs.element.exact { return lhs.element.exact }
-        if lhs.element.score != rhs.element.score { return lhs.element.score > rhs.element.score }
-        return lhs.offset < rhs.offset
-      }.map(\.element)
-      lines = iteration
-      result.lines = lines
+      guard let ranked = searchIteration(result.lines, depth: depth, wanted: wanted) else { break }
+      result.lines = ranked
       result.depth = depth
-
-      let best = lines[0].score
-      if abs(best) >= Self.mateBound && depth > Self.mate - abs(best) + 2 { break }
-      if let timeLimit, ContinuousClock.now - start > timeLimit / 2 { break }
+      if Self.mateWithinDepth(ranked[0].score, depth: depth) { break }
+      if let timeLimit, ContinuousClock.now - start > timeLimit / Self.iterationTimeDivisor {
+        break
+      }
     }
     for index in result.lines.indices where result.lines[index].exact {
       result.lines[index].pv = extendedPV(result.lines[index].pv, maxLength: max(result.depth, 1))
@@ -181,6 +228,66 @@ struct EngineSearcher: ~Copyable {
     result.nodes = nodes
     result.cancelled = cancelled
     return result
+  }
+
+  /// Searches every root move to `depth`; `nil` when the search stopped part way.
+  private mutating func searchIteration(
+    _ lines: [RootLine],
+    depth: Int,
+    wanted: Int
+  ) -> [RootLine]? {
+    var exactScores: [Int] = []
+    var iteration = lines
+    for index in iteration.indices {
+      let threshold = exactScores.count >= wanted ? exactScores[wanted - 1] : -Self.infinity
+      let move = iteration[index].move
+      guard let searched = searchRootMove(move, depth: depth, threshold: threshold) else {
+        return nil
+      }
+      let score = searched.score
+      let exact = score > threshold
+      iteration[index].score = score
+      iteration[index].exact = exact
+      if exact {
+        iteration[index].pv = [move] + searched.childPV
+        exactScores.append(score)
+        exactScores.sort(by: >)
+      }
+    }
+    // Exact scores first (best first), then bounded moves; ties keep the previous order.
+    return iteration.enumerated().sorted { lhs, rhs in
+      if lhs.element.exact != rhs.element.exact { return lhs.element.exact }
+      if lhs.element.score != rhs.element.score { return lhs.element.score > rhs.element.score }
+      return lhs.offset < rhs.offset
+    }.map(\.element)
+  }
+
+  /// Scores one root move; a null window at `threshold` only proves whether it beats the
+  /// moves already holding an exact score. `nil` when the search stopped.
+  private mutating func searchRootMove(
+    _ move: EngineMove,
+    depth: Int,
+    threshold: Int
+  ) -> (score: Int, childPV: [EngineMove])? {
+    board.make(move)
+    var score: Int
+    if threshold == -Self.infinity {
+      score = -negamax(depth - 1, ply: 1, alpha: -Self.infinity, beta: Self.infinity)
+    } else {
+      score = -negamax(depth - 1, ply: 1, alpha: -threshold - 1, beta: -threshold)
+      if !stopped && score > threshold {
+        score = -negamax(depth - 1, ply: 1, alpha: -Self.infinity, beta: -threshold)
+      }
+    }
+    let childPV = Array(
+      UnsafeBufferPointer(start: pvTable + Self.maxPly + 1, count: max(0, pvLength[1] - 1))
+    )
+    board.unmake()
+    return stopped ? nil : (score, childPV)
+  }
+
+  private static func mateWithinDepth(_ score: Int, depth: Int) -> Bool {
+    abs(score) >= mateBound && depth > mate - abs(score) + mateDepthSlack
   }
 
   private mutating func orderedRootMoves() -> [EngineMove] {
@@ -226,6 +333,19 @@ struct EngineSearcher: ~Copyable {
     }
   }
 
+  /// Counts a node, polls the limits now and then, and tells whether the search stopped.
+  @inline(__always)
+  private mutating func enterNode() -> Bool {
+    nodes += 1
+    if nodes & Self.limitCheckMask == 0 { checkLimits() }
+    return stopped
+  }
+
+  private var isDrawByRule: Bool {
+    board.halfmove >= Self.fiftyMoveHalfmoves || board.isRepetition
+      || board.hasInsufficientMaterial
+  }
+
   private mutating func negamax(
     _ requestedDepth: Int,
     ply: Int,
@@ -234,206 +354,328 @@ struct EngineSearcher: ~Copyable {
     allowNull: Bool = true
   ) -> Int {
     pvLength[ply] = ply
-    if board.halfmove >= 100 || board.isRepetition || board.hasInsufficientMaterial { return 0 }
-    var alpha = max(alphaIn, -Self.mate + ply)
+    if isDrawByRule { return 0 }
+    let alpha = max(alphaIn, -Self.mate + ply)
     let beta = min(betaIn, Self.mate - ply - 1)
     if alpha >= beta { return alpha }
 
     let inCheck = board.inCheck
     let depth = inCheck ? requestedDepth + 1 : requestedDepth
     if depth <= 0 { return quiescence(ply: ply, alpha: alpha, beta: beta) }
+    if enterNode() { return 0 }
+    if ply >= Self.horizonPly { return board.evaluate() }
 
-    nodes += 1
-    if nodes & 1023 == 0 { checkLimits() }
-    if stopped { return 0 }
-    if ply >= Self.maxPly - 2 { return board.evaluate() }
-
-    let pvNode = beta - alpha > 1
-    let slot = entries + (Int(truncatingIfNeeded: board.hash) & tableMask)
+    let node = Node(
+      depth: depth,
+      ply: ply,
+      pvNode: beta - alpha > 1,
+      inCheck: inCheck,
+      slot: entries + (Int(truncatingIfNeeded: board.hash) & tableMask)
+    )
     var ttMove: EngineMove = 0
-    if slot.pointee.key == board.hash {
-      let entry = slot.pointee
-      ttMove = entry.move
-      if !pvNode && Int(entry.depth) >= depth {
-        let score = Self.scoreFromTable(Int(entry.score), ply: ply)
-        switch entry.info & 3 {
-        case Bound.exact: return score
-        case Bound.lower where score >= beta: return score
-        case Bound.upper where score <= alpha: return score
-        default: break
-        }
-      }
-    }
-
+    if let score = probeTable(node, alpha: alpha, beta: beta, ttMove: &ttMove) { return score }
     var staticEval = Self.infinity
-    if !pvNode && !inCheck {
-      staticEval = board.evaluate()
-      // Reverse futility: far above beta near the leaves.
-      if depth <= 3 && abs(beta) < Self.mateBound && staticEval - 110 * depth >= beta {
-        return staticEval - 110 * depth
-      }
-      // Null move: if passing still fails high, a real move will too.
-      if allowNull && depth >= 3 && staticEval >= beta && board.hasNonPawnMaterial(board.side) {
-        let reduction = depth >= 7 ? 3 : 2
-        board.makeNull()
-        let score = -negamax(
-          depth - 1 - reduction,
-          ply: ply + 1,
-          alpha: -beta,
-          beta: -beta + 1,
-          allowNull: false
-        )
-        board.unmakeNull()
-        if stopped { return 0 }
-        if score >= beta { return score >= Self.mateBound ? beta : score }
-      }
+    if let score = tryPrune(node, beta: beta, allowNull: allowNull, staticEval: &staticEval) {
+      return score
     }
-    let futile =
-      depth <= 2 && staticEval != Self.infinity && abs(alpha) < Self.mateBound
-      && staticEval + 120 * depth + 60 <= alpha
+    let futile = Self.isFutile(staticEval, depth: depth, alpha: alpha)
+    return searchMoves(node, alpha: alpha, beta: beta, ttMove: ttMove, futile: futile)
+  }
 
-    let list = moveLists + ply * 256
-    let scores = moveScores + ply * 256
-    let count = board.generateMoves(into: list, capturesOnly: false)
-    for index in 0..<count {
-      scores[index] = orderScore(list[index], ttMove: ttMove, ply: ply)
+  /// What the phases of one `negamax` node share.
+  private struct Node {
+    let depth: Int
+    let ply: Int
+    let pvNode: Bool
+    let inCheck: Bool
+    let slot: UnsafeMutablePointer<TranspositionEntry>
+  }
+
+  /// Returns the stored score when the table entry decides this node, and hands back the
+  /// stored move for ordering either way.
+  @inline(__always)
+  private func probeTable(
+    _ node: Node,
+    alpha: Int,
+    beta: Int,
+    ttMove: inout EngineMove
+  ) -> Int? {
+    guard node.slot.pointee.key == board.hash else { return nil }
+    let entry = node.slot.pointee
+    ttMove = entry.move
+    guard !node.pvNode && Int(entry.depth) >= node.depth else { return nil }
+    let score = Self.scoreFromTable(Int(entry.score), ply: node.ply)
+    switch entry.info & Bound.mask {
+    case Bound.exact: return score
+    case Bound.lower where score >= beta: return score
+    case Bound.upper where score <= alpha: return score
+    default: return nil
     }
+  }
 
-    let originalAlpha = alpha
+  /// Prunes a quiet non-PV node from its static score before any move is searched. Sets
+  /// `staticEval` when it evaluates the node.
+  @inline(__always)
+  private mutating func tryPrune(
+    _ node: Node,
+    beta: Int,
+    allowNull: Bool,
+    staticEval: inout Int
+  ) -> Int? {
+    guard !node.pvNode && !node.inCheck else { return nil }
+    staticEval = board.evaluate()
+    if let score = tryStaticPrune(staticEval, depth: node.depth, beta: beta) { return score }
+    return allowNull ? tryNullMove(staticEval, node, beta: beta) : nil
+  }
+
+  /// Reverse futility: far above beta near the leaves.
+  @inline(__always)
+  private func tryStaticPrune(_ staticEval: Int, depth: Int, beta: Int) -> Int? {
+    guard depth <= ReverseFutility.maxDepth && abs(beta) < Self.mateBound else { return nil }
+    let score = staticEval - ReverseFutility.marginPerDepth * depth
+    return score >= beta ? score : nil
+  }
+
+  /// Null move: if passing still fails high, a real move will too.
+  @inline(__always)
+  private mutating func tryNullMove(_ staticEval: Int, _ node: Node, beta: Int) -> Int? {
+    guard
+      node.depth >= NullMove.minDepth && staticEval >= beta
+        && board.hasNonPawnMaterial(board.side)
+    else { return nil }
+    let reduction = node.depth >= NullMove.deepDepth ? NullMove.deepReduction : NullMove.reduction
+    board.makeNull()
+    let score = -negamax(
+      node.depth - 1 - reduction,
+      ply: node.ply + 1,
+      alpha: -beta,
+      beta: -beta + 1,
+      allowNull: false
+    )
+    board.unmakeNull()
+    if stopped { return 0 }
+    guard score >= beta else { return nil }
+    return score >= Self.mateBound ? beta : score
+  }
+
+  /// Futility: quiet moves cannot lift a static score this far below alpha.
+  @inline(__always)
+  private static func isFutile(_ staticEval: Int, depth: Int, alpha: Int) -> Bool {
+    depth <= Futility.maxDepth && staticEval != infinity && abs(alpha) < mateBound
+      && staticEval + Futility.marginPerDepth * depth + Futility.baseMargin <= alpha
+  }
+
+  @inline(__always)
+  private mutating func searchMoves(
+    _ node: Node,
+    alpha alphaIn: Int,
+    beta: Int,
+    ttMove: EngineMove,
+    futile: Bool
+  ) -> Int {
+    let (list, scores, count) = orderedMoves(ply: node.ply, ttMove: ttMove, capturesOnly: false)
+    var alpha = alphaIn
     var best = -Self.infinity
     var bestMove: EngineMove = 0
     var legal = 0
     for index in 0..<count {
-      Self.pickNext(list, scores, from: index, count: count)
-      let move = list[index]
+      let move = Self.pickNext(list, scores, from: index, count: count)
       guard board.make(move) else { continue }
       legal += 1
-      let quiet = move.isQuiet
       let givesCheck = board.inCheck
-      if futile && legal > 1 && quiet && !givesCheck {
+      if Self.isFutileMove(move, futile: futile, legal: legal, givesCheck: givesCheck) {
         board.unmake()
         continue
       }
-      var score: Int
-      if legal == 1 {
-        score = -negamax(depth - 1, ply: ply + 1, alpha: -beta, beta: -alpha)
-      } else {
-        var reduction = 0
-        if depth >= 3 && legal > 3 && quiet && !inCheck && !givesCheck && scores[index] < 790_000 {
-          reduction = legal > 10 ? 2 : 1
-          if depth >= 8 && !pvNode { reduction += 1 }
-          reduction = min(reduction, depth - 2)
-        }
-        score = -negamax(depth - 1 - reduction, ply: ply + 1, alpha: -alpha - 1, beta: -alpha)
-        if !stopped && score > alpha && reduction > 0 {
-          score = -negamax(depth - 1, ply: ply + 1, alpha: -alpha - 1, beta: -alpha)
-        }
-        if !stopped && score > alpha && score < beta {
-          score = -negamax(depth - 1, ply: ply + 1, alpha: -beta, beta: -alpha)
-        }
-      }
+      let reduction = Self.lateMoveReduction(node, move, legal, givesCheck, scores[index])
+      let score = searchChild(node, legal: legal, reduction: reduction, alpha: alpha, beta: beta)
       board.unmake()
       if stopped { return 0 }
-
-      if score > best {
-        best = score
-        bestMove = move
-        if score > alpha {
-          alpha = score
-          updatePV(ply: ply, move: move)
-          if score >= beta {
-            if quiet { recordCutoff(move, ply: ply, depth: depth) }
-            break
-          }
-        }
+      guard score > best else { continue }
+      best = score
+      bestMove = move
+      guard score > alpha else { continue }
+      alpha = score
+      updatePV(ply: node.ply, move: move)
+      guard score < beta else {
+        if move.isQuiet { recordCutoff(move, ply: node.ply, depth: node.depth) }
+        break
       }
     }
-
-    if legal == 0 { return inCheck ? -Self.mate + ply : 0 }
-
-    let bound = best >= beta ? Bound.lower : (best > originalAlpha ? Bound.exact : Bound.upper)
-    let existing = slot.pointee
-    if existing.key == board.hash || existing.info >> 2 != generation
-      || Int(existing.depth) <= depth + 2
-    {
-      slot.pointee = TranspositionEntry(
-        key: board.hash,
-        move: bestMove != 0 ? bestMove : existing.move,
-        score: Int16(Self.scoreToTable(best, ply: ply)),
-        depth: Int8(clamping: depth),
-        info: bound | generation << 2
-      )
-    }
+    guard legal > 0 else { return Self.scoreWithoutMoves(node) }
+    storeTable(node, best: best, bestMove: bestMove, alpha: alphaIn, beta: beta)
     return best
+  }
+
+  /// Checkmate scores the distance from the root; stalemate is a draw.
+  @inline(__always)
+  private static func scoreWithoutMoves(_ node: Node) -> Int {
+    node.inCheck ? -mate + node.ply : 0
+  }
+
+  /// Futility: at a futile node, quiet moves after the first that give no check are skipped.
+  @inline(__always)
+  private static func isFutileMove(
+    _ move: EngineMove,
+    futile: Bool,
+    legal: Int,
+    givesCheck: Bool
+  ) -> Bool {
+    futile && legal > 1 && move.isQuiet && !givesCheck
+  }
+
+  /// Principal variation search: the first move gets the full window, later moves a null
+  /// window (reduced first if `reduction > 0`) and a re-search only when they beat alpha.
+  @inline(__always)
+  private mutating func searchChild(
+    _ node: Node,
+    legal: Int,
+    reduction: Int,
+    alpha: Int,
+    beta: Int
+  ) -> Int {
+    let depth = node.depth
+    let ply = node.ply + 1
+    if legal == 1 { return -negamax(depth - 1, ply: ply, alpha: -beta, beta: -alpha) }
+    var score = -negamax(depth - 1 - reduction, ply: ply, alpha: -alpha - 1, beta: -alpha)
+    if !stopped && score > alpha && reduction > 0 {
+      score = -negamax(depth - 1, ply: ply, alpha: -alpha - 1, beta: -alpha)
+    }
+    if !stopped && score > alpha && score < beta {
+      score = -negamax(depth - 1, ply: ply, alpha: -beta, beta: -alpha)
+    }
+    return score
+  }
+
+  /// Plies to cut from a late quiet move. Only moves ordered below the killers qualify, which
+  /// `Ordering` guarantees for every quiet move ranked by its butterfly score.
+  @inline(__always)
+  private static func lateMoveReduction(
+    _ node: Node,
+    _ move: EngineMove,
+    _ legal: Int,
+    _ givesCheck: Bool,
+    _ orderScore: Int32
+  ) -> Int {
+    guard
+      node.depth >= LateMoveReduction.minDepth && legal > LateMoveReduction.fullDepthMoves
+        && move.isQuiet && !node.inCheck && !givesCheck && orderScore < Ordering.secondKiller
+    else { return 0 }
+    var reduction =
+      legal > LateMoveReduction.deeperReductionAfter
+      ? LateMoveReduction.deeperReduction : LateMoveReduction.reduction
+    if node.depth >= LateMoveReduction.extraReductionDepth && !node.pvNode { reduction += 1 }
+    return min(reduction, node.depth - LateMoveReduction.minRemainingDepth)
+  }
+
+  @inline(__always)
+  private func storeTable(
+    _ node: Node,
+    best: Int,
+    bestMove: EngineMove,
+    alpha: Int,
+    beta: Int
+  ) {
+    let bound = best >= beta ? Bound.lower : (best > alpha ? Bound.exact : Bound.upper)
+    let existing = node.slot.pointee
+    guard
+      existing.key == board.hash || existing.info >> Bound.generationShift != generation
+        || Int(existing.depth) <= node.depth + Self.tableReplaceDepthSlack
+    else { return }
+    node.slot.pointee = TranspositionEntry(
+      key: board.hash,
+      move: bestMove != 0 ? bestMove : existing.move,
+      score: Int16(Self.scoreToTable(best, ply: node.ply)),
+      depth: Int8(clamping: node.depth),
+      info: bound | generation << Bound.generationShift
+    )
   }
 
   private mutating func quiescence(ply: Int, alpha alphaIn: Int, beta: Int) -> Int {
     pvLength[ply] = ply
-    nodes += 1
-    if nodes & 1023 == 0 { checkLimits() }
-    if stopped { return 0 }
+    if enterNode() { return 0 }
     let standPat = board.evaluate()
-    if ply >= Self.maxPly - 2 || standPat >= beta { return standPat }
+    if ply >= Self.horizonPly || standPat >= beta { return standPat }
     var alpha = max(alphaIn, standPat)
     var best = standPat
 
-    let list = moveLists + ply * 256
-    let scores = moveScores + ply * 256
-    let count = board.generateMoves(into: list, capturesOnly: true)
+    let (list, scores, count) = orderedMoves(ply: ply, ttMove: 0, capturesOnly: true)
     for index in 0..<count {
-      scores[index] = orderScore(list[index], ttMove: 0, ply: ply)
-    }
-    for index in 0..<count {
-      Self.pickNext(list, scores, from: index, count: count)
-      let move = list[index]
-      if move.promotion == 0 {
-        // Delta pruning: even winning the victim cannot lift the score to alpha.
-        let victim = move.flag == MoveFlag.enPassant ? EngineKind.pawn : board.squares[move.to] & 7
-        if standPat + EngineEvaluation.endgameValue[victim] + 200 <= alpha { continue }
-      }
+      let move = Self.pickNext(list, scores, from: index, count: count)
+      if isDeltaPruned(move, standPat: standPat, alpha: alpha) { continue }
       guard board.make(move) else { continue }
       let score = -quiescence(ply: ply + 1, alpha: -beta, beta: -alpha)
       board.unmake()
       if stopped { return 0 }
-      if score > best {
-        best = score
-        if score > alpha {
-          alpha = score
-          if score >= beta { break }
-        }
-      }
+      best = max(best, score)
+      guard score > alpha else { continue }
+      alpha = score
+      if score >= beta { break }
     }
     return best
   }
 
+  /// Delta pruning: even winning the victim cannot lift the score to alpha.
+  @inline(__always)
+  private func isDeltaPruned(_ move: EngineMove, standPat: Int, alpha: Int) -> Bool {
+    move.promotion == 0
+      && standPat + EngineEvaluation.endgameValue[capturedKind(move)] + Self.deltaMargin <= alpha
+  }
+
   // MARK: - Move ordering
 
+  /// Generates the moves of `ply` into its buffer and scores them for `pickNext`.
+  @inline(__always)
+  private func orderedMoves(
+    ply: Int,
+    ttMove: EngineMove,
+    capturesOnly: Bool
+  ) -> (UnsafeMutablePointer<EngineMove>, UnsafeMutablePointer<Int32>, Int) {
+    let list = moveLists + ply * Self.moveListCapacity
+    let scores = moveScores + ply * Self.moveListCapacity
+    let count = board.generateMoves(into: list, capturesOnly: capturesOnly)
+    for index in 0..<count {
+      scores[index] = orderScore(list[index], ttMove: ttMove, ply: ply)
+    }
+    return (list, scores, count)
+  }
+
+  @inline(__always)
+  private func capturedKind(_ move: EngineMove) -> Int {
+    move.flag == MoveFlag.enPassant ? EngineKind.pawn : board.squares[move.to] & Self.kindMask
+  }
+
   private func orderScore(_ move: EngineMove, ttMove: EngineMove, ply: Int) -> Int32 {
-    if move == ttMove { return 2_000_000 }
+    if move == ttMove { return Ordering.tableMove }
     var score: Int32 = 0
     if move.isCapture {
-      let victim = move.flag == MoveFlag.enPassant ? EngineKind.pawn : board.squares[move.to] & 7
-      let attacker = board.squares[move.from] & 7
-      score = 1_000_000 + Int32(victim * 16 - attacker)
+      let attacker = board.squares[move.from] & Self.kindMask
+      score = Ordering.capture + Int32(capturedKind(move) * Ordering.victimWeight - attacker)
     }
     switch move.promotion {
     case 0: break
-    case EngineKind.queen: score += 900_000
-    default: return score - 500_000
+    case EngineKind.queen: score += Ordering.queenPromotion
+    default: return score - Ordering.underpromotionPenalty
     }
     if score != 0 { return score }
-    if move == killers[ply * 2] { return 800_000 }
-    if move == killers[ply * 2 + 1] { return 790_000 }
-    return history[board.side * 16384 + move.from * 128 + move.to]
+    if move == killers[ply * 2] { return Ordering.firstKiller }
+    if move == killers[ply * 2 + 1] { return Ordering.secondKiller }
+    return butterflyScores[butterflyIndex(move)]
   }
 
+  @inline(__always)
+  private func butterflyIndex(_ move: EngineMove) -> Int {
+    board.side * Butterfly.sideStride + move.from * Butterfly.squareCount + move.to
+  }
+
+  /// Swaps the best-scored remaining move into `start` and returns it.
   @inline(__always)
   private static func pickNext(
     _ list: UnsafeMutablePointer<EngineMove>,
     _ scores: UnsafeMutablePointer<Int32>,
     from start: Int,
     count: Int
-  ) {
+  ) -> EngineMove {
     var bestIndex = start
     var index = start + 1
     while index < count {
@@ -444,6 +686,7 @@ struct EngineSearcher: ~Copyable {
       list.swapAt(start, bestIndex)
       scores.swapAt(start, bestIndex)
     }
+    return list[start]
   }
 
   private mutating func recordCutoff(_ move: EngineMove, ply: Int, depth: Int) {
@@ -451,8 +694,11 @@ struct EngineSearcher: ~Copyable {
       killers[ply * 2 + 1] = killers[ply * 2]
       killers[ply * 2] = move
     }
-    let index = board.side * 16384 + move.from * 128 + move.to
-    history[index] = min(history[index] + Int32(depth * depth), 700_000)
+    let index = butterflyIndex(move)
+    butterflyScores[index] = min(
+      butterflyScores[index] + Int32(depth * depth),
+      Ordering.butterflyCap
+    )
   }
 
   private func updatePV(ply: Int, move: EngineMove) {
