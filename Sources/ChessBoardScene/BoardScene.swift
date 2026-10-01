@@ -22,19 +22,21 @@ public final class BoardScene: SKScene {
 
   let onIntent: (BoardIntent) -> Void
   private let textures: PieceTextureCache
-  private let labels: SquareLabels
+  let labels: SquareLabels
 
   private(set) var geometry: BoardGeometry
   private(set) var squareNodes: [Square: SKSpriteNode] = [:]
   private(set) var pieceNodes: [Square: PieceNode] = [:]
-  private(set) var legalMarkers: [Square: LegalMarkerNode] = [:]
+  var legalMarkers: [Square: LegalMarkerNode] = [:]
+  /// Rebuilt with the layout; every legal marker of a kind shares its path.
+  private(set) var legalMarkerPaths: [LegalMarkerNode.Kind: CGPath] = [:]
   private var coordinateNodes: [SKLabelNode] = []
   let checkNode = SKShapeNode()
   let focusNode = SKShapeNode()
   let hintNode = SKShapeNode()
   /// The correct or incorrect move marker; hidden without a badge.
   let badgeNode = SKShapeNode()
-  private let badgeGlyphNode = SKShapeNode()
+  let badgeGlyphNode = SKShapeNode()
   /// One per square, in `Square.all` order (a1, b1, …, h8).
   public private(set) var squareAccessibilityNodes: [SKNode] = []
   /// Whether the cursor ring is drawn. Off for pointer and touch input, on for the remote,
@@ -148,9 +150,45 @@ public final class BoardScene: SKScene {
     updateAccessibilityFrames()
   }
 
+  // MARK: Touch and mouse events, handled in BoardScene+Input.swift
+
+  #if os(iOS)
+    override public func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+      guard let touch = touches.first else { return }
+      pointerDown(at: touch.location(in: self))
+    }
+
+    override public func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+      guard let touch = touches.first else { return }
+      pointerMoved(to: touch.location(in: self))
+    }
+
+    override public func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+      guard let touch = touches.first else { return }
+      pointerUp(at: touch.location(in: self))
+    }
+
+    override public func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+      guard let drag else { return }
+      pointerUp(at: geometry.center(of: drag.from))
+    }
+  #elseif os(macOS)
+    override public func mouseDown(with event: NSEvent) {
+      pointerDown(at: event.location(in: self))
+    }
+
+    override public func mouseDragged(with event: NSEvent) {
+      pointerMoved(to: event.location(in: self))
+    }
+
+    override public func mouseUp(with event: NSEvent) {
+      pointerUp(at: event.location(in: self))
+    }
+  #endif
+
   // MARK: Layout
 
-  private var squareSize: CGFloat { geometry.squareSize }
+  var squareSize: CGFloat { geometry.squareSize }
 
   /// Recomputes the geometry and redraws everything at the new size, orientation, or theme.
   private func layoutBoard() {
@@ -171,6 +209,7 @@ public final class BoardScene: SKScene {
     updatePieceTextures()
     for marker in legalMarkers.values { marker.removeFromParent() }
     legalMarkers = [:]
+    legalMarkerPaths = LegalMarkerNode.paths(squareSize: squareSize, style: style)
     updateLegalMarkers(snapshot?.legalTargets ?? [])
     updateCheckShape()
     updateCheck()
@@ -225,242 +264,27 @@ public final class BoardScene: SKScene {
     }
   }
 
-  // MARK: Squares and markers
-
-  /// Squares drawn with a tint instead of their plain color.
-  private static func tintedSquares(_ snapshot: BoardSnapshot?) -> Set<Square> {
-    guard let snapshot else { return [] }
-    return Set(
-      [snapshot.lastMove?.from, snapshot.lastMove?.to, snapshot.selectedSquare].compactMap { $0 }
-    )
-  }
-
-  private func updateSquareColors(_ squares: Set<Square>) {
-    for square in squares {
-      guard let node = squareNodes[square] else { continue }
-      let colors: SquareColors
-      if square == snapshot?.selectedSquare {
-        colors = theme.selection
-      } else if let move = snapshot?.lastMove, square == move.from || square == move.to {
-        colors = theme.lastMove
-      } else {
-        colors = theme.squares
-      }
-      node.color = colors.color(isLight: square.isLight).skColor
-    }
-  }
-
-  /// Dots on empty legal targets, rings around capturable pieces.
-  private func updateLegalMarkers(_ squares: Set<Square>) {
-    for square in squares {
-      var kind: LegalMarkerNode.Kind?
-      if let snapshot, snapshot.legalTargets.contains(square) {
-        kind = snapshot.pieces[square] == nil ? .dot : .ring
-      }
-      if legalMarkers[square]?.kind == kind { continue }
-      legalMarkers.removeValue(forKey: square)?.removeFromParent()
-      guard let kind else { continue }
-      let marker = LegalMarkerNode(
-        kind: kind,
-        squareSize: squareSize,
-        style: style,
-        color: theme.legalMove.skColor
-      )
-      marker.position = geometry.center(of: square)
-      legalMarkers[square] = marker
-      addChild(marker)
-    }
-  }
-
-  private func updateCheckShape() {
-    let diameter = squareSize * style.markers.check
-    checkNode.path = CGPath(
-      ellipseIn: CGRect(x: -diameter / 2, y: -diameter / 2, width: diameter, height: diameter),
-      transform: nil
-    )
-    checkNode.fillColor = theme.check.skColor
-    checkNode.strokeColor = .clear
-    checkNode.lineWidth = 0
-  }
-
-  private func updateCheck() {
-    guard let square = snapshot?.checkSquare else {
-      checkNode.isHidden = true
-      return
-    }
-    checkNode.position = geometry.center(of: square)
-    checkNode.isHidden = false
-  }
-
-  private func updateFocusShape() {
-    let width = max(style.focusRing.minimumWidth, squareSize * style.focusRing.widthRatio)
-    let side = max(0, squareSize - width)
-    focusNode.path = CGPath(
-      rect: CGRect(x: -side / 2, y: -side / 2, width: side, height: side),
-      transform: nil
-    )
-    focusNode.lineWidth = width
-    focusNode.strokeColor = style.focusRing.color.skColor
-    focusNode.fillColor = .clear
-  }
-
-  private func updateFocus(animated: Bool) {
-    guard showsFocusRing, let square = snapshot?.focusedSquare else {
-      focusNode.isHidden = true
-      return
-    }
-    let target = geometry.center(of: square)
-    focusNode.removeAllActions()
-    if animated && !focusNode.isHidden && focusNode.position != target {
-      focusNode.run(.move(to: target, duration: style.animation.focusSeconds))
-    } else {
-      focusNode.position = target
-    }
-    focusNode.isHidden = false
-  }
-
-  private func updateHint() {
-    guard let hint = snapshot?.hint, hint.from != hint.to else {
-      hintNode.isHidden = true
-      return
-    }
-    let start = geometry.center(of: hint.from)
-    let tip = geometry.center(of: hint.to)
-    let length = hypot(tip.x - start.x, tip.y - start.y)
-    let direction = CGPoint(x: (tip.x - start.x) / length, y: (tip.y - start.y) / length)
-    let normal = CGPoint(x: -direction.y, y: direction.x)
-    let markers = style.markers
-    let shaftStart = squareSize * markers.arrowStartInset
-    let headBase = max(shaftStart, length - squareSize * markers.arrowHeadLength)
-    func point(along distance: CGFloat, across offset: CGFloat) -> CGPoint {
-      CGPoint(
-        x: start.x + direction.x * distance + normal.x * offset,
-        y: start.y + direction.y * distance + normal.y * offset
-      )
-    }
-    let shaft = squareSize * markers.arrowShaftWidth / 2
-    let head = squareSize * markers.arrowHeadWidth / 2
-    let path = CGMutablePath()
-    path.addLines(between: [
-      point(along: shaftStart, across: shaft), point(along: headBase, across: shaft),
-      point(along: headBase, across: head), point(along: length, across: 0),
-      point(along: headBase, across: -head), point(along: headBase, across: -shaft),
-      point(along: shaftStart, across: -shaft),
-    ])
-    path.closeSubpath()
-    hintNode.path = path
-    hintNode.fillColor = style.hintArrowColor.skColor
-    hintNode.strokeColor = .clear
-    hintNode.lineWidth = 0
-    hintNode.isHidden = false
-  }
-
-  /// A colored disc with a check mark or cross on the top-right corner of the badge's square.
-  private func updateBadge() {
-    guard let badge = snapshot?.badge, squareSize > 0 else {
-      badgeNode.isHidden = true
-      return
-    }
-    let style = style.badge
-    let diameter = squareSize * style.diameterRatio
-    let rect = geometry.rect(of: badge.square)
-    let inset = squareSize * style.cornerInsetRatio
-    badgeNode.position = CGPoint(x: rect.maxX - inset, y: rect.maxY - inset)
-    badgeNode.path = CGPath(
-      ellipseIn: CGRect(x: -diameter / 2, y: -diameter / 2, width: diameter, height: diameter),
-      transform: nil
-    )
-    badgeNode.fillColor =
-      (badge.kind == .correct ? style.correctColor : style.incorrectColor).skColor
-    badgeNode.strokeColor = .clear
-    badgeNode.lineWidth = 0
-    let half = diameter * style.glyphRatio / 2
-    let glyph = CGMutablePath()
-    switch badge.kind {
-    case .correct:
-      glyph.addLines(between: [
-        CGPoint(x: -half, y: 0), CGPoint(x: -half / 3, y: -half * 0.7),
-        CGPoint(x: half, y: half * 0.7),
-      ])
-    case .incorrect:
-      glyph.addLines(between: [
-        CGPoint(x: -half * 0.7, y: -half * 0.7), CGPoint(x: half * 0.7, y: half * 0.7),
-      ])
-      glyph.addLines(between: [
-        CGPoint(x: -half * 0.7, y: half * 0.7), CGPoint(x: half * 0.7, y: -half * 0.7),
-      ])
-    }
-    badgeGlyphNode.path = glyph
-    badgeGlyphNode.strokeColor = style.glyphColor.skColor
-    badgeGlyphNode.fillColor = .clear
-    badgeGlyphNode.lineWidth = diameter * style.glyphLineRatio
-    badgeGlyphNode.lineCap = .round
-    badgeGlyphNode.lineJoin = .round
-    badgeNode.isHidden = false
-  }
-
   // MARK: Pieces
 
-  /// Moves, adds, and removes piece nodes so they match the snapshot. A node that leaves a
-  /// square slides to a square where the same piece appears: the last move first (which may
-  /// promote), then the nearest match, so castling moves both king and rook.
+  /// Moves, adds, and removes piece nodes so they match the snapshot, as `PieceDiff` decides.
   private func updatePieces(from old: [Square: Piece], lastMove: ChessMove?, animated: Bool) {
-    let new = snapshot?.pieces ?? [:]
-    var vacated: [Square: PieceNode] = [:]
-    for (square, piece) in old where new[square] != piece {
-      vacated[square] = pieceNodes.removeValue(forKey: square)
+    let diff = PieceDiff(old: old, new: snapshot?.pieces ?? [:], lastMove: lastMove)
+    let moving = diff.moved.compactMap { move in
+      pieceNodes.removeValue(forKey: move.from).map { (node: $0, move: move) }
     }
-    var appeared = new.keys.filter { old[$0] != new[$0] }.sorted()
-    var moves: [(node: PieceNode, to: Square)] = []
-    if let move = lastMove, let index = appeared.firstIndex(of: move.to),
-      let node = vacated[move.from],
-      node.piece.color == new[move.to]?.color
-    {
-      vacated[move.from] = nil
-      appeared.remove(at: index)
-      moves.append((node, move.to))
-    }
-    for square in appeared {
-      let piece = new[square]
-      let match = vacated.filter { $0.value.piece == piece }.min { lhs, rhs in
-        let (left, right) = (Self.distance(lhs.key, square), Self.distance(rhs.key, square))
-        return left != right ? left < right : lhs.key < rhs.key
-      }
-      if let match {
-        vacated[match.key] = nil
-        moves.append((match.value, square))
-      } else if let piece {
-        let node = PieceNode(piece: piece)
-        node.zPosition = style.zPositions.pieces
-        node.position = geometry.center(of: square)
-        setTexture(of: node)
-        pieceNodes[square] = node
-        addChild(node)
-      }
-    }
-    for (node, square) in moves {
-      if let piece = new[square], piece != node.piece {
-        node.piece = piece
-        setTexture(of: node)
-      }
+    let leaving = diff.removed.compactMap { pieceNodes.removeValue(forKey: $0) }
+    for (square, piece) in diff.added.sorted(by: { $0.key < $1.key }) {
+      let node = PieceNode(piece: piece)
+      node.zPosition = style.zPositions.pieces
+      node.position = geometry.center(of: square)
+      setTexture(of: node)
       pieceNodes[square] = node
-      let target = geometry.center(of: square)
-      node.removeAllActions()
-      if animated {
-        node.zPosition = style.zPositions.movingPiece
-        let restZ = style.zPositions.pieces
-        node.run(
-          .sequence([
-            .move(to: target, duration: style.animation.moveSeconds),
-            .run { [weak node] in node?.zPosition = restZ },
-          ])
-        )
-      } else {
-        node.zPosition = style.zPositions.pieces
-        node.position = target
-      }
+      addChild(node)
     }
-    for node in vacated.values {
+    for (node, move) in moving {
+      slide(node, to: move.to, becoming: move.piece, animated: animated)
+    }
+    for node in leaving {
       node.removeAllActions()
       if animated {
         node.run(
@@ -474,8 +298,27 @@ public final class BoardScene: SKScene {
     }
   }
 
-  private static func distance(_ lhs: Square, _ rhs: Square) -> Int {
-    max(abs(lhs.file - rhs.file), abs(lhs.rank - rhs.rank))
+  private func slide(_ node: PieceNode, to square: Square, becoming piece: Piece, animated: Bool) {
+    if piece != node.piece {
+      node.piece = piece
+      setTexture(of: node)
+    }
+    pieceNodes[square] = node
+    let target = geometry.center(of: square)
+    node.removeAllActions()
+    if animated {
+      node.zPosition = style.zPositions.movingPiece
+      let restZ = style.zPositions.pieces
+      node.run(
+        .sequence([
+          .move(to: target, duration: style.animation.moveSeconds),
+          .run { [weak node] in node?.zPosition = restZ },
+        ])
+      )
+    } else {
+      node.zPosition = style.zPositions.pieces
+      node.position = target
+    }
   }
 
   /// Side of the piece art in pixels at the current square size and display scale.
@@ -492,88 +335,6 @@ public final class BoardScene: SKScene {
   private func updatePieceTextures() {
     for node in pieceNodes.values { setTexture(of: node) }
   }
-
-  // MARK: Accessibility
-
-  /// The spoken description of `square` in `snapshot`, such as "e4, white knight, selected".
-  /// Takes the snapshot rather than using the applied one: a view builds its label before it
-  /// applies a new snapshot to the scene.
-  public func accessibilityLabel(for square: Square, in snapshot: BoardSnapshot) -> String {
-    labels.label(for: square, labelState(of: square, in: snapshot))
-  }
-
-  private func labelState(of square: Square, in snapshot: BoardSnapshot?) -> SquareLabelState {
-    SquareLabelState(
-      piece: snapshot?.pieces[square],
-      isSelected: snapshot?.selectedSquare == square,
-      isLegalTarget: snapshot?.legalTargets.contains(square) ?? false,
-      isCheck: snapshot?.checkSquare == square,
-      badge: snapshot?.badge?.square == square ? snapshot?.badge?.kind : nil
-    )
-  }
-
-  private func updateAccessibilityLabels() {
-    for case let node as SquareAccessibilityNode in squareAccessibilityNodes {
-      node.updateLabel(labelState(of: node.square, in: snapshot), using: labels)
-    }
-  }
-
-  /// Accessibility frames are in screen coordinates, so they need the view.
-  private func updateAccessibilityFrames() {
-    for case let node as SquareAccessibilityNode in squareAccessibilityNodes {
-      let rect = geometry.rect(of: node.square)
-      node.position = CGPoint(x: rect.midX, y: rect.midY)
-      guard let view else { continue }
-      let corner = convertPoint(toView: CGPoint(x: rect.minX, y: rect.minY))
-      let opposite = convertPoint(toView: CGPoint(x: rect.maxX, y: rect.maxY))
-      let viewRect = CGRect(
-        x: min(corner.x, opposite.x),
-        y: min(corner.y, opposite.y),
-        width: abs(opposite.x - corner.x),
-        height: abs(opposite.y - corner.y)
-      )
-      #if os(macOS)
-        node.accessibilityFrame =
-          view.window?.convertToScreen(view.convert(viewRect, to: nil)) ?? viewRect
-      #else
-        node.accessibilityFrame = UIAccessibility.convertToScreenCoordinates(viewRect, in: view)
-      #endif
-    }
-  }
-
-  #if os(iOS)
-    override public func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-      guard let touch = touches.first else { return }
-      pointerDown(at: touch.location(in: self))
-    }
-
-    override public func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-      guard let touch = touches.first else { return }
-      pointerMoved(to: touch.location(in: self))
-    }
-
-    override public func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-      guard let touch = touches.first else { return }
-      pointerUp(at: touch.location(in: self))
-    }
-
-    override public func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-      guard let drag else { return }
-      pointerUp(at: geometry.center(of: drag.from))
-    }
-  #elseif os(macOS)
-    override public func mouseDown(with event: NSEvent) {
-      pointerDown(at: event.location(in: self))
-    }
-
-    override public func mouseDragged(with event: NSEvent) {
-      pointerMoved(to: event.location(in: self))
-    }
-
-    override public func mouseUp(with event: NSEvent) {
-      pointerUp(at: event.location(in: self))
-    }
-  #endif
 }
 
 /// A piece sprite; it keeps its piece so a move can match it to the square it lands on.
@@ -586,28 +347,4 @@ final class PieceNode: SKSpriteNode {
   }
 
   required init?(coder aDecoder: NSCoder) { nil }
-}
-
-/// A legal-move marker: a dot on an empty square or a ring around a capturable piece.
-final class LegalMarkerNode: SKShapeNode {
-  enum Kind { case dot, ring }
-
-  private(set) var kind: Kind = .dot
-
-  convenience init(kind: Kind, squareSize: CGFloat, style: BoardStyle, color: SKColor) {
-    let markers = style.markers
-    let lineWidth = kind == .ring ? squareSize * markers.captureRingWidth : 0
-    let diameter =
-      kind == .ring ? squareSize * markers.captureRing - lineWidth : squareSize * markers.legalDot
-    self.init()
-    self.kind = kind
-    path = CGPath(
-      ellipseIn: CGRect(x: -diameter / 2, y: -diameter / 2, width: diameter, height: diameter),
-      transform: nil
-    )
-    self.lineWidth = lineWidth
-    fillColor = kind == .dot ? color : .clear
-    strokeColor = kind == .ring ? color : .clear
-    zPosition = style.zPositions.legalMarkers
-  }
 }
