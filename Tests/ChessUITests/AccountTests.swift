@@ -5,6 +5,7 @@ import ChessPlay
 import Foundation
 import HTTPSupportTests
 import Testing
+@testable import ChessComPlay
 @testable import ChessUI
 
 private let baseURL = URL(string: "https://pub.example.test/pub/")!
@@ -13,18 +14,12 @@ private let standardPGN =
   "[Event \\\"Live\\\"]\\n[White \\\"Ann\\\"]\\n[Black \\\"Bob\\\"]\\n"
   + "[Result \\\"1-0\\\"]\\n\\n1. e4 e5 2. Nf3 1-0\\n"
 
-private func gameJSON(
-  id: Int,
-  rules: String = "chess",
-  endTime: Int = 1_768_478_400,
-  whiteResult: String = "win",
-  blackResult: String = "resigned"
-) -> String {
+private func gameJSON(id: Int, endTime: Int = 1_768_478_400) -> String {
   """
   {"url":"https://www.chess.com/game/live/\(id)","pgn":"\(standardPGN)","time_control":"180+2","end_time":\(endTime),
-  "rated":true,"time_class":"blitz","rules":"\(rules)",
-  "white":{"rating":1500,"result":"\(whiteResult)","username":"Ann"},
-  "black":{"rating":1400,"result":"\(blackResult)","username":"Bob"}}
+  "rated":true,"time_class":"blitz","rules":"chess",
+  "white":{"rating":1500,"result":"win","username":"Ann"},
+  "black":{"rating":1400,"result":"resigned","username":"Bob"}}
   """
 }
 
@@ -47,14 +42,6 @@ private func makeClient(_ handler: @escaping @Sendable (URL) -> (Int, Data)) -> 
 @MainActor
 struct AccountTests {
   private let localization = Localization()
-
-  private func makeStore() -> GamePersistenceStore {
-    GamePersistenceStore(
-      fileURL: FileManager.default.temporaryDirectory.appending(
-        path: "AccountTests-\(UUID().uuidString)/games.json"
-      )
-    )
-  }
 
   @Test
   func everyGameCenterReasonHasItsOwnEnglishText() {
@@ -121,77 +108,6 @@ struct AccountTests {
       ]
     )
     #expect(AccountLayout.summaryLines(ChessComImportSummary(), localization: localization).isEmpty)
-  }
-
-  @Test
-  func timeControlsResultsAndTerminationsMap() {
-    #expect(
-      ChessComImporting.timeControl("180+2")
-        == TimeControl(initialSeconds: 180, incrementSeconds: 2)
-    )
-    #expect(
-      ChessComImporting.timeControl("600") == TimeControl(initialSeconds: 600, incrementSeconds: 0)
-    )
-    #expect(ChessComImporting.timeControl("1/86400") == .untimed)
-    #expect(ChessComImporting.result(white: .win, black: .checkmated) == .whiteWon)
-    #expect(ChessComImporting.result(white: .timeout, black: .win) == .blackWon)
-    #expect(ChessComImporting.result(white: .agreed, black: .agreed) == .draw)
-    #expect(ChessComImporting.termination(white: .win, black: .checkmated) == .checkmate)
-    #expect(ChessComImporting.termination(white: .resigned, black: .win) == .resignation)
-    #expect(ChessComImporting.termination(white: .fiftyMove, black: .fiftyMove) == .fiftyMoveRule)
-    #expect(ChessComImporting.termination(white: .win, black: .other("abandoned")) == nil)
-  }
-
-  @Test
-  func gameIDsAreStablePerURL() throws {
-    let one = try #require(URL(string: "https://www.chess.com/game/live/1"))
-    let two = try #require(URL(string: "https://www.chess.com/game/live/2"))
-    let first = ChessComImporting.savedGameID(for: one)
-    let second = ChessComImporting.savedGameID(for: one)
-    #expect(first == second)
-    #expect(first != ChessComImporting.savedGameID(for: two))
-  }
-
-  @Test
-  func importIntoUnreadableArchiveSkipsEveryGame() async throws {
-    let fileURL = FileManager.default.temporaryDirectory
-      .appending(path: "AccountTests-\(UUID().uuidString).json")
-    defer { try? FileManager.default.removeItem(at: fileURL) }
-    let damaged = Data("not json".utf8)
-    try damaged.write(to: fileURL)
-    let games = [try decodeGame(gameJSON(id: 1)), try decodeGame(gameJSON(id: 2))]
-
-    let summary = await ChessComImporting.importGames(
-      games,
-      username: "ann",
-      into: GamePersistenceStore(fileURL: fileURL)
-    )
-    #expect(summary == ChessComImportSummary(imported: 0, duplicates: 0, skipped: 2))
-    #expect(try Data(contentsOf: fileURL) == damaged)
-  }
-
-  @Test
-  func importSkipsDuplicatesAndVariants() async throws {
-    let store = makeStore()
-    let games = [
-      try decodeGame(gameJSON(id: 1)), try decodeGame(gameJSON(id: 2)),
-      try decodeGame(gameJSON(id: 3, rules: "chess960")),
-    ]
-
-    let first = await ChessComImporting.importGames(games, username: "ann", into: store)
-    #expect(first == ChessComImportSummary(imported: 2, duplicates: 0, skipped: 1))
-    let second = await ChessComImporting.importGames(games, username: "ann", into: store)
-    #expect(second == ChessComImportSummary(imported: 0, duplicates: 2, skipped: 1))
-
-    let saved = try await store.allGames()
-    #expect(saved.count == 2)
-    let one = try #require(
-      saved.first { $0.id == ChessComImporting.savedGameID(for: games[0].url) }
-    )
-    #expect(one.white.name == "Ann" && one.black.name == "Bob")
-    #expect(one.result == .whiteWon && one.termination == .resignation && one.isFinished)
-    #expect(one.game.moves.count == 3)
-    #expect(one.timeControl == TimeControl(initialSeconds: 180, incrementSeconds: 2))
   }
 
   @Test

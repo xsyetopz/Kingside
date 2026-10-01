@@ -101,6 +101,14 @@
 				"LichessPlay"
 			]
 		},
+		"ChessComPlay": {
+			"path": "Sources/ChessComPlay",
+			"allow": ["Foundation", "ChessPlay", "ChessComLink"]
+		},
+		"ChessComPlayTests": {
+			"path": "Tests/ChessComPlayTests",
+			"allow": ["Foundation", "Testing", "ChessPlay", "ChessComLink", "ChessComPlay"]
+		},
 		"ChessContentTests": {
 			"path": "Tests/ChessContentTests",
 			"allow": ["Foundation", "Testing", "ChessCore", "ChessContent"]
@@ -167,6 +175,7 @@
 				"ChessFeedback",
 				"HTTPSupport",
 				"ChessComLink",
+				"ChessComPlay",
 				"LichessLink",
 				"LichessPlay",
 				"ChessOnline"
@@ -183,6 +192,7 @@
 				"ChessPlay",
 				"HTTPSupportTests",
 				"ChessComLink",
+				"ChessComPlay",
 				"LichessLink",
 				"LichessPlay",
 				"ChessOnline"

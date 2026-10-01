@@ -1,4 +1,5 @@
 import ChessComLink
+import ChessComPlay
 import ChessContent
 import ChessCore
 import ChessOnline

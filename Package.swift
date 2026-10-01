@@ -17,6 +17,7 @@ let package = Package(
     .library(name: "ChessOnline", targets: ["ChessOnline"]),
     .library(name: "ChessPlay", targets: ["ChessPlay"]),
     .library(name: "LichessPlay", targets: ["LichessPlay"]),
+    .library(name: "ChessComPlay", targets: ["ChessComPlay"]),
     .library(name: "ChessBoardScene", targets: ["ChessBoardScene"]),
     .library(name: "ChessFeedback", targets: ["ChessFeedback"]),
     .library(name: "ChessUI", targets: ["ChessUI"]),
@@ -34,13 +35,14 @@ let package = Package(
       name: "LichessPlay",
       dependencies: ["ChessCore", "ChessContent", "ChessPlay", "LichessLink"]
     ),
+    .target(name: "ChessComPlay", dependencies: ["ChessPlay", "ChessComLink"]),
     .target(name: "ChessBoardScene", dependencies: ["ChessCore", "ChessContent", "ChessPlay"]),
     .target(name: "ChessFeedback", dependencies: ["ChessCore", "ChessContent", "ChessPlay"]),
     .target(
       name: "ChessUI",
       dependencies: [
         "ChessCore", "ChessContent", "ChessPlay", "ChessBoardScene", "ChessFeedback",
-        "HTTPSupport", "ChessComLink", "LichessLink", "LichessPlay", "ChessOnline",
+        "HTTPSupport", "ChessComLink", "ChessComPlay", "LichessLink", "LichessPlay", "ChessOnline",
       ]
     ),
     .executableTarget(name: "ChessBench", dependencies: ["ChessCore"], path: "Tools/ChessBench"),
@@ -70,6 +72,10 @@ let package = Package(
       ]
     ),
     .testTarget(
+      name: "ChessComPlayTests",
+      dependencies: ["ChessComPlay", "ChessPlay", "ChessComLink"]
+    ),
+    .testTarget(
       name: "ChessBoardSceneTests",
       dependencies: ["ChessBoardScene", "ChessPlay", "ChessCore", "ChessContent"]
     ),
@@ -81,7 +87,7 @@ let package = Package(
       name: "ChessUITests",
       dependencies: [
         "ChessUI", "ChessPlay", "ChessCore", "ChessContent", "HTTPSupportTests", "ChessComLink",
-        "LichessLink", "LichessPlay", "ChessOnline",
+        "ChessComPlay", "LichessLink", "LichessPlay", "ChessOnline",
       ]
     ),
   ]
