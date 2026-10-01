@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess 未接受此次登录。请重试。";
 "account.lichess.error.rateLimited" = "Lichess 正忙。请等一分钟后再试。";
 "account.lichess.error.network" = "无法连接 Lichess。请检查网络连接，然后重试。";
+"account.lichess.error.saveFailed" = "无法在此设备上保存登录信息。请重试。";
 "account.lichess.tv.appleAccount" = "请在 iPhone、iPad 或 Mac 上使用同一个 Apple 账户登录。登录信息会通过 iCloud 钥匙串同步。";
 "account.lichess.tv.checkAgain" = "重新检查";
 "account.lichess.tv.token.title" = "或创建个人令牌";

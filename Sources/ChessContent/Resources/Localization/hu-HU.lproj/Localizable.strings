@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "A Lichess nem fogadta el a bejelentkezést. Próbáld újra.";
 "account.lichess.error.rateLimited" = "A Lichess túlterhelt. Várj egy percet, majd próbáld újra.";
 "account.lichess.error.network" = "Nem sikerült elérni a Lichesst. Ellenőrizd a kapcsolatot, majd próbáld újra.";
+"account.lichess.error.saveFailed" = "A bejelentkezést nem sikerült menteni ezen az eszközön. Próbáld újra.";
 "account.lichess.tv.appleAccount" = "Jelentkezz be iPhone-on, iPaden vagy Macen ugyanazzal az Apple-fiókkal. A bejelentkezés az iCloud-kulcskarikán keresztül szinkronizálódik.";
 "account.lichess.tv.checkAgain" = "Újraellenőrzés";
 "account.lichess.tv.token.title" = "Vagy hozz létre személyes tokent";

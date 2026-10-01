@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess no ha aceptado el inicio de sesión. Inténtalo de nuevo.";
 "account.lichess.error.rateLimited" = "Lichess está ocupado. Espera un minuto e inténtalo de nuevo.";
 "account.lichess.error.network" = "No se ha podido conectar con Lichess. Comprueba tu conexión e inténtalo de nuevo.";
+"account.lichess.error.saveFailed" = "No se ha podido guardar el inicio de sesión en este dispositivo. Inténtalo de nuevo.";
 "account.lichess.tv.appleAccount" = "Inicia sesión en tu iPhone, iPad o Mac con la misma cuenta de Apple. El inicio de sesión se sincroniza mediante el llavero de iCloud.";
 "account.lichess.tv.checkAgain" = "Comprobar de nuevo";
 "account.lichess.tv.token.title" = "O crea un token personal";

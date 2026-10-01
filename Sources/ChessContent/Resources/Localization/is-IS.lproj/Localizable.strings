@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess samþykkti ekki innskráninguna. Reyndu aftur.";
 "account.lichess.error.rateLimited" = "Mikið álag á Lichess. Bíddu í eina mínútu og reyndu svo aftur.";
 "account.lichess.error.network" = "Ekki náðist samband við Lichess. Athugaðu tenginguna og reyndu aftur.";
+"account.lichess.error.saveFailed" = "Ekki tókst að vista innskráninguna á þessu tæki. Reyndu aftur.";
 "account.lichess.tv.appleAccount" = "Skráðu þig inn á iPhone, iPad eða Mac með sama Apple-reikningi. Innskráningin samstillist í gegnum iCloud-lyklakippu.";
 "account.lichess.tv.checkAgain" = "Athuga aftur";
 "account.lichess.tv.token.title" = "Eða búðu til persónulegan lykil";

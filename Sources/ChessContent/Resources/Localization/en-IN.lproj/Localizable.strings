@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess did not accept the sign-in. Try again.";
 "account.lichess.error.rateLimited" = "Lichess is busy. Wait a minute, then try again.";
 "account.lichess.error.network" = "Could not reach Lichess. Check your connection, then try again.";
+"account.lichess.error.saveFailed" = "The sign-in could not be saved on this device. Try again.";
 "account.lichess.tv.appleAccount" = "Sign in on your iPhone, iPad or Mac with the same Apple Account. The sign-in syncs through iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "Check Again";
 "account.lichess.tv.token.title" = "Or create a personal token";

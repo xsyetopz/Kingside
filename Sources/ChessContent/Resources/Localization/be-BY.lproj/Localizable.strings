@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess не прыняў уваход. Паспрабуйце яшчэ раз.";
 "account.lichess.error.rateLimited" = "Lichess занятый. Пачакайце хвіліну і паспрабуйце яшчэ раз.";
 "account.lichess.error.network" = "Не ўдалося звязацца з Lichess. Праверце падключэнне і паспрабуйце яшчэ раз.";
+"account.lichess.error.saveFailed" = "Не ўдалося захаваць уваход на гэтай прыладзе. Паспрабуйце яшчэ раз.";
 "account.lichess.tv.appleAccount" = "Увайдзіце на iPhone, iPad або Mac з тым жа ўліковым запісам Apple. Уваход сінхранізуецца праз Звязак ключоў iCloud.";
 "account.lichess.tv.checkAgain" = "Праверыць яшчэ раз";
 "account.lichess.tv.token.title" = "Або стварыце асабісты токен";

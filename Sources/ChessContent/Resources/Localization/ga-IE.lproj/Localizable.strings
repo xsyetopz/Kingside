@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Níor ghlac Lichess leis an síniú isteach. Bain triail eile as.";
 "account.lichess.error.rateLimited" = "Tá Lichess gnóthach. Fan nóiméad, ansin bain triail eile as.";
 "account.lichess.error.network" = "Níorbh fhéidir teacht ar Lichess. Seiceáil do cheangal, ansin bain triail eile as.";
+"account.lichess.error.saveFailed" = "Níorbh fhéidir an síniú isteach a shábháil ar an ngléas seo. Bain triail eile as.";
 "account.lichess.tv.appleAccount" = "Sínigh isteach ar d'iPhone, d'iPad nó do Mac leis an gCuntas Apple céanna. Sioncronaíonn an síniú isteach trí iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "Seiceáil Arís";
 "account.lichess.tv.token.title" = "Nó cruthaigh comhartha pearsanta";

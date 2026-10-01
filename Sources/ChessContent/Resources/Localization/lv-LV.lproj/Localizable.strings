@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess nepieņēma pierakstīšanos. Mēģini vēlreiz.";
 "account.lichess.error.rateLimited" = "Lichess ir aizņemts. Uzgaidi minūti un mēģini vēlreiz.";
 "account.lichess.error.network" = "Nevarēja sazināties ar Lichess. Pārbaudi savienojumu un mēģini vēlreiz.";
+"account.lichess.error.saveFailed" = "Pierakstīšanos neizdevās saglabāt šajā ierīcē. Mēģini vēlreiz.";
 "account.lichess.tv.appleAccount" = "Pierakstieties savā iPhone, iPad vai Mac ierīcē ar to pašu Apple kontu. Pierakstīšanās tiek sinhronizēta, izmantojot iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "Pārbaudīt vēlreiz";
 "account.lichess.tv.token.title" = "Vai izveido personisko pilnvaru";

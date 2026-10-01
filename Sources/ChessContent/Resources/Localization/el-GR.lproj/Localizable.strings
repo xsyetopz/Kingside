@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Το Lichess δεν αποδέχτηκε τη σύνδεση. Δοκιμάστε ξανά.";
 "account.lichess.error.rateLimited" = "Το Lichess είναι απασχολημένο. Περιμένετε ένα λεπτό και δοκιμάστε ξανά.";
 "account.lichess.error.network" = "Δεν ήταν δυνατή η σύνδεση με το Lichess. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.";
+"account.lichess.error.saveFailed" = "Η σύνδεση δεν ήταν δυνατό να αποθηκευτεί σε αυτή τη συσκευή. Δοκιμάστε ξανά.";
 "account.lichess.tv.appleAccount" = "Συνδεθείτε στο iPhone, το iPad ή το Mac σας με τον ίδιο Apple Account. Η σύνδεση συγχρονίζεται μέσω του iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "Έλεγχος ξανά";
 "account.lichess.tv.token.title" = "Ή δημιουργήστε ένα προσωπικό διακριτικό";

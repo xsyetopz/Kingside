@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess-ը չընդունեց մուտքը։ Կրկին փորձեք։";
 "account.lichess.error.rateLimited" = "Lichess-ը զբաղված է։ Սպասեք մեկ րոպե, ապա կրկին փորձեք։";
 "account.lichess.error.network" = "Չհաջողվեց կապ հաստատել Lichess-ի հետ։ Ստուգեք ձեր կապը և կրկին փորձեք։";
+"account.lichess.error.saveFailed" = "Մուտքը չհաջողվեց պահել այս սարքում։ Կրկին փորձեք։";
 "account.lichess.tv.appleAccount" = "Մուտք գործեք ձեր iPhone-ում, iPad-ում կամ Mac-ում նույն Apple հաշվով։ Մուտքը համաժամեցվում է iCloud Keychain-ի միջոցով։";
 "account.lichess.tv.checkAgain" = "Ստուգել կրկին";
 "account.lichess.tv.token.title" = "Կամ ստեղծեք անձնական թոքեն";

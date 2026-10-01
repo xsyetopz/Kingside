@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess ورود را نپذیرفت. دوباره تلاش کنید.";
 "account.lichess.error.rateLimited" = "Lichess شلوغ است. یک دقیقه صبر کنید، سپس دوباره تلاش کنید.";
 "account.lichess.error.network" = "اتصال به Lichess برقرار نشد. اتصال خود را بررسی کنید، سپس دوباره تلاش کنید.";
+"account.lichess.error.saveFailed" = "ورود در این دستگاه ذخیره نشد. دوباره تلاش کنید.";
 "account.lichess.tv.appleAccount" = "در iPhone، iPad یا Mac خود با همان حساب Apple وارد شوید. ورود از طریق زنجیره کلید iCloud همگام می‌شود.";
 "account.lichess.tv.checkAgain" = "بررسی دوباره";
 "account.lichess.tv.token.title" = "یا یک توکن شخصی بسازید";

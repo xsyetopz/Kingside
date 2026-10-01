@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess није прихватио пријаву. Покушајте поново.";
 "account.lichess.error.rateLimited" = "Lichess је заузет. Сачекајте минут, па покушајте поново.";
 "account.lichess.error.network" = "Није могуће повезати се са Lichess-ом. Проверите везу, па покушајте поново.";
+"account.lichess.error.saveFailed" = "Није могуће сачувати пријаву на овом уређају. Покушајте поново.";
 "account.lichess.tv.appleAccount" = "Пријавите се на свом iPhone-у, iPad-у или Mac-у помоћу истог Apple налога. Пријава се синхронизује преко iCloud привезка кључева.";
 "account.lichess.tv.checkAgain" = "Провери поново";
 "account.lichess.tv.token.title" = "Или направите лични токен";

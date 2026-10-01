@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess přihlášení nepřijal. Zkuste to znovu.";
 "account.lichess.error.rateLimited" = "Lichess je vytížený. Počkejte minutu a zkuste to znovu.";
 "account.lichess.error.network" = "Nepodařilo se spojit s Lichess. Zkontrolujte připojení a zkuste to znovu.";
+"account.lichess.error.saveFailed" = "Přihlášení se nepodařilo uložit v tomto zařízení. Zkuste to znovu.";
 "account.lichess.tv.appleAccount" = "Přihlaste se na iPhonu, iPadu nebo Macu pomocí stejného Apple účtu. Přihlášení se synchronizuje přes iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "Zkontrolovat znovu";
 "account.lichess.tv.token.title" = "Nebo vytvořte osobní token";

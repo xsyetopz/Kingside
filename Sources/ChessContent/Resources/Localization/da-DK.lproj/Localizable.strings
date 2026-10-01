@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess accepterede ikke login. Prøv igen.";
 "account.lichess.error.rateLimited" = "Lichess har travlt. Vent et minut, og prøv så igen.";
 "account.lichess.error.network" = "Kunne ikke få forbindelse til Lichess. Tjek din forbindelse, og prøv igen.";
+"account.lichess.error.saveFailed" = "Login kunne ikke gemmes på denne enhed. Prøv igen.";
 "account.lichess.tv.appleAccount" = "Log ind på din iPhone, iPad eller Mac med den samme Apple-konto. Login synkroniseres via iCloud-nøglering.";
 "account.lichess.tv.checkAgain" = "Tjek igen";
 "account.lichess.tv.token.title" = "Eller opret et personligt token";

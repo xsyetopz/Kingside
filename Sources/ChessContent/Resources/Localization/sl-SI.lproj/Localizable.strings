@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess ni sprejel prijave. Poskusite znova.";
 "account.lichess.error.rateLimited" = "Lichess je zaseden. Počakajte minuto in poskusite znova.";
 "account.lichess.error.network" = "Povezave z Lichess ni bilo mogoče vzpostaviti. Preverite povezavo in poskusite znova.";
+"account.lichess.error.saveFailed" = "Prijave ni bilo mogoče shraniti v to napravo. Poskusite znova.";
 "account.lichess.tv.appleAccount" = "Prijavite se na iPhonu, iPadu ali Macu z istim računom Apple. Prijava se sinhronizira prek iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "Preveri znova";
 "account.lichess.tv.token.title" = "Ali ustvarite osebni žeton";

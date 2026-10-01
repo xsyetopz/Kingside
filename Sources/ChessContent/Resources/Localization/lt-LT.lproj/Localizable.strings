@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess nepriėmė prisijungimo. Bandykite dar kartą.";
 "account.lichess.error.rateLimited" = "Lichess užimtas. Palaukite minutę ir bandykite dar kartą.";
 "account.lichess.error.network" = "Nepavyko pasiekti Lichess. Patikrinkite ryšį ir bandykite dar kartą.";
+"account.lichess.error.saveFailed" = "Prisijungimo nepavyko išsaugoti šiame įrenginyje. Bandykite dar kartą.";
 "account.lichess.tv.appleAccount" = "Prisijunkite savo iPhone, iPad arba Mac su ta pačia Apple paskyra. Prisijungimas sinchronizuojamas per iCloud raktų pakabuką.";
 "account.lichess.tv.checkAgain" = "Patikrinti dar kartą";
 "account.lichess.tv.token.title" = "Arba sukurkite asmeninį raktą";

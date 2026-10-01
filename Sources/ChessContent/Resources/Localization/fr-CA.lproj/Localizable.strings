@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess n'a pas accepté l'ouverture de session. Réessayez.";
 "account.lichess.error.rateLimited" = "Lichess est occupé. Patientez une minute, puis réessayez.";
 "account.lichess.error.network" = "Impossible de joindre Lichess. Vérifiez votre connexion, puis réessayez.";
+"account.lichess.error.saveFailed" = "Impossible d'enregistrer l'ouverture de session sur cet appareil. Réessayez.";
 "account.lichess.tv.appleAccount" = "Ouvrez une session sur votre iPhone, iPad ou Mac avec le même compte Apple. La session se synchronise par le Trousseau iCloud.";
 "account.lichess.tv.checkAgain" = "Vérifier à nouveau";
 "account.lichess.tv.token.title" = "Ou créez un jeton personnel";

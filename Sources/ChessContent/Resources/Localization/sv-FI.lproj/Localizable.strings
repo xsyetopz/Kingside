@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess godkände inte inloggningen. Försök igen.";
 "account.lichess.error.rateLimited" = "Lichess är upptaget. Vänta en minut och försök sedan igen.";
 "account.lichess.error.network" = "Det gick inte att nå Lichess. Kontrollera anslutningen och försök igen.";
+"account.lichess.error.saveFailed" = "Inloggningen kunde inte sparas på den här enheten. Försök igen.";
 "account.lichess.tv.appleAccount" = "Logga in på din iPhone, iPad eller Mac med samma Apple-konto. Inloggningen synkas via iCloud-nyckelringen.";
 "account.lichess.tv.checkAgain" = "Kontrollera igen";
 "account.lichess.tv.token.title" = "Eller skapa en personlig token";

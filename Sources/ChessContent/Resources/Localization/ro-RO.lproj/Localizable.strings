@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess nu a acceptat autentificarea. Încearcă din nou.";
 "account.lichess.error.rateLimited" = "Lichess este ocupat. Așteaptă un minut, apoi încearcă din nou.";
 "account.lichess.error.network" = "Nu s-a putut contacta Lichess. Verifică conexiunea, apoi încearcă din nou.";
+"account.lichess.error.saveFailed" = "Autentificarea nu a putut fi salvată pe acest dispozitiv. Încearcă din nou.";
 "account.lichess.tv.appleAccount" = "Autentifică-te pe iPhone, iPad sau Mac cu același cont Apple. Autentificarea se sincronizează prin Breloc iCloud.";
 "account.lichess.tv.checkAgain" = "Verifică din nou";
 "account.lichess.tv.token.title" = "Sau creează un token personal";

@@ -20,6 +20,7 @@ extension LichessFailure {
     case .rateLimited: "account.lichess.error.rateLimited"
     case .network: "account.lichess.error.network"
     case .notAllowed: "online.error.notAllowed"
+    case .couldNotSaveSignIn: "account.lichess.error.saveFailed"
     }
   }
 }

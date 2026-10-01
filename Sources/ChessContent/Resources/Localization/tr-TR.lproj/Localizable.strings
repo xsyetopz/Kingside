@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess oturum açmayı kabul etmedi. Tekrar dene.";
 "account.lichess.error.rateLimited" = "Lichess meşgul. Bir dakika bekle, sonra tekrar dene.";
 "account.lichess.error.network" = "Lichess'e ulaşılamadı. Bağlantını kontrol et, sonra tekrar dene.";
+"account.lichess.error.saveFailed" = "Oturum açma bilgisi bu cihaza kaydedilemedi. Tekrar dene.";
 "account.lichess.tv.appleAccount" = "iPhone, iPad veya Mac'inde aynı Apple Hesabı ile oturum aç. Oturum açma bilgisi iCloud Anahtar Zinciri ile eşzamanlanır.";
 "account.lichess.tv.checkAgain" = "Tekrar Kontrol Et";
 "account.lichess.tv.token.title" = "Veya kişisel bir anahtar oluştur";

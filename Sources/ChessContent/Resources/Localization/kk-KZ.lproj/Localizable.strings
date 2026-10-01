@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess кіруді қабылдамады. Қайталап көріңіз.";
 "account.lichess.error.rateLimited" = "Lichess бос емес. Бір минут күтіп, қайталап көріңіз.";
 "account.lichess.error.network" = "Lichess-ке қосылу мүмкін болмады. Байланысты тексеріп, қайталап көріңіз.";
+"account.lichess.error.saveFailed" = "Кіруді осы құрылғыға сақтау мүмкін болмады. Қайталап көріңіз.";
 "account.lichess.tv.appleAccount" = "iPhone, iPad немесе Mac құрылғысында сол Apple Account арқылы кіріңіз. Кіру деректері iCloud Keychain арқылы синхрондалады.";
 "account.lichess.tv.checkAgain" = "Қайта тексеру";
 "account.lichess.tv.token.title" = "Немесе жеке токен жасаңыз";

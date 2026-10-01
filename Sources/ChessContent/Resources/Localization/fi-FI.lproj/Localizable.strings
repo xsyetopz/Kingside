@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess ei hyväksynyt kirjautumista. Yritä uudelleen.";
 "account.lichess.error.rateLimited" = "Lichess on kiireinen. Odota hetki ja yritä sitten uudelleen.";
 "account.lichess.error.network" = "Lichessiin ei saatu yhteyttä. Tarkista yhteytesi ja yritä uudelleen.";
+"account.lichess.error.saveFailed" = "Kirjautumista ei voitu tallentaa tälle laitteelle. Yritä uudelleen.";
 "account.lichess.tv.appleAccount" = "Kirjaudu iPhonella, iPadilla tai Macilla samalla Apple-tilillä. Kirjautuminen synkronoituu iCloud-avainnipun kautta.";
 "account.lichess.tv.checkAgain" = "Tarkista uudelleen";
 "account.lichess.tv.token.title" = "Tai luo henkilökohtainen tunnus";

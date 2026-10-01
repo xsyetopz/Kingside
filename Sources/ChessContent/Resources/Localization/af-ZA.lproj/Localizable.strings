@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess het nie die aanmelding aanvaar nie. Probeer weer.";
 "account.lichess.error.rateLimited" = "Lichess is besig. Wag 'n minuut en probeer dan weer.";
 "account.lichess.error.network" = "Kon nie Lichess bereik nie. Kontroleer jou verbinding en probeer dan weer.";
+"account.lichess.error.saveFailed" = "Die aanmelding kon nie op hierdie toestel gestoor word nie. Probeer weer.";
 "account.lichess.tv.appleAccount" = "Meld aan op jou iPhone, iPad of Mac met dieselfde Apple-rekening. Die aanmelding sinchroniseer deur iCloud-sleutelhanger.";
 "account.lichess.tv.checkAgain" = "Kontroleer weer";
 "account.lichess.tv.token.title" = "Of skep 'n persoonlike teken";

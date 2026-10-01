@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess-ek ez du saio-hasiera onartu. Saiatu berriro.";
 "account.lichess.error.rateLimited" = "Lichess lanpetuta dago. Itxaron minutu bat eta saiatu berriro.";
 "account.lichess.error.network" = "Ezin izan da Lichess-era konektatu. Egiaztatu konexioa eta saiatu berriro.";
+"account.lichess.error.saveFailed" = "Ezin izan da saio-hasiera gailu honetan gorde. Saiatu berriro.";
 "account.lichess.tv.appleAccount" = "Hasi saioa zure iPhone, iPad edo Mac gailuan Apple Account berarekin. Saio-hasiera iCloud Keychain bidez sinkronizatzen da.";
 "account.lichess.tv.checkAgain" = "Egiaztatu berriro";
 "account.lichess.tv.token.title" = "Edo sortu token pertsonal bat";

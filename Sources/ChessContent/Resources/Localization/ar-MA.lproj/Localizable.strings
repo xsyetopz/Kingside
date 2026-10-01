@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "لم يقبل Lichess تسجيل الدخول. حاول مجددًا.";
 "account.lichess.error.rateLimited" = "Lichess مشغول. انتظر دقيقة، ثم حاول مجددًا.";
 "account.lichess.error.network" = "تعذر الوصول إلى Lichess. تحقق من اتصالك، ثم حاول مجددًا.";
+"account.lichess.error.saveFailed" = "تعذر حفظ تسجيل الدخول على هذا الجهاز. حاول مجددًا.";
 "account.lichess.tv.appleAccount" = "سجّل الدخول على iPhone أو iPad أو Mac باستخدام حساب Apple نفسه. تتم مزامنة تسجيل الدخول عبر سلسلة مفاتيح iCloud.";
 "account.lichess.tv.checkAgain" = "تحقق مجددًا";
 "account.lichess.tv.token.title" = "أو أنشئ رمزًا شخصيًا";

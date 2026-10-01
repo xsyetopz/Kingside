@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess ei aktsepteerinud sisselogimist. Proovi uuesti.";
 "account.lichess.error.rateLimited" = "Lichess on hõivatud. Oota minut ja proovi siis uuesti.";
 "account.lichess.error.network" = "Lichessiga ei õnnestunud ühendust saada. Kontrolli ühendust ja proovi uuesti.";
+"account.lichess.error.saveFailed" = "Sisselogimist ei õnnestunud sellesse seadmesse salvestada. Proovi uuesti.";
 "account.lichess.tv.appleAccount" = "Logi sisse oma iPhone'is, iPadis või Macis sama Apple'i kontoga. Sisselogimine sünkroonitakse iCloudi võtmerõnga kaudu.";
 "account.lichess.tv.checkAgain" = "Kontrolli uuesti";
 "account.lichess.tv.token.title" = "Või loo isiklik tunnus";

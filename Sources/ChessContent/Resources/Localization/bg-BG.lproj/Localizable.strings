@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess не прие входа. Опитай пак.";
 "account.lichess.error.rateLimited" = "Lichess е претоварен. Изчакай минута и опитай пак.";
 "account.lichess.error.network" = "Няма връзка с Lichess. Провери връзката си и опитай пак.";
+"account.lichess.error.saveFailed" = "Входът не можа да бъде запазен на това устройство. Опитай пак.";
 "account.lichess.tv.appleAccount" = "Влез на своя iPhone, iPad или Mac със същия Apple Account. Входът се синхронизира чрез iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "Провери отново";
 "account.lichess.tv.token.title" = "Или създай личен токен";

@@ -116,6 +116,18 @@ struct LichessAccountModelTests {
   }
 
   @Test(.timeLimit(.minutes(1)))
+  func signInThatCannotBeSavedSaysSoAndOpensNoStream() async throws {
+    let transport = makeTransport(lichessAPI)
+    let configuration = configuration
+    let model = LichessAccountModel(store: UnsavableTokenStore()) {
+      LichessClient(configuration: configuration, transport: transport, tokenProvider: $0)
+    }
+    await model.signIn(token: "good")
+    #expect(model.phase == .failed(.couldNotSaveSignIn))
+    #expect(await transport.paths == ["GET /api/account"])
+  }
+
+  @Test(.timeLimit(.minutes(1)))
   func startWithStoredTokenSignsInAndLoadsOngoingGames() async throws {
     let (model, _, transport) = makeModel(token: "good")
     await model.start()
@@ -228,6 +240,31 @@ struct LichessAccountModelTests {
     try await wait { waits.all.count >= 2 }
     await model.signOut()
     #expect(waits.all.allSatisfy { $0 >= .seconds(60) })
+  }
+
+  @Test(.timeLimit(.minutes(1)))
+  func anEventBeforeTheDisconnectKeepsTheReconnectWaitAtOneSecond() async throws {
+    let waits = Waits()
+    // Every stream delivers one event, then ends.
+    let transport = FakeTransport(streamLines: [challengeLine(id: "c1")]) { request in
+      let (status, body) = lichessAPI(request)
+      return (status, [:], body)
+    }
+    let configuration = configuration
+    let model = LichessAccountModel(
+      store: InMemoryTokenStore(token: "good"),
+      makeClient: {
+        LichessClient(configuration: configuration, transport: transport, tokenProvider: $0)
+      },
+      sleep: { duration in
+        waits.record(duration)
+        await Task.yield()
+      }
+    )
+    await model.start()
+    try await wait { waits.all.count >= 3 }
+    await model.signOut()
+    #expect(waits.all.allSatisfy { $0 == .seconds(1) })
   }
 
   // MARK: - Lobby
@@ -437,6 +474,15 @@ struct LichessAccountModelTests {
     let (model, _, _) = makeModel()
     #expect(model.gameConnection(id: "rCRw1Auv").userID.isEmpty)
   }
+}
+
+/// A store like a keychain that refuses every write.
+private struct UnsavableTokenStore: TokenStore {
+  struct SaveRefused: Error {}
+
+  func token() -> String? { nil }
+  func save(_ token: String) throws { throw SaveRefused() }
+  func delete() throws {}
 }
 
 private final class Waits: @unchecked Sendable {

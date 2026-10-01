@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess нэвтрэлтийг хүлээн авсангүй. Дахин оролдоно уу.";
 "account.lichess.error.rateLimited" = "Lichess ачаалалтай байна. Нэг минут хүлээгээд дахин оролдоно уу.";
 "account.lichess.error.network" = "Lichess-т холбогдож чадсангүй. Холболтоо шалгаад дахин оролдоно уу.";
+"account.lichess.error.saveFailed" = "Нэвтрэлтийг энэ төхөөрөмжид хадгалж чадсангүй. Дахин оролдоно уу.";
 "account.lichess.tv.appleAccount" = "iPhone, iPad эсвэл Mac дээрээ ижил Apple Account-аар нэвтэрнэ үү. Нэвтрэлт iCloud Keychain-ээр синк хийгдэнэ.";
 "account.lichess.tv.checkAgain" = "Дахин шалгах";
 "account.lichess.tv.token.title" = "Эсвэл хувийн токен үүсгэх";

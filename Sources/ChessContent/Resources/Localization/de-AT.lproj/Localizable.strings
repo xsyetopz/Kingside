@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess hat die Anmeldung nicht akzeptiert. Versuche es erneut.";
 "account.lichess.error.rateLimited" = "Lichess ist ausgelastet. Warte eine Minute und versuche es dann erneut.";
 "account.lichess.error.network" = "Lichess ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.";
+"account.lichess.error.saveFailed" = "Die Anmeldung konnte nicht auf diesem Gerät gespeichert werden. Versuche es erneut.";
 "account.lichess.tv.appleAccount" = "Melde dich auf deinem iPhone, iPad oder Mac mit demselben Apple-Account an. Die Anmeldung wird über den iCloud-Schlüsselbund synchronisiert.";
 "account.lichess.tv.checkAgain" = "Erneut prüfen";
 "account.lichess.tv.token.title" = "Oder erstelle ein persönliches Token";

@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichessがサインインを受け付けませんでした。もう一度お試しください。";
 "account.lichess.error.rateLimited" = "Lichessが混み合っています。1分ほど待ってから、もう一度お試しください。";
 "account.lichess.error.network" = "Lichessに接続できませんでした。接続を確認してから、もう一度お試しください。";
+"account.lichess.error.saveFailed" = "サインインをこのデバイスに保存できませんでした。もう一度お試しください。";
 "account.lichess.tv.appleAccount" = "iPhone、iPad、Macで同じApple Accountでサインインしてください。サインイン情報はiCloudキーチェーンで同期されます。";
 "account.lichess.tv.checkAgain" = "再確認";
 "account.lichess.tv.token.title" = "または個人用トークンを作成";

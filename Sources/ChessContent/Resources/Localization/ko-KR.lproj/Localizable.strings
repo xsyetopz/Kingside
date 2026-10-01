@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess에서 로그인을 받아들이지 않았어요. 다시 시도하세요.";
 "account.lichess.error.rateLimited" = "Lichess가 혼잡해요. 1분 후에 다시 시도하세요.";
 "account.lichess.error.network" = "Lichess에 연결할 수 없어요. 연결 상태를 확인한 다음 다시 시도하세요.";
+"account.lichess.error.saveFailed" = "로그인을 이 기기에 저장할 수 없어요. 다시 시도하세요.";
 "account.lichess.tv.appleAccount" = "iPhone, iPad 또는 Mac에서 같은 Apple 계정으로 로그인하세요. 로그인 정보는 iCloud 키체인을 통해 동기화돼요.";
 "account.lichess.tv.checkAgain" = "다시 확인";
 "account.lichess.tv.token.title" = "또는 개인 토큰 만들기";

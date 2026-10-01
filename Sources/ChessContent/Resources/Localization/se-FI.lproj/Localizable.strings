@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess ii dohkkehan sisačálihemiid. Geahččal fas.";
 "account.lichess.error.rateLimited" = "Lichess lea hui gorrojuvvon. Vuordde minuhta ja geahččal fas.";
 "account.lichess.error.network" = "Ii lihkostuvvan oažžut oktavuođa Lichessii. Dárkkis gulahallama ja geahččal fas.";
+"account.lichess.error.saveFailed" = "Ii lihkostuvvan vurket sisačálihemiid dán reaiddus. Geahččal fas.";
 "account.lichess.tv.appleAccount" = "Čálit sisa iPhonas, iPadas dahje Macas seammá Apple Accountain. Sisačálihus sihkkarastojuvvo iCloud Keychaina bokte.";
 "account.lichess.tv.checkAgain" = "Dárkkis fas";
 "account.lichess.tv.token.title" = "Dahje dagat persovnnalaš tokena";

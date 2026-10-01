@@ -9,6 +9,8 @@ public enum LichessFailure: Error, Equatable, Sendable {
   case unauthorized, rateLimited, network
   /// Lichess answered 400: it refuses the seek or challenge.
   case notAllowed
+  /// Lichess accepted the token, but this device could not store it.
+  case couldNotSaveSignIn
 
   init(_ error: any Error) {
     switch error as? LichessError {
@@ -43,12 +45,6 @@ public final class LichessAccountModel {
     case signedIn(username: String)
     case failed(LichessFailure)
   }
-
-  /// Wait before the first reconnect; it doubles up to `maxReconnectDelay`.
-  static let firstReconnectDelay: Duration = .seconds(1)
-  static let maxReconnectDelay: Duration = .seconds(30)
-  /// Lichess asks clients to wait at least a minute after a 429.
-  static let rateLimitDelay: Duration = .seconds(60)
 
   public private(set) var phase = Phase.signedOut
   private(set) var incomingChallenges: [LichessChallenge] = []
@@ -111,7 +107,10 @@ public final class LichessAccountModel {
     defer { source.setCandidate(nil) }
     do {
       let account = try await client.account()
-      try store.save(token)
+      do { try store.save(token) } catch {
+        phase = .failed(.couldNotSaveSignIn)
+        return
+      }
       source.setCandidate(nil)
       phase = .signedIn(username: account.username)
       openStream()
@@ -280,25 +279,24 @@ public final class LichessAccountModel {
 
   /// Reads events until cancelled, reconnecting with back-off after every disconnect.
   private func runStream() async {
-    var delay = Self.firstReconnectDelay
+    var reconnect = ReconnectPolicy()
     while !Task.isCancelled {
       do {
         // Events only report changes, so reload what a disconnect may have hidden.
         await refresh()
         for try await event in await client.eventStream() {
           if Task.isCancelled { return }
-          delay = Self.firstReconnectDelay
+          reconnect.eventArrived()
           await apply(event)
         }
       } catch LichessError.unauthorized {
         handle(LichessError.unauthorized)
         return
       } catch LichessError.rateLimited {
-        delay = max(delay, Self.rateLimitDelay)
+        reconnect.rateLimited()
       } catch {}
       guard !Task.isCancelled else { return }
-      do { try await sleep(delay) } catch { return }
-      delay = min(delay * 2, Self.maxReconnectDelay)
+      do { try await sleep(reconnect.disconnected()) } catch { return }
     }
   }
 

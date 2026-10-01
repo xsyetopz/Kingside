@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess לא אישר את ההתחברות. נסו שוב.";
 "account.lichess.error.rateLimited" = "Lichess עמוס. המתינו דקה ונסו שוב.";
 "account.lichess.error.network" = "לא ניתן היה להתחבר ל-Lichess. בדקו את החיבור ונסו שוב.";
+"account.lichess.error.saveFailed" = "לא ניתן היה לשמור את ההתחברות במכשיר זה. נסו שוב.";
 "account.lichess.tv.appleAccount" = "התחברו ב-iPhone, ב-iPad או ב-Mac עם אותו חשבון Apple. ההתחברות מסתנכרנת דרך iCloud Keychain.";
 "account.lichess.tv.checkAgain" = "בדיקה מחדש";
 "account.lichess.tv.token.title" = "או צרו אסימון אישי";

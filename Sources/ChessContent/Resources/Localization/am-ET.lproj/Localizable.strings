@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess መግቢያውን አልተቀበለም። እንደገና ሞክር።";
 "account.lichess.error.rateLimited" = "Lichess ተጨናንቋል። አንድ ደቂቃ ጠብቅ፣ ከዚያ እንደገና ሞክር።";
 "account.lichess.error.network" = "Lichessን ማግኘት አልተቻለም። ግንኙነትህን አረጋግጥ፣ ከዚያ እንደገና ሞክር።";
+"account.lichess.error.saveFailed" = "መግቢያው በዚህ መሣሪያ ላይ መቀመጥ አልተቻለም። እንደገና ሞክር።";
 "account.lichess.tv.appleAccount" = "በiPhone፣ iPad ወይም Mac ላይ በተመሳሳይ Apple መለያ ግባ። መግቢያው በiCloud Keychain በኩል ይመሳሰላል።";
 "account.lichess.tv.checkAgain" = "እንደገና አረጋግጥ";
 "account.lichess.tv.token.title" = "ወይም የግል ቶከን ፍጠር";

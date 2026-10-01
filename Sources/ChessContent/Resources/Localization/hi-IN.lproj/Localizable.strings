@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess ने साइन-इन स्वीकार नहीं किया। फिर कोशिश करें।";
 "account.lichess.error.rateLimited" = "Lichess व्यस्त है। एक मिनट रुकें, फिर कोशिश करें।";
 "account.lichess.error.network" = "Lichess तक नहीं पहुँचा जा सका। अपना कनेक्शन जाँचें, फिर कोशिश करें।";
+"account.lichess.error.saveFailed" = "साइन-इन इस डिवाइस पर सहेजा नहीं जा सका। फिर कोशिश करें।";
 "account.lichess.tv.appleAccount" = "अपने iPhone, iPad या Mac पर उसी Apple खाते से साइन इन करें। साइन-इन iCloud कीचेन के ज़रिए सिंक होता है।";
 "account.lichess.tv.checkAgain" = "फिर जाँचें";
 "account.lichess.tv.token.title" = "या एक निजी टोकन बनाएँ";

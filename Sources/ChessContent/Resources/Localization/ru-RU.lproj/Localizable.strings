@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess не принял вход. Повторите попытку.";
 "account.lichess.error.rateLimited" = "Lichess перегружен. Подождите минуту и повторите попытку.";
 "account.lichess.error.network" = "Не удалось подключиться к Lichess. Проверьте подключение и повторите попытку.";
+"account.lichess.error.saveFailed" = "Не удалось сохранить вход на этом устройстве. Повторите попытку.";
 "account.lichess.tv.appleAccount" = "Войдите на iPhone, iPad или Mac с той же учётной записью Apple. Вход синхронизируется через связку ключей iCloud.";
 "account.lichess.tv.checkAgain" = "Проверить снова";
 "account.lichess.tv.token.title" = "Или создайте персональный токен";

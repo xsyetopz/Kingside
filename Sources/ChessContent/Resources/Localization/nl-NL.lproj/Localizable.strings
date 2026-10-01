@@ -557,6 +557,7 @@
 "account.lichess.error.unauthorized" = "Lichess heeft het inloggen niet geaccepteerd. Probeer het opnieuw.";
 "account.lichess.error.rateLimited" = "Lichess is druk. Wacht een minuut en probeer het dan opnieuw.";
 "account.lichess.error.network" = "Kan geen verbinding maken met Lichess. Controleer je verbinding en probeer het opnieuw.";
+"account.lichess.error.saveFailed" = "Het inloggen kon niet op dit apparaat worden opgeslagen. Probeer het opnieuw.";
 "account.lichess.tv.appleAccount" = "Log in op je iPhone, iPad of Mac met hetzelfde Apple-account. De inlog wordt gesynchroniseerd via iCloud-sleutelhanger.";
 "account.lichess.tv.checkAgain" = "Opnieuw controleren";
 "account.lichess.tv.token.title" = "Of maak een persoonlijk token aan";
