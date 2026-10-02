@@ -1,5 +1,3 @@
-import Foundation
-
 /// `chat-filter.json`: the words that the online chat hides in incoming lines.
 public struct ChatFilter: Codable, Hashable, Sendable {
   /// Says what the list is, for whoever edits the file.

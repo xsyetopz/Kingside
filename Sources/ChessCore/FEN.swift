@@ -1,5 +1,3 @@
-import Foundation
-
 public extension ChessPosition {
   init(fen: String) throws {
     let fields = fen.split(separator: " ")

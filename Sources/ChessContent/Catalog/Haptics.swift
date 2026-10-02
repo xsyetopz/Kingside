@@ -1,5 +1,3 @@
-import Foundation
-
 /// `haptics.json`: the tunable choices of `ChessFeedback`. That is the Core Haptics patterns, the
 /// sound and haptic of each game event, and the game-controller repeat timing.
 public struct FeedbackTuning: Codable, Hashable, Sendable {

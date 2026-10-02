@@ -1,5 +1,3 @@
-import Foundation
-
 /// `play-tuning.json`: the tunable numbers of play, puzzles, and review. `ChessPlay` holds the
 /// rules that use them.
 public struct PlayTuning: Codable, Hashable, Sendable {

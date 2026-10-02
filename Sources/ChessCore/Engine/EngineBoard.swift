@@ -1,5 +1,3 @@
-import Foundation
-
 // Internal fast board used by the search engine.
 //
 // Squares use the 0x88 layout (index = rank * 16 + file), so `square & 0x88 != 0` means

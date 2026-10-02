@@ -1,5 +1,3 @@
-import Foundation
-
 /// `board-themes.json` entry: the colors of a procedurally drawn board.
 public struct BoardTheme: Codable, Hashable, Identifiable, Sendable {
   public let id: String

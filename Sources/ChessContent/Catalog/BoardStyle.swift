@@ -1,5 +1,3 @@
-import Foundation
-
 /// `board-style.json`: the rendering constants of the SpriteKit board, shared by every theme.
 /// Ratios are fractions of one square's side.
 public struct BoardStyle: Codable, Hashable, Sendable {

@@ -1,5 +1,3 @@
-import Foundation
-
 /// Static evaluation: material and piece placement (kept incrementally by the board and
 /// tapered between middlegame and endgame), plus pawn structure, rook files, bishop pair,
 /// king shelter and a mop-up term for won endgames.

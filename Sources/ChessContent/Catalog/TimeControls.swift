@@ -1,5 +1,3 @@
-import Foundation
-
 /// `time-controls.json`: the offered clock presets and how they are grouped.
 public struct TimeControlCatalog: Codable, Sendable {
   /// Moves assumed when estimating a game's length from its increment.

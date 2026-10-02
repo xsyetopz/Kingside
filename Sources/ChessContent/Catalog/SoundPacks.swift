@@ -1,5 +1,3 @@
-import Foundation
-
 /// `sound-packs.json` entry: sound effects described as synthesis recipes.
 ///
 /// Each effect is a mix of layers. A layer's sample at time `t` (seconds from the

@@ -1,5 +1,3 @@
-import Foundation
-
 /// A chess position backed by an `EngineBoard`, copied on write. The rules (move generation,
 /// attacks, material) are the engine's; the position adds the FEN fields the engine does not keep
 /// exactly: the en-passant target after any double push, and the unclamped clocks.

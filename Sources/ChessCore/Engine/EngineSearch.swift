@@ -1,5 +1,3 @@
-import Foundation
-
 struct TranspositionEntry {
   var key: UInt64 = 0
   var move: EngineMove = 0
