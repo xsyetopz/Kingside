@@ -83,6 +83,20 @@
     }
 
     @Test
+    func targetsForTheSameGameAreEqual() throws {
+      let session = try makeSession()
+      let other = try makeSession()
+      defer { try? FileManager.default.removeItem(at: directory) }
+
+      let target = GameMenuTarget(session: session) {}
+      let update = GameMenuTarget(session: session, confirmResign: {}, flip: {})
+
+      #expect(target == update)
+      #expect(target != GameMenuTarget(session: other) {})
+      #expect(target != GameMenuTarget {})
+    }
+
+    @Test
     func everyCommandHasItsShortcut() {
       let expected: [GameMenuCommand: GameMenuShortcut] = [
         .hint: GameMenuShortcut(key: "h", shift: true),

@@ -9,6 +9,8 @@
     var session: (any PlayableGame)?
     var newGame: () -> Void = {}
     var confirmResign: () -> Void = {}
+    /// The puzzle's board, when there is no session.
+    var puzzle: PuzzleBoardSession?
     let flip: () -> Void
 
     /// The Hint, Takeback and Rematch items are shown unless the game cannot do them; a puzzle
@@ -25,6 +27,15 @@
     var canResign: Bool { session.map { !$0.isGameOver } ?? false }
     /// Rematch and New Game.
     var canStartAgain: Bool { session?.isGameOver ?? false }
+  }
+
+  /// Targets for the same game or puzzle are equal, whatever their closures. Each view update
+  /// makes a new target; if it counted as a change, the menu would update the view again, and
+  /// the main thread would never go idle.
+  extension GameMenuTarget: @MainActor Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+      lhs.session === rhs.session && lhs.puzzle === rhs.puzzle
+    }
   }
 
   extension FocusedValues {

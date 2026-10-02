@@ -60,7 +60,10 @@ struct PuzzleScreenLayout<Header: View>: View {
       .toolbar {
         ToolbarItem(placement: .primaryAction) { flipButton.labelStyle(.iconOnly) }
       }
-      .focusedSceneValue(\.gameMenuTarget, GameMenuTarget { board.apply(.flipBoard) })
+      .focusedSceneValue(
+        \.gameMenuTarget,
+        GameMenuTarget(puzzle: board) { board.apply(.flipBoard) }
+      )
     #endif
   }
 
