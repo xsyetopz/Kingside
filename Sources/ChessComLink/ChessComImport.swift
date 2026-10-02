@@ -1,5 +1,4 @@
 import ChessCore
-import Foundation
 
 public struct ChessComImportedGame: Equatable, Sendable {
   public var source: ChessComGame

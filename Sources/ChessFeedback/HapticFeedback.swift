@@ -1,6 +1,5 @@
 import ChessContent
 import CoreHaptics
-import Foundation
 
 /// Plays the Core Haptics patterns of `FeedbackTuning.haptics`.
 ///

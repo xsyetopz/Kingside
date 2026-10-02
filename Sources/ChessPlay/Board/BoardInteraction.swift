@@ -1,5 +1,4 @@
 import ChessCore
-import Foundation
 
 // Board focus and selection, owned by a session and projected into `BoardSnapshot`.
 // - `focusedSquare` is the remote or keyboard cursor; `moveFocus(_:)` moves it in screen

@@ -1,6 +1,5 @@
 import ChessComLink
 import ChessComPlay
-import ChessCore
 import ChessPlay
 import Foundation
 import Observation

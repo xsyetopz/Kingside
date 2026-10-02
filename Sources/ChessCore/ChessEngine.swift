@@ -1,5 +1,3 @@
-import Foundation
-
 /// An engine score from White's point of view.
 ///
 /// `mateIn` is set when a forced mate was found: positive when White mates in that many

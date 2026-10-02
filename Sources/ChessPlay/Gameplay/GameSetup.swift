@@ -1,6 +1,5 @@
 import ChessContent
 import ChessCore
-import Foundation
 
 /// Everything needed to start a new game. Built by Play Bots and Play a Friend.
 public struct GameSetup: Hashable, Sendable {

@@ -5,7 +5,6 @@ import SpriteKit
 import SwiftUI
 // `SpriteView` lives in this cross-import overlay; the open-source toolchain does not load it
 // from `import SpriteKit` plus `import SwiftUI` alone.
-import _SpriteKit_SwiftUI
 
 /// Shows a `BoardScene` and turns every input source into `BoardInput`s.
 ///

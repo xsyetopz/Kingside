@@ -1,4 +1,3 @@
-import Foundation
 import ChessCore
 
 /// `puzzles.json` entry, from the Lichess puzzle database (CC0).

@@ -1,4 +1,3 @@
-import ChessContent
 import SwiftUI
 
 /// The app's root: a tab view on iOS and tvOS, a sidebar on macOS.

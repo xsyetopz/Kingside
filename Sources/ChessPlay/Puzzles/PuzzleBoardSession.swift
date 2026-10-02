@@ -1,6 +1,5 @@
 import ChessContent
 import ChessCore
-import Foundation
 import Observation
 
 // One puzzle on the board.

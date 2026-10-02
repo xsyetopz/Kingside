@@ -1,6 +1,5 @@
 import ChessContent
 import ChessCore
-import Foundation
 import SpriteKit
 
 /// Where the board sits in a scene: the largest centered square, 8 × 8 squares, with

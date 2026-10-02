@@ -1,6 +1,5 @@
 import ChessCore
 import ChessPlay
-import Foundation
 import SpriteKit
 
 /// A piece following the pointer.

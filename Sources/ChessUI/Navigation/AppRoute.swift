@@ -1,5 +1,4 @@
 import ChessPlay
-import Foundation
 
 /// Top-level sections: tabs on iOS and tvOS, the sidebar on macOS.
 enum AppSection: String, CaseIterable, Identifiable, Hashable {

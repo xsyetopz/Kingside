@@ -1,4 +1,3 @@
-import ChessBoardScene
 import ChessContent
 import ChessCore
 import ChessFeedback

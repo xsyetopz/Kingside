@@ -1,7 +1,6 @@
 import ChessContent
 import ChessCore
 import ChessPlay
-import Foundation
 import LichessLink
 
 /// One Lichess game as an `OnlineGameConnection`: maps the Board API's game stream to

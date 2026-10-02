@@ -1,6 +1,5 @@
 import ChessContent
 import ChessCore
-import Foundation
 import Testing
 
 @testable import ChessPlay

@@ -1,5 +1,4 @@
 import ChessContent
-import Foundation
 import Observation
 
 /// Rated puzzle training: picks an unseen puzzle near the player's rating, records the first

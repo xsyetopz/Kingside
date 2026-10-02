@@ -1,4 +1,6 @@
 import ChessContent
+// Foundation provides the C math function `pow`; unused_import does not attribute it.
+// swiftlint:disable:next unused_import
 import Foundation
 
 /// Elo update for rated puzzles: the player "plays" the puzzle as an opponent with the

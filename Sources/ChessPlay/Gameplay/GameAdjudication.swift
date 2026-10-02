@@ -1,6 +1,5 @@
 import ChessContent
 import ChessCore
-import Foundation
 
 /// Pure game-end rules used by the game session.
 enum GameAdjudication {

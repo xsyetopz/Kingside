@@ -1,5 +1,4 @@
 import ChessContent
-import Foundation
 import Observation
 
 /// The Daily Puzzle of one day. It is unrated: playing it to the end, with hints and retries

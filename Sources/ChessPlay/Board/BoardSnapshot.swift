@@ -1,5 +1,4 @@
 import ChessCore
-import Foundation
 
 /// Everything the board scene draws, as ids and values. The scene resolves colors and assets
 /// from `ChessContent` and the settings; it never changes chess state and sends `BoardInput`s.

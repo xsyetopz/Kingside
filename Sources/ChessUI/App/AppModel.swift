@@ -2,7 +2,6 @@ import ChessContent
 import ChessCore
 import ChessOnline
 import ChessPlay
-import Foundation
 import LichessLink
 import Observation
 

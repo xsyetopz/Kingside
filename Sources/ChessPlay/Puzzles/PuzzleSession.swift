@@ -1,6 +1,5 @@
 import ChessContent
 import ChessCore
-import Foundation
 import Observation
 
 /// Pure solving rules for one puzzle, independent of UI and timing.

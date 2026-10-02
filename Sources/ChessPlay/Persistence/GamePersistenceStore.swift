@@ -1,4 +1,3 @@
-import ChessCore
 import Foundation
 
 /// Stores local games as one JSON file, by default `Kingside/saved-games.json` in

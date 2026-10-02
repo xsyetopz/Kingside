@@ -1,5 +1,4 @@
 import ChessContent
-import Foundation
 
 /// A moment that the player should hear or feel. `ChessFeedback` maps each event to sound and
 /// haptics; sessions only report what happened.

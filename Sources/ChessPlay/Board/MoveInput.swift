@@ -1,5 +1,4 @@
 import ChessCore
-import Foundation
 
 // The player's move input on one board, shared by `GameSession`, `OnlineGameSession` and
 // `PuzzleBoardSession`.

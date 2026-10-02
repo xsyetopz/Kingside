@@ -1,3 +1,5 @@
+// Foundation provides the C math function `exp`; unused_import does not attribute it.
+// swiftlint:disable:next unused_import
 import Foundation
 
 /// Playing strength on an Elo-like scale from 250 to 2200. All search settings derive from `elo`.

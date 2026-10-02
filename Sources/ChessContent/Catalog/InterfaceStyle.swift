@@ -1,5 +1,3 @@
-import Foundation
-
 /// Spacing, corner radii, and board framing of the SwiftUI screens, decoded from `interface.json`.
 /// Colors come from the system and the app's accent color, not from here.
 public struct InterfaceStyle: Codable, Hashable, Sendable {

@@ -1,4 +1,3 @@
-import Foundation
 import ChessCore
 
 /// `bots.json`: the bot characters and the groups the roster is split into, weakest first.

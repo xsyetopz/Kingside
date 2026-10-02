@@ -1,4 +1,6 @@
 import ChessContent
+// Foundation provides the C math functions `exp` and `sin`; unused_import does not attribute them.
+// swiftlint:disable:next unused_import
 import Foundation
 
 /// Renders the synthesis recipes of a `SoundPack` into mono PCM samples.

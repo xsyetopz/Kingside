@@ -1,4 +1,3 @@
-import ChessContent
 import ChessPlay
 import SwiftUI
 
