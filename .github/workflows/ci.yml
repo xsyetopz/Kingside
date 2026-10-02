@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  SWIFTLINT_URL: https://github.com/realm/SwiftLint/releases/download/0.65.1/portable_swiftlint.zip
+  SWIFTLINT_SHA256: c1e429b0599cf1b516f369a2d9ec04eaf0e436f3c12b637df8851fa52ff694d0
+  PERIPHERY_URL: https://github.com/peripheryapp/periphery/releases/download/3.8.0/periphery-3.8.0.zip
+  PERIPHERY_SHA256: 07d4e286e31dd79164df39097e0b59f533c94badbe18158464a455ea88a166d7
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install SwiftLint
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" "$SWIFTLINT_URL"
+          echo "$SWIFTLINT_SHA256  $RUNNER_TEMP/swiftlint.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/tools"
+          echo "$RUNNER_TEMP/tools" >>"$GITHUB_PATH"
+      - run: swiftlint lint --quiet --strict
+      - run: swift format lint --strict --recursive Sources Tests Package.swift Kingside KingsideUITests
+      - run: Tools/check-imports.sh
+
+  unit-tests:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: swift test
+
+  # Builds the app and runs the UI tests on each platform's simulator, or on the runner for macOS.
+  app:
+    name: app (${{ matrix.platform }})
+    runs-on: macos-26
+    # A clang probe in Xcode 26.6's build service can block forever on a full stderr pipe.
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macOS
+            destination: platform=macOS,arch=arm64
+          - platform: iOS
+            destination: platform=iOS Simulator,name=iPhone 17,OS=26.5
+          - platform: iPadOS
+            destination: platform=iOS Simulator,name=iPad (A16),OS=26.5
+          - platform: tvOS
+            destination: platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=26.5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The project signs with the developer's team; CI has no account, so it signs ad hoc.
+      - name: Build and run UI tests
+        env:
+          DESTINATION: ${{ matrix.destination }}
+        run: >
+          xcodebuild test -project Kingside.xcodeproj -scheme Kingside
+          -destination "$DESTINATION" -resultBundlePath "$RUNNER_TEMP/Kingside.xcresult"
+          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: xcresult-${{ matrix.platform }}
+          path: ${{ runner.temp }}/Kingside.xcresult
+          if-no-files-found: warn
+
+  # Records unused code per platform; analyze-merge fails on code that every platform leaves unused.
+  # iPadOS compiles from the iOS SDK, so the iOS leg covers it.
+  analyze:
+    name: analyze (${{ matrix.platform }})
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macOS, iOS, tvOS]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install SwiftLint and Periphery
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" "$SWIFTLINT_URL"
+          curl -fsSL -o "$RUNNER_TEMP/periphery.zip" "$PERIPHERY_URL"
+          echo "$SWIFTLINT_SHA256  $RUNNER_TEMP/swiftlint.zip" | shasum -a 256 -c
+          echo "$PERIPHERY_SHA256  $RUNNER_TEMP/periphery.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/tools"
+          unzip -qo "$RUNNER_TEMP/periphery.zip" -d "$RUNNER_TEMP/tools"
+          echo "$RUNNER_TEMP/tools" >>"$GITHUB_PATH"
+      - run: Tools/analyze.sh "$PLATFORM" "$RUNNER_TEMP/analyze"
+        env:
+          PLATFORM: ${{ matrix.platform }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: analyze-${{ matrix.platform }}
+          path: |
+            ${{ runner.temp }}/analyze/findings.txt
+            ${{ runner.temp }}/analyze/compiled.txt
+          if-no-files-found: error
+
+  analyze-merge:
+    needs: analyze
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: analyze-*
+          path: ${{ runner.temp }}/analyze
+      - run: Tools/analyze-merge.sh "$RUNNER_TEMP"/analyze/analyze-*
+
+  # The one check to require in branch protection: it fails unless every job above succeeded.
+  ci:
+    if: ${{ always() }}
+    needs: [lint, unit-tests, app, analyze-merge]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done
