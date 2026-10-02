@@ -9,6 +9,7 @@ public protocol TokenStore: Sendable {
 }
 
 struct KeychainError: Error, Equatable, Sendable {
+  // periphery:ignore - the status shows in logged errors and debugger output.
   var status: OSStatus
 }
 

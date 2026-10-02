@@ -7,17 +7,14 @@ public struct ReviewedMove: Identifiable, Sendable {
   /// Index into `ChessGame.moves`.
   public let ply: Int
   public let san: String
-  public let move: ChessMove
   public let mover: PieceColor
   public let classification: MoveClassification
   /// Expected points lost, 0...1.
   public let loss: Double
   /// Engine evaluation of the position after the move (White's point of view).
   public let evaluationAfter: Evaluation
-  /// Engine best move and line in the position before the move.
-  public let bestMove: ChessMove?
+  /// Engine best move in the position before the move.
   let bestSAN: String?
-  let bestLine: [ChessMove]
 
   public var id: Int { ply }
 
@@ -145,22 +142,15 @@ public final class GameReviewModel {
     return ReviewedMove(
       ply: ply,
       san: played.san,
-      move: played.move,
       mover: position.sideToMove,
       classification: MoveClassifier.classify(context, thresholds: thresholds),
       loss: context.loss,
       evaluationAfter: after.evaluation,
-      bestMove: before.bestMove,
-      bestSAN: before.bestMove.flatMap { try? ChessNotation.san(for: $0, in: position) },
-      bestLine: before.principalVariation
+      bestSAN: before.bestMove.flatMap { try? ChessNotation.san(for: $0, in: position) }
     )
   }
 
   public func accuracy(for color: PieceColor) -> Double? {
     AccuracyCalculator.accuracy(losses: moves.filter { $0.mover == color }.map(\.loss))
-  }
-
-  public func count(_ classification: MoveClassification, for color: PieceColor) -> Int {
-    moves.filter { $0.mover == color && $0.classification == classification }.count
   }
 }

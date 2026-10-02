@@ -16,10 +16,6 @@ struct BoardGeometry: Equatable {
     self.orientation = orientation
   }
 
-  var boardRect: CGRect {
-    CGRect(origin: origin, size: CGSize(width: squareSize * 8, height: squareSize * 8))
-  }
-
   /// Screen column (0 = left) and row (0 = bottom) of a square.
   func cell(of square: Square) -> (column: Int, row: Int) {
     orientation == .white ? (square.file, square.rank) : (7 - square.file, 7 - square.rank)

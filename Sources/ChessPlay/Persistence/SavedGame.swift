@@ -80,13 +80,6 @@ public struct TimeControl: Codable, Hashable, Sendable {
     guard isTimed else { return "-" }
     return incrementSeconds > 0 ? "\(initialSeconds)+\(incrementSeconds)" : "\(initialSeconds)"
   }
-
-  /// The catalog preset with the same times, if one is offered.
-  public func preset(in catalog: TimeControlCatalog) -> TimeControlPreset? {
-    catalog.presets.first {
-      $0.initialSeconds == initialSeconds && $0.incrementSeconds == incrementSeconds
-    }
-  }
 }
 
 /// Final or current result of a game.

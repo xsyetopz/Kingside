@@ -12,8 +12,6 @@ public struct Localization: Sendable {
 
   /// The localization chosen for the injected preference order, if any.
   let resolvedLanguage: String?
-  /// All `.lproj` directories packaged in the bundle.
-  let availableLocalizations: [String]
 
   private let preferredBundle: Bundle?
   private let sourceBundle: Bundle?
@@ -29,7 +27,6 @@ public struct Localization: Sendable {
     let language = preferred.flatMap { match in
       names.first { $0.caseInsensitiveCompare(match) == .orderedSame }
     }
-    availableLocalizations = names
     resolvedLanguage = language
     preferredBundle = language.flatMap { Self.lprojBundle($0, in: bundle, among: names) }
     sourceBundle =

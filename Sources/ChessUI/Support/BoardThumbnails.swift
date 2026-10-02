@@ -53,8 +53,11 @@ struct BoardThumbnail: View {
 /// Rasterized pieces by set and size, so thumbnails do not read the PDFs on every redraw.
 @MainActor
 private enum PieceThumbnails {
+  // The fields are read only through the synthesized hash and equality.
   private struct Key: Hashable {
+    // periphery:ignore
     let setID: String
+    // periphery:ignore
     let pixelSize: Int
   }
 

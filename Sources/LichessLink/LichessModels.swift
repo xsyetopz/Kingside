@@ -9,6 +9,8 @@ public enum LichessChallengeColor: String, Decodable, Sendable, Equatable {
 }
 
 struct LichessPerf: Decodable, Sendable, Equatable {
+  // Decoded so the model matches the API payload; nothing reads it yet.
+  // swiftlint:disable:next unused_declaration
   var games: Int?
   var rating: Int?
 }
@@ -237,13 +239,18 @@ public struct LichessGameState: Decodable, Sendable, Equatable {
   /// Milliseconds.
   public var wtime: Int
   public var btime: Int
+  // Decoded so the model matches the API payload; nothing reads them yet.
+  // swiftlint:disable unused_declaration
   var winc: Int
   var binc: Int
+  // swiftlint:enable unused_declaration
   public var status: LichessGameStatus
   public var winner: LichessColor?
   public var wdraw: Bool?
   public var bdraw: Bool?
   var wtakeback: Bool?
+  // Decoded so the model matches the API payload; nothing reads it yet.
+  // swiftlint:disable:next unused_declaration
   var btakeback: Bool?
 }
 

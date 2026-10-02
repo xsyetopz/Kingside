@@ -14,7 +14,6 @@ import Observation
 public final class PuzzleRushSession {
   /// The finished run.
   public struct Result: Equatable, Sendable {
-    public let mode: PuzzleRushMode
     public let score: Int
     public let isNewBest: Bool
     /// The best score of the mode, including this run.
@@ -140,7 +139,6 @@ public final class PuzzleRushSession {
     stop()
     let isNewBest = progress.recordRush(mode: mode, score: run.score)
     result = Result(
-      mode: mode,
       score: run.score,
       isNewBest: isNewBest,
       best: progress.rushBest(for: mode)

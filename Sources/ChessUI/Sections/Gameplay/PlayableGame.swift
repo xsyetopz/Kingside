@@ -6,7 +6,6 @@ import Observation
 /// Both sessions are `@Observable`, so a view that reads these members updates when they change.
 @MainActor
 protocol PlayableGame: AnyObject, Observable {
-  func apply(_ boardInput: BoardInput)
   func apply(_ action: GameAction)
 
   var isGameOver: Bool { get }
@@ -18,8 +17,6 @@ protocol PlayableGame: AnyObject, Observable {
   var materialAdvantage: [PieceColor: Int] { get }
   func isLowTime(_ color: PieceColor) -> Bool
 
-  /// The side whose draw offer the local player has to answer, if any.
-  var pendingDrawOffer: PieceColor? { get }
   /// Whether Offer Draw can be sent now.
   var canOfferDraw: Bool { get }
   var canMove: Bool { get }

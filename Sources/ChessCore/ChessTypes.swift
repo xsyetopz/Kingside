@@ -127,8 +127,6 @@ public enum GameOutcome: Codable, Equatable, Sendable {
   case drawThreefoldRepetition
   case drawInsufficientMaterial
 
-  public var isFinished: Bool { self != .ongoing }
-
   public var isDraw: Bool {
     switch self {
     case .stalemate, .drawFiftyMove, .drawThreefoldRepetition, .drawInsufficientMaterial: true

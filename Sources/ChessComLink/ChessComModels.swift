@@ -7,6 +7,8 @@ public struct ChessComProfile: Codable, Equatable, Sendable {
   /// Country resource URL; its last path component is the ISO country code.
   var country: URL?
   public var joined: Date
+  // Decoded so the model matches the API payload; nothing reads it yet.
+  // swiftlint:disable:next unused_declaration
   var lastOnline: Date
 
   enum CodingKeys: String, CodingKey {

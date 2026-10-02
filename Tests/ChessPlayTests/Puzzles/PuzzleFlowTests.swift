@@ -228,7 +228,7 @@ final class PuzzleFlowTests {
       await advance { rush.result != nil || rush.board.phase == .intro }
     }
     let result = try #require(rush.result)
-    #expect(result == PuzzleRushSession.Result(mode: .survival, score: 1, isNewBest: true, best: 1))
+    #expect(result == PuzzleRushSession.Result(score: 1, isNewBest: true, best: 1))
     #expect(progress.rushBest(for: .survival) == 1)
     #expect(rush.run.isOver)
 
@@ -243,7 +243,7 @@ final class PuzzleFlowTests {
     rush.start()
     rush.end()
     #expect(
-      rush.result == PuzzleRushSession.Result(mode: .survival, score: 0, isNewBest: false, best: 5)
+      rush.result == PuzzleRushSession.Result(score: 0, isNewBest: false, best: 5)
     )
   }
 

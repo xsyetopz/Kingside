@@ -41,8 +41,6 @@ public struct EngineAnalysis: Equatable, Sendable {
   public let bestMove: ChessMove?
   /// Expected line starting with `bestMove`.
   public let principalVariation: [ChessMove]
-  /// Last fully completed iteration depth (0 when there is no legal move).
-  public let depth: Int
   /// Second-best root move and its score from White's point of view; `nil` with a single legal
   /// move.
   public let secondBestMove: ChessMove?
@@ -115,7 +113,6 @@ public actor ChessEngine {
       evaluation: Self.evaluation(best.score, whiteToMove: whiteToMove),
       bestMove: best.move.chessMove,
       principalVariation: best.pv.map(\.chessMove),
-      depth: result.depth,
       secondBestMove: second?.move.chessMove,
       secondBestEvaluation: second.map { Self.evaluation($0.score, whiteToMove: whiteToMove) },
       nodes: result.nodes
@@ -127,7 +124,6 @@ public actor ChessEngine {
       evaluation: evaluation,
       bestMove: nil,
       principalVariation: [],
-      depth: 0,
       secondBestMove: nil,
       secondBestEvaluation: nil,
       nodes: nodes

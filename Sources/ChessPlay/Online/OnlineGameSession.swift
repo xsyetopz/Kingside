@@ -488,7 +488,6 @@ public final class OnlineGameSession {
     (perGame.result, perGame.termination) = Self.outcome(
       status: state.status,
       winner: state.winner,
-      position: game.position,
       outcome: game.outcome
     )
     updateClockTurn()
@@ -636,13 +635,12 @@ public final class OnlineGameSession {
 
   // MARK: - Pure rules
 
-  /// Result and termination for a server status. `position` and `outcome` are the final
-  /// board, used to tell a draw's reason and to name the winner when the server does not.
+  /// Result and termination for a server status. `outcome` is the final board's, used to tell a
+  /// draw's reason and to name the winner when the server does not.
   /// Statuses with no matching `GameTermination` (such as `cheat`) have a nil termination.
   nonisolated static func outcome(
     status: OnlineGameStatus,
     winner: PieceColor?,
-    position: ChessPosition,
     outcome: GameOutcome
   ) -> (GameResult, GameTermination?) {
     let decided = winner.map(GameResult.win(for:)) ?? .draw

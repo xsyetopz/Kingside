@@ -6,9 +6,13 @@ import SpriteKit
 /// Piece textures rasterized from the set's vector PDFs, one per (set, piece, pixel size).
 @MainActor
 final class PieceTextureCache {
+  // The fields are read only through the synthesized hash and equality.
   private struct Key: Hashable {
+    // periphery:ignore
     let setID: String
+    // periphery:ignore
     let piece: Piece
+    // periphery:ignore
     let pixelSize: Int
   }
 
@@ -18,8 +22,6 @@ final class PieceTextureCache {
   init(bundle: Bundle) {
     self.bundle = bundle
   }
-
-  var count: Int { textures.count }
 
   /// Nil when the set has no file for the piece or the file is not a readable PDF.
   func texture(for piece: Piece, in set: PieceSet, pixelSize: Int) -> SKTexture? {

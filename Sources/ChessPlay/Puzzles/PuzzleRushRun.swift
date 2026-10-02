@@ -18,7 +18,6 @@ public enum PuzzleRushMode: String, CaseIterable, Codable, Identifiable, Sendabl
 /// Pure score, strike, and clock state of one Puzzle Rush run.
 /// The run ends at `maxStrikes` wrong puzzles, or when a timed mode's clock reaches zero.
 public struct PuzzleRushRun: Equatable, Sendable {
-  public let mode: PuzzleRushMode
   public let maxStrikes: Int
   public private(set) var score = 0
   public private(set) var strikes = 0
@@ -27,7 +26,6 @@ public struct PuzzleRushRun: Equatable, Sendable {
 
   /// `tuning` is `ContentCatalog.tuning.puzzleRush`.
   init(mode: PuzzleRushMode, tuning: PuzzleRushTuning) {
-    self.mode = mode
     maxStrikes = tuning.maxStrikes
     remaining = mode.timeLimit(tuning: tuning)
   }
