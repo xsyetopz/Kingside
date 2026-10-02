@@ -65,6 +65,9 @@ play. The developer runs no server and collects no data. Details are in the
    Signing & Capabilities.
 1. Press **Command-R**.
 
+Maintainers publish signed builds with the release workflow; see
+[docs/releasing.md](docs/releasing.md).
+
 ## Credits
 
 The chess pieces are the cburnett set (BSD 3-Clause), and the puzzles come from the Lichess puzzle

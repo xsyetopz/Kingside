@@ -14,3 +14,5 @@ xcuserdata/
 *.xccheckout
 *.moved-aside
 .claude/handoff.md
+*.provisionprofile
+*.p8
