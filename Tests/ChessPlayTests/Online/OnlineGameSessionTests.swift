@@ -5,50 +5,6 @@ import Testing
 
 @testable import ChessPlay
 
-/// A connection whose events the test pushes; records every action sent.
-final class FakeOnlineConnection: OnlineGameConnection, @unchecked Sendable {
-  let service = "lichess"
-  private let lock = NSLock()
-  private var continuation: AsyncThrowingStream<OnlineGameEvent, Error>.Continuation?
-  private var sentActions: [OnlineAction] = []
-  private var failsSends = false
-  private var streamCount = 0
-
-  var sent: [OnlineAction] { lock.withLock { sentActions } }
-  var streams: Int { lock.withLock { streamCount } }
-
-  func setFailsSends(_ fails: Bool) { lock.withLock { failsSends = fails } }
-
-  func events() -> AsyncThrowingStream<OnlineGameEvent, Error> {
-    let (stream, continuation) = AsyncThrowingStream<OnlineGameEvent, Error>.makeStream()
-    lock.withLock {
-      self.continuation = continuation
-      streamCount += 1
-    }
-    return stream
-  }
-
-  /// Ends the newest stream with an error.
-  func fail() {
-    let continuation = lock.withLock { self.continuation }
-    continuation?.finish(throwing: URLError(.networkConnectionLost))
-  }
-
-  /// Sends `event` on the newest stream.
-  func push(_ event: OnlineGameEvent) {
-    let continuation = lock.withLock { self.continuation }
-    continuation?.yield(event)
-  }
-
-  func send(_ action: OnlineAction) throws {
-    let fails = lock.withLock {
-      sentActions.append(action)
-      return failsSends
-    }
-    if fails { throw URLError(.notConnectedToInternet) }
-  }
-}
-
 @MainActor
 @Suite(.timeLimit(.minutes(1)))
 final class OnlineGameSessionTests {

@@ -60,3 +60,14 @@ func makeClient(
   )
   return (client, transport)
 }
+
+/// A thread-safe flag the `@Sendable` fake-transport handler can read while the test mutates it.
+final class LockedFlag: @unchecked Sendable {
+  private let lock = NSLock()
+  private var stored: Bool
+  init(_ value: Bool) { stored = value }
+  var value: Bool {
+    get { lock.withLock { stored } }
+    set { lock.withLock { stored = newValue } }
+  }
+}

@@ -1,7 +1,6 @@
 import ChessCore
 import Testing
 
-func move(_ uci: String) throws -> ChessMove { try #require(ChessMove(uci: uci)) }
 func square(_ name: String) throws -> Square { try #require(Square(algebraic: name)) }
 
 @Suite
