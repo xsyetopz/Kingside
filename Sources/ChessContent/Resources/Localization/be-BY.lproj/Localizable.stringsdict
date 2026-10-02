@@ -122,6 +122,30 @@
 			<string>%d гульні імпартавана</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d гульняў абноўлена</string>
+			<key>one</key>
+			<string>%d гульня абноўлена</string>
+			<key>two</key>
+			<string>%d гульні абноўлены</string>
+			<key>few</key>
+			<string>%d гульні абноўлены</string>
+			<key>many</key>
+			<string>%d гульняў абноўлена</string>
+			<key>other</key>
+			<string>%d гульні абноўлена</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

@@ -122,6 +122,30 @@
 			<string>%d importuotų partijų</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d atnaujintų partijų</string>
+			<key>one</key>
+			<string>%d atnaujinta partija</string>
+			<key>two</key>
+			<string>%d atnaujintos partijos</string>
+			<key>few</key>
+			<string>%d atnaujintos partijos</string>
+			<key>many</key>
+			<string>%d atnaujintos partijos</string>
+			<key>other</key>
+			<string>%d atnaujintų partijų</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

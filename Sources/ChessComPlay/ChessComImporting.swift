@@ -5,6 +5,8 @@ import Foundation
 /// What one import did.
 public struct ChessComImportSummary: Equatable, Sendable {
   public internal(set) var imported = 0
+  /// Copies saved by an earlier version, replaced so they show the user's side.
+  public internal(set) var updated = 0
   /// Already in the archive.
   public internal(set) var duplicates = 0
   /// Other rules than standard chess, a PGN that does not replay, or a failed save.
@@ -13,39 +15,94 @@ public struct ChessComImportSummary: Equatable, Sendable {
 
 /// Turns Chess.com games into `SavedGame`s of the local archive.
 public enum ChessComImporting {
-  /// Saves each standard-chess game whose id is not stored yet. Returns the counts. When the
-  /// archive cannot be read, nothing can be saved, so every game counts as skipped.
+  /// The `GameMode.online` service of imported games.
+  static let service = "chessCom"
+
+  /// Saves each standard-chess game whose id is not stored yet, with `username`'s side as the
+  /// local user's. Returns the counts. When the archive cannot be read, nothing can be saved, so
+  /// every game counts as skipped.
+  ///
+  /// Imports used to be saved as pass-and-play with neither side marked. A stored pass-and-play
+  /// game with a game's id is such a copy, because games played here get random ids, so it is
+  /// replaced and counted as updated. Old copies of `username`'s games that `sources` does not
+  /// hold are looked up in the monthly archives `monthGames` returns, by year and month; a month
+  /// that fails to load is tried again on the next import.
+  @preconcurrency
   public static func importGames(
     _ sources: [ChessComGame],
     username: String,
-    into store: GamePersistenceStore
+    into store: GamePersistenceStore,
+    monthGames: @Sendable (_ year: Int, _ month: Int) async throws -> [ChessComGame] = { _, _ in
+      []
+    }
   ) async -> ChessComImportSummary {
     var summary = ChessComImportSummary()
     guard let stored = try? await store.allGames() else {
       summary.skipped = sources.count
       return summary
     }
-    var known = Set(stored.map(\.id))
+    var oldCopies = Set(stored.filter { $0.mode == .passAndPlay }.map(\.id))
+    var known = Set(stored.map(\.id)).subtracting(oldCopies)
     let importer = ChessComGameImporter()
+    func save(_ source: ChessComGame, id: UUID) async -> Bool {
+      guard case .imported(let imported)? = try? importer.importGame(source) else { return false }
+      return (try? await store.save(savedGame(imported, id: id, username: username))) != nil
+    }
     for source in sources {
       let id = savedGameID(for: source.url)
       guard known.insert(id).inserted else {
         summary.duplicates += 1
         continue
       }
-      guard case .imported(let imported)? = try? importer.importGame(source),
-        (try? await store.save(savedGame(imported, id: id))) != nil
-      else {
+      guard await save(source, id: id) else {
         summary.skipped += 1
         continue
       }
-      summary.imported += 1
+      if oldCopies.remove(id) != nil { summary.updated += 1 } else { summary.imported += 1 }
+    }
+    let remaining = stored.filter { oldCopies.contains($0.id) && isOldCopy($0, of: username) }
+    for (year, month) in archiveMonths(of: remaining) {
+      guard let games = try? await monthGames(year, month) else { continue }
+      for source in games {
+        let id = savedGameID(for: source.url)
+        guard oldCopies.contains(id), await save(source, id: id) else { continue }
+        oldCopies.remove(id)
+        summary.updated += 1
+      }
     }
     return summary
   }
 
-  /// Both players are named as on Chess.com, so the game reads as one between two people.
-  static func savedGame(_ imported: ChessComImportedGame, id: UUID) -> SavedGame {
+  /// Whether `game` can be an import of `username`'s saved by an earlier version: pass-and-play
+  /// with `username` playing. Only the id tells for sure.
+  static func isOldCopy(_ game: SavedGame, of username: String) -> Bool {
+    game.mode == .passAndPlay
+      && [game.white.name, game.black.name].contains {
+        $0.caseInsensitiveCompare(username) == .orderedSame
+      }
+  }
+
+  /// The archive months, oldest first, that can hold each game. A game was saved with its end
+  /// time; Chess.com files it by a month that this code does not know the time zone of, so the
+  /// months of every zone (UTC−12 to UTC+14) count.
+  static func archiveMonths(of games: [SavedGame]) -> [(year: Int, month: Int)] {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .gmt
+    let months = Set(
+      games.flatMap { game in
+        [-12.0, 0, 14].map { hours in
+          let date = game.createdAt.addingTimeInterval(hours * 3600)
+          return calendar.component(.year, from: date) * 100
+            + calendar.component(.month, from: date)
+        }
+      }
+    )
+    return months.sorted().map { ($0 / 100, $0 % 100) }
+  }
+
+  /// Both players are named as on Chess.com. `username`'s side is the local user's, so the
+  /// archive and Game Review show the game from that side; a game without `username` has none.
+  static func savedGame(_ imported: ChessComImportedGame, id: UUID, username: String) -> SavedGame {
     let source = imported.source
     let timeControl = timeControl(source.timeControl)
     let result = result(white: source.white.result, black: source.black.result)
@@ -53,9 +110,17 @@ public enum ChessComImporting {
       id: id,
       createdAt: source.endTime,
       updatedAt: source.endTime,
-      mode: .passAndPlay,
-      white: PlayerInfo(name: source.white.username, rating: source.white.rating),
-      black: PlayerInfo(name: source.black.username, rating: source.black.rating),
+      mode: .online(service: service, gameID: source.url.lastPathComponent),
+      white: PlayerInfo(
+        name: source.white.username,
+        rating: source.white.rating,
+        isLocalUser: source.white.isUser(username)
+      ),
+      black: PlayerInfo(
+        name: source.black.username,
+        rating: source.black.rating,
+        isLocalUser: !source.white.isUser(username) && source.black.isUser(username)
+      ),
       timeControl: timeControl,
       autoFlip: false,
       game: imported.game,

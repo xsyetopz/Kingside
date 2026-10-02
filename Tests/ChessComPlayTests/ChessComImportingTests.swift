@@ -32,6 +32,17 @@ struct ChessComImportingTests {
     )
   }
 
+  /// A store holding `game` as imports used to save it: pass-and-play, neither side marked.
+  private func makeStoreWithOldCopy(of game: ChessComGame) async throws -> GamePersistenceStore {
+    let store = makeStore()
+    _ = await ChessComImporting.importGames([game], username: "ann", into: store)
+    var old = try #require(try await store.allGames().first)
+    old.mode = .passAndPlay
+    old.white = PlayerInfo(name: old.white.name, rating: old.white.rating)
+    try await store.save(old)
+    return store
+  }
+
   @Test
   func timeControlsResultsAndTerminationsMap() {
     #expect(
@@ -98,8 +109,152 @@ struct ChessComImportingTests {
       saved.first { $0.id == ChessComImporting.savedGameID(for: games[0].url) }
     )
     #expect(one.white.name == "Ann" && one.black.name == "Bob")
+    #expect(one.humanColor == .white)
+    #expect(one.mode == .online(service: "chessCom", gameID: "1"))
     #expect(one.result == .whiteWon && one.termination == .resignation && one.isFinished)
     #expect(one.game.moves.count == 3)
     #expect(one.timeControl == TimeControl(initialSeconds: 180, incrementSeconds: 2))
   }
+
+  @Test
+  func reimportUpgradesACopySavedWithoutTheUsersSide() async throws {
+    let store = makeStore()
+    let game = try decodeGame(gameJSON(id: 1))
+    _ = await ChessComImporting.importGames([game], username: "ann", into: store)
+    let current = try #require(try await store.allGames().first)
+    // Imports used to be saved as pass-and-play with neither side marked.
+    var old = current
+    old.mode = .passAndPlay
+    old.white = PlayerInfo(name: current.white.name, rating: current.white.rating)
+    try await store.save(old)
+
+    let summary = await ChessComImporting.importGames([game], username: "ann", into: store)
+    #expect(summary == ChessComImportSummary(imported: 0, updated: 1, duplicates: 0, skipped: 0))
+    let upgraded = try await store.allGames()
+    #expect(upgraded.count == 1)
+    #expect(upgraded.first?.mode == .online(service: "chessCom", gameID: "1"))
+    #expect(upgraded.first?.humanColor == .white)
+
+    let again = await ChessComImporting.importGames([game], username: "ann", into: store)
+    #expect(again == ChessComImportSummary(imported: 0, duplicates: 1, skipped: 0))
+  }
+
+  @Test
+  func reimportKeepsAPassAndPlayGameWithAnotherID() async throws {
+    let game = try decodeGame(gameJSON(id: 1))
+    let scratch = makeStore()
+    _ = await ChessComImporting.importGames([game], username: "ann", into: scratch)
+    let played = try #require(try await scratch.allGames().first)
+    // The same game played on this device: pass-and-play with a random id.
+    let local = SavedGame(
+      id: UUID(),
+      createdAt: played.createdAt,
+      updatedAt: played.updatedAt,
+      mode: .passAndPlay,
+      white: PlayerInfo(name: "Ann"),
+      black: PlayerInfo(name: "Bob"),
+      timeControl: played.timeControl,
+      autoFlip: false,
+      game: played.game,
+      result: played.result,
+      termination: played.termination,
+      clock: played.clock
+    )
+    let store = makeStore()
+    try await store.save(local)
+
+    _ = await ChessComImporting.importGames([game], username: "ann", into: store)
+    let saved = try await store.allGames()
+    #expect(saved.count == 2)
+    #expect(saved.first { $0.id == local.id }?.mode == .passAndPlay)
+  }
+
+  @Test
+  func importUpdatesOldCopiesFromTheirMonthWithoutImportingItsOtherGames() async throws {
+    let game = try decodeGame(gameJSON(id: 1))
+    let store = try await makeStoreWithOldCopy(of: game)
+    let other = try decodeGame(gameJSON(id: 2))
+    let requested = Requests()
+
+    let summary = await ChessComImporting.importGames([], username: "Ann", into: store) {
+      await requested.append($0, $1)
+      return [other, game]
+    }
+    #expect(summary == ChessComImportSummary(imported: 0, updated: 1, duplicates: 0, skipped: 0))
+    // The game ended 2026-01-15 12:00 UTC: January in every time zone.
+    #expect(await requested.months == ["2026-1"])
+    let saved = try await store.allGames()
+    #expect(saved.count == 1)
+    #expect(saved.first?.mode == .online(service: "chessCom", gameID: "1"))
+    #expect(saved.first?.humanColor == .white)
+
+    let again = await ChessComImporting.importGames([], username: "ann", into: store) {
+      await requested.append($0, $1)
+      return [game]
+    }
+    #expect(again == ChessComImportSummary())
+    #expect(await requested.months == ["2026-1"])
+  }
+
+  @Test
+  func oldCopyOfAMonthThatFailsToLoadIsKeptForTheNextImport() async throws {
+    struct Offline: Error {}
+    let game = try decodeGame(gameJSON(id: 1))
+    let store = try await makeStoreWithOldCopy(of: game)
+
+    let failed = await ChessComImporting.importGames([], username: "ann", into: store) { _, _ in
+      throw Offline()
+    }
+    #expect(failed == ChessComImportSummary())
+    #expect(try await store.allGames().first?.mode == .passAndPlay)
+
+    let retried = await ChessComImporting.importGames([], username: "ann", into: store) { _, _ in
+      [game]
+    }
+    #expect(retried.updated == 1)
+  }
+
+  @Test
+  func onlyPassAndPlayGamesOfTheUserAreLookedUp() async throws {
+    let game = try decodeGame(gameJSON(id: 1))
+    let store = try await makeStoreWithOldCopy(of: game)
+    let requested = Requests()
+    // An old copy of Ann's game, but Carol is linked now.
+    let summary = await ChessComImporting.importGames([], username: "carol", into: store) {
+      await requested.append($0, $1)
+      return [game]
+    }
+    #expect(summary == ChessComImportSummary())
+    #expect(await requested.months.isEmpty)
+
+    var copy = try #require(try await store.allGames().first)
+    #expect(ChessComImporting.isOldCopy(copy, of: "ANN"))
+    #expect(ChessComImporting.isOldCopy(copy, of: "bob"))
+    copy.mode = .online(service: "chessCom", gameID: "1")
+    #expect(!ChessComImporting.isOldCopy(copy, of: "ann"))
+  }
+
+  @Test
+  func gamesNearAMonthEndAreLookedUpInBothMonths() throws {
+    let game = try decodeGame(gameJSON(id: 1))
+    guard case .imported(let imported) = try ChessComGameImporter().importGame(game) else {
+      Issue.record("game did not import")
+      return
+    }
+    var saved = ChessComImporting.savedGame(imported, id: UUID(), username: "ann")
+    // 2026-02-01 05:00 UTC is still January west of UTC−5.
+    saved.createdAt = Date(timeIntervalSince1970: 1_769_922_000)
+    let months = ChessComImporting.archiveMonths(of: [saved]).map { "\($0.year)-\($0.month)" }
+    #expect(months == ["2026-1", "2026-2"])
+    // 2025-12-31 20:00 UTC is already January east of UTC+4.
+    saved.createdAt = Date(timeIntervalSince1970: 1_767_211_200)
+    let yearEnd = ChessComImporting.archiveMonths(of: [saved]).map { "\($0.year)-\($0.month)" }
+    #expect(yearEnd == ["2025-12", "2026-1"])
+  }
+}
+
+/// The archive months an import asked for, in order.
+private actor Requests {
+  private(set) var months: [String] = []
+  func append(_ year: Int, _ month: Int) { months.append("\(year)-\(month)") }
 }

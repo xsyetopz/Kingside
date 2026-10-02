@@ -111,11 +111,15 @@ final class ChessComAccountModel {
     phase = outcome
   }
 
-  /// Saves `sources` that are not in the archive yet, and reports what happened.
+  /// Saves `sources` that are not in the archive yet, updates copies that earlier versions saved
+  /// without the user's side, and reports what happened.
   func importGames(_ sources: [ChessComGame], into store: GamePersistenceStore) async {
     guard let name = username else { return }
     let current = generation
-    let summary = await ChessComImporting.importGames(sources, username: name, into: store)
+    let client = client
+    let summary = await ChessComImporting.importGames(sources, username: name, into: store) {
+      try await client.games(username: name, year: $0, month: $1)
+    }
     guard current == generation else { return }
     importSummary = summary
   }

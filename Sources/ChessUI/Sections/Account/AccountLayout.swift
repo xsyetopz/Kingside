@@ -50,10 +50,10 @@ enum AccountLayout {
     localization.string("account.chessCom.record", record.win, record.loss, record.draw)
   }
 
-  /// The side `username` played, ignoring case; nil when neither side is theirs.
+  /// The side `username` played; nil when neither side is theirs.
   static func color(of username: String, in game: ChessComGame) -> PieceColor? {
-    if game.white.username.caseInsensitiveCompare(username) == .orderedSame { return .white }
-    if game.black.username.caseInsensitiveCompare(username) == .orderedSame { return .black }
+    if game.white.isUser(username) { return .white }
+    if game.black.isUser(username) { return .black }
     return nil
   }
 
@@ -92,6 +92,7 @@ enum AccountLayout {
   {
     [
       ("account.chessCom.imported", summary.imported),
+      ("account.chessCom.updated", summary.updated),
       ("account.chessCom.duplicates", summary.duplicates),
       ("account.chessCom.skipped", summary.skipped),
     ]

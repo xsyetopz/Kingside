@@ -122,6 +122,30 @@
 			<string>게임 %d개 가져옴</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>게임 %d개 업데이트됨</string>
+			<key>one</key>
+			<string>게임 %d개 업데이트됨</string>
+			<key>two</key>
+			<string>게임 %d개 업데이트됨</string>
+			<key>few</key>
+			<string>게임 %d개 업데이트됨</string>
+			<key>many</key>
+			<string>게임 %d개 업데이트됨</string>
+			<key>other</key>
+			<string>게임 %d개 업데이트됨</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

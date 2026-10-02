@@ -122,6 +122,30 @@
 			<string>%d peliä tuotu</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d peliä päivitetty</string>
+			<key>one</key>
+			<string>%d peli päivitetty</string>
+			<key>two</key>
+			<string>%d peliä päivitetty</string>
+			<key>few</key>
+			<string>%d peliä päivitetty</string>
+			<key>many</key>
+			<string>%d peliä päivitetty</string>
+			<key>other</key>
+			<string>%d peliä päivitetty</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

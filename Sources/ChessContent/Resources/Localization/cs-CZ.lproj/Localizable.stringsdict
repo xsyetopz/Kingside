@@ -122,6 +122,30 @@
 			<string>%d importovaných partií</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d aktualizovaných partií</string>
+			<key>one</key>
+			<string>%d aktualizovaná partie</string>
+			<key>two</key>
+			<string>%d aktualizovaných partií</string>
+			<key>few</key>
+			<string>%d aktualizované partie</string>
+			<key>many</key>
+			<string>%d aktualizovaných partií</string>
+			<key>other</key>
+			<string>%d aktualizovaných partií</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

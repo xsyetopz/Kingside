@@ -148,10 +148,10 @@ struct AccountTests {
 
   @Test
   func summaryNamesOnlyTheCountsThatHappened() {
-    let summary = ChessComImportSummary(imported: 1, duplicates: 0, skipped: 2)
+    let summary = ChessComImportSummary(imported: 1, updated: 3, duplicates: 0, skipped: 2)
     #expect(
       AccountLayout.summaryLines(summary, localization: localization) == [
-        "1 game imported", "2 games could not be imported",
+        "1 game imported", "3 games updated", "2 games could not be imported",
       ]
     )
     #expect(AccountLayout.summaryLines(ChessComImportSummary(), localization: localization).isEmpty)
@@ -250,6 +250,30 @@ struct AccountTests {
       #expect(await account.link(username: username) == failure)
       #expect(settings.value.chessComUsername == nil)
     }
+  }
+
+  @Test
+  func importUpdatesOldCopiesFromTheLinkedAccountsArchiveOfTheirMonth() async throws {
+    defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+    let transport = makeTransport(annAccount)
+    let (account, _) = try makeAccount(client: makeClient(transport))
+    let store = GamePersistenceStore(
+      fileURL: FileManager.default.temporaryDirectory.appending(
+        path: "AccountTests-\(UUID().uuidString)/games.json"
+      )
+    )
+    let game = try decodeGame(gameJSON(id: 1, endTime: 1_768_478_400))
+    _ = await ChessComImporting.importGames([game], username: "ann", into: store)
+    // Saved as imports used to be: pass-and-play, neither side marked, January 2026.
+    var old = try #require(try await store.allGames().first)
+    old.mode = .passAndPlay
+    old.white = PlayerInfo(name: old.white.name, rating: old.white.rating)
+    try await store.save(old)
+
+    await account.importGames([], into: store)
+    #expect(account.importSummary?.updated == 1)
+    #expect(await transport.requests.map(\.url?.path) == ["/pub/player/ann/games/2026/01"])
+    #expect(try await store.allGames().first?.humanColor == .white)
   }
 
   @Test

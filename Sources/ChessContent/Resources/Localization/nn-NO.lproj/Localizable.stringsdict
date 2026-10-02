@@ -122,6 +122,30 @@
 			<string>%d parti importerte</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d parti oppdaterte</string>
+			<key>one</key>
+			<string>%d parti oppdatert</string>
+			<key>two</key>
+			<string>%d parti oppdaterte</string>
+			<key>few</key>
+			<string>%d parti oppdaterte</string>
+			<key>many</key>
+			<string>%d parti oppdaterte</string>
+			<key>other</key>
+			<string>%d parti oppdaterte</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

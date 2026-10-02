@@ -122,6 +122,30 @@
 			<string>%d partides importades</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d partides actualitzades</string>
+			<key>one</key>
+			<string>%d partida actualitzada</string>
+			<key>two</key>
+			<string>%d partides actualitzades</string>
+			<key>few</key>
+			<string>%d partides actualitzades</string>
+			<key>many</key>
+			<string>%d partides actualitzades</string>
+			<key>other</key>
+			<string>%d partides actualitzades</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

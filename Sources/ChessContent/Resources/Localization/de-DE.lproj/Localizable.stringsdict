@@ -122,6 +122,30 @@
 			<string>%d Partien importiert</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d Partien aktualisiert</string>
+			<key>one</key>
+			<string>%d Partie aktualisiert</string>
+			<key>two</key>
+			<string>%d Partien aktualisiert</string>
+			<key>few</key>
+			<string>%d Partien aktualisiert</string>
+			<key>many</key>
+			<string>%d Partien aktualisiert</string>
+			<key>other</key>
+			<string>%d Partien aktualisiert</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

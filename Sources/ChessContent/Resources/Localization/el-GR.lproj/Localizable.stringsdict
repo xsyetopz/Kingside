@@ -122,6 +122,30 @@
 			<string>%d παρτίδες εισήχθησαν</string>
 		</dict>
 	</dict>
+	<key>account.chessCom.updated</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d παρτίδες ενημερώθηκαν</string>
+			<key>one</key>
+			<string>%d παρτίδα ενημερώθηκε</string>
+			<key>two</key>
+			<string>%d παρτίδες ενημερώθηκαν</string>
+			<key>few</key>
+			<string>%d παρτίδες ενημερώθηκαν</string>
+			<key>many</key>
+			<string>%d παρτίδες ενημερώθηκαν</string>
+			<key>other</key>
+			<string>%d παρτίδες ενημερώθηκαν</string>
+		</dict>
+	</dict>
 	<key>account.chessCom.duplicates</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

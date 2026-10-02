@@ -72,6 +72,11 @@ public struct ChessComGame: Codable, Equatable, Sendable, Identifiable {
     public var username: String
     public var rating: Int
     public var result: ChessComPlayerResult
+
+    /// Whether this is `name`'s account; Chess.com usernames ignore case.
+    public func isUser(_ name: String) -> Bool {
+      username.caseInsensitiveCompare(name) == .orderedSame
+    }
   }
 }
 
