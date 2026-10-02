@@ -4,8 +4,9 @@ import ChessPlay
 import SwiftUI
 
 extension MoveClassification {
+  // `mark` below and the review tests use it; unused_declaration does not see those uses.
   /// How a grade is drawn beside a move.
-  enum Mark: Equatable {
+  enum Mark: Equatable {  // swiftlint:disable:this unused_declaration
     /// A chess annotation, such as "??" for a blunder.
     case annotation(String)
     /// An SF Symbol, for the grades that chess notation has no annotation for.
@@ -108,6 +109,79 @@ struct ReviewSummary: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(style.gap)
     .contentPanel(style)
+  }
+}
+
+/// White's chances through the game: White's share fills from the bottom, mistakes, misses, and
+/// blunders are dots in their grade's color, and a line marks the shown position. A click or tap
+/// shows that position. VoiceOver skips the graph: the move list and coach line give each move's
+/// grade and evaluation.
+struct ReviewGraph: View {
+  let review: GameReviewModel
+  @Binding
+  var ply: Int
+  @Environment(AppModel.self)
+  private var model
+
+  var body: some View {
+    let style = model.catalog.interface
+    let shape = RoundedRectangle(cornerRadius: style.cornerRadius / 2, style: .continuous)
+    GeometryReader { proxy in
+      let size = proxy.size
+      let points = ReviewLayout.graphPoints(
+        review.whiteExpectedPoints,
+        moveCount: review.moveCount,
+        in: size
+      )
+      let shownX = ReviewLayout.graphX(ply: ply, moveCount: review.moveCount, width: size.width)
+      ZStack(alignment: .topLeading) {
+        ZStack {
+          Color.black
+          if let first = points.first, let last = points.last {
+            Path { path in
+              path.move(to: CGPoint(x: first.x, y: size.height))
+              path.addLines(points)
+              path.addLine(to: CGPoint(x: last.x, y: size.height))
+              path.closeSubpath()
+            }
+            .fill(Color.white)
+          }
+          Path { path in
+            path.move(to: CGPoint(x: 0, y: size.height / 2))
+            path.addLine(to: CGPoint(x: size.width, y: size.height / 2))
+          }
+          .stroke(Color.gray, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+          Path { path in
+            path.move(to: CGPoint(x: shownX, y: 0))
+            path.addLine(to: CGPoint(x: shownX, y: size.height))
+          }
+          .stroke(Color.accentColor, lineWidth: 2)
+        }
+        .clipShape(shape)
+        // Outside the clip, so a dot at the top or bottom edge stays whole.
+        ForEach(review.moves.filter(\.classification.isError)) { move in
+          if move.ply + 1 < points.count {
+            Circle()
+              .fill(move.classification.color)
+              .overlay(Circle().stroke(Color.gray, lineWidth: 1))
+              .frame(width: style.gap / 2, height: style.gap / 2)
+              .position(points[move.ply + 1])
+          }
+        }
+      }
+      .contentShape(Rectangle())
+      #if !os(tvOS)
+        .onTapGesture { location in
+          ply = ReviewLayout.graphPly(
+            atX: location.x,
+            width: size.width,
+            moveCount: review.moveCount
+          )
+        }
+      #endif
+    }
+    .frame(height: style.game.graphHeight * style.platformScale)
+    .accessibilityHidden(true)
   }
 }
 

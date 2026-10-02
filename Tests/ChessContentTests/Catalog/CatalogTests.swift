@@ -364,6 +364,7 @@ struct CatalogTests {
     #expect((0...1024).contains(style.game.panelWidth))
     #expect((0...128).contains(style.game.avatarSize))
     #expect((0...2048).contains(style.game.compactHeight))
+    #expect((16...256).contains(style.game.graphHeight))
     #expect((0...128).contains(style.puzzles.strikeSize))
     #expect((0...256).contains(style.account.avatarSize))
     #expect((0...256).contains(style.account.welcomeIconSize))

@@ -74,6 +74,9 @@ public final class GameReviewModel {
   public var moveCount: Int { game.game.moves.count }
   public var isComplete: Bool { analyses.count == positions.count }
 
+  /// White's expected points, 0...1, at each analysed position: the evaluation graph.
+  public var whiteExpectedPoints: [Double] { analyses.map { WinProbability.white($0.evaluation) } }
+
   /// Starts or resumes the analysis; results appear one move at a time.
   public func start() {
     guard task == nil, !isComplete else { return }

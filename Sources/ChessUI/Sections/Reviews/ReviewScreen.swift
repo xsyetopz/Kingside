@@ -78,6 +78,10 @@ private struct ReviewView: View {
     ReviewSummary(review: review)
   }
 
+  private var graph: some View {
+    ReviewGraph(review: review, ply: $ply)
+  }
+
   private var coach: some View {
     ReviewCoach(review: review, ply: ply)
   }
@@ -107,6 +111,7 @@ private struct ReviewView: View {
         } else {
           VStack(spacing: style.gap) {
             summary
+            graph
             coach
             moves(.vertical)
               .frame(maxHeight: .infinity)
@@ -141,6 +146,7 @@ private struct ReviewView: View {
   @ViewBuilder
   private var panels: some View {
     summary
+    graph
     coach
     controls
     moves(.horizontal)

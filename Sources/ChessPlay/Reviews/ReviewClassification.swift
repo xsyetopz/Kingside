@@ -19,6 +19,9 @@ public enum MoveClassification: String, CaseIterable, Sendable {
   /// Localisation key of the grade's name, such as "Blunder".
   public var titleKey: String { "review.classification.\(rawValue).name" }
 
+  /// Marked on the evaluation graph.
+  public var isError: Bool { self == .mistake || self == .miss || self == .blunder }
+
   /// Moves that deserve a "best move was ..." hint and an engine arrow.
   var showsBestMove: Bool {
     switch self {
@@ -26,9 +29,6 @@ public enum MoveClassification: String, CaseIterable, Sendable {
     default: false
     }
   }
-
-  /// Marked on the evaluation graph.
-  var isError: Bool { self == .mistake || self == .miss || self == .blunder }
 
   /// Localisation key of the coach line, such as "%@ is a blunder."; the argument is the SAN.
   var coachKey: String { "review.coach.\(rawValue)" }

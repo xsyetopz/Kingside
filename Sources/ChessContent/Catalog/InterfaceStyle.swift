@@ -27,6 +27,8 @@ public struct GameLayoutStyle: Codable, Hashable, Sendable {
   /// Height below which the wide layout moves the player bars from above and below the board
   /// into the panel, so a short screen such as a landscape phone gives the board its height.
   public let compactHeight: Double
+  /// Height of Game Review's evaluation graph.
+  public let graphHeight: Double
 }
 
 /// Sizes of the puzzle screens, which share the game screen's wide or narrow rule.

@@ -1,5 +1,7 @@
 import ChessCore
 import ChessPlay
+// Foundation provides `CGPoint`, `CGSize`, and `CGFloat`; unused_import does not attribute them.
+// swiftlint:disable:next unused_import
 import Foundation
 
 /// The review screen's board position and move browsing, apart from the views.
@@ -52,6 +54,28 @@ enum ReviewLayout {
       pendingPromotion: nil,
       isInputEnabled: false
     )
+  }
+
+  /// The evaluation graph's x of `ply`: the start at the left edge, the last move at the right.
+  static func graphX(ply: Int, moveCount: Int, width: CGFloat) -> CGFloat {
+    moveCount > 0 ? width * CGFloat(ply) / CGFloat(moveCount) : 0
+  }
+
+  /// The evaluation graph's line in `size`: a point per analysed position from
+  /// `GameReviewModel.whiteExpectedPoints`, rising as White's chances do.
+  static func graphPoints(_ whitePoints: [Double], moveCount: Int, in size: CGSize) -> [CGPoint] {
+    whitePoints.enumerated().map { ply, value in
+      CGPoint(
+        x: graphX(ply: ply, moveCount: moveCount, width: size.width),
+        y: size.height * (1 - min(1, max(0, value)))
+      )
+    }
+  }
+
+  /// The ply nearest `x` on a graph `width` wide.
+  static func graphPly(atX x: CGFloat, width: CGFloat, moveCount: Int) -> Int {
+    guard width > 0 else { return 0 }
+    return min(moveCount, max(0, Int((x / width * CGFloat(moveCount)).rounded())))
   }
 
   /// A row of the move list; a move's ply is the position after it.

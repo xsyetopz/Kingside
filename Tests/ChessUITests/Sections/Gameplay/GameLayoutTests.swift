@@ -7,7 +7,8 @@ struct GameLayoutTests {
   private var style: GameLayoutStyle {
     get throws {
       let json =
-        #"{"wideAspectRatio": 1.3, "panelWidth": 340, "avatarSize": 44, "compactHeight": 480}"#
+        #"{"wideAspectRatio": 1.3, "panelWidth": 340, "avatarSize": 44, "compactHeight": 480, "#
+        + #""graphHeight": 72}"#
       return try JSONDecoder().decode(GameLayoutStyle.self, from: Data(json.utf8))
     }
   }

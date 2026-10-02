@@ -170,6 +170,11 @@ struct ReviewTests {
   // MARK: Text
 
   @Test
+  func onlyMistakesMissesAndBlundersAreErrors() {
+    #expect(MoveClassification.allCases.filter(\.isError) == [.mistake, .miss, .blunder])
+  }
+
+  @Test
   func evaluationLabelsAndCoachText() {
     #expect(EvaluationLabel.text(Evaluation(centipawns: 125)) == "+1.25")
     #expect(EvaluationLabel.text(Evaluation(centipawns: -40)) == "-0.40")
@@ -235,6 +240,7 @@ struct ReviewTests {
     #expect(cached.isComplete)
     #expect(cached.analyses == analyses)
     #expect(cached.moves.map(\.san) == ["e4"])
+    #expect(cached.whiteExpectedPoints == analyses.map { WinProbability.white($0.evaluation) })
 
     let uncached = try makeReview(of: game, cache: ReviewAnalysisCache())
     #expect(!uncached.isComplete)

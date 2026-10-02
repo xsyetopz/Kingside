@@ -1,5 +1,8 @@
 import ChessCore
 import ChessPlay
+// Foundation provides `CGPoint`, `CGSize`, and `CGFloat`; unused_import does not attribute them.
+// swiftlint:disable:next unused_import
+import Foundation
 import Testing
 @testable import ChessUI
 
@@ -46,12 +49,36 @@ struct ReviewLayoutTests {
     var game = ChessGame()
     var last: ChessMove?
     for uci in ["e2e4", "f7f6", "d1h5"] {
-      last = try #require(ChessMove(uci: uci))
-      _ = try game.makeMove(#require(last))
+      let move = try #require(ChessMove(uci: uci))
+      _ = try game.makeMove(move)
+      last = move
     }
     let checked = ReviewLayout.snapshot(game.position, lastMove: last, orientation: .white)
     #expect(checked.lastMove == last)
     #expect(checked.checkSquare == Square(algebraic: "e8"))
+  }
+
+  @Test
+  func graphRisesWithWhitesChancesAcrossTheWidth() {
+    let size = CGSize(width: 200, height: 100)
+    let points = ReviewLayout.graphPoints([0.5, 1, 0, 1.5], moveCount: 4, in: size)
+    #expect(
+      points == [
+        CGPoint(x: 0, y: 50), CGPoint(x: 50, y: 0), CGPoint(x: 100, y: 100), CGPoint(x: 150, y: 0),
+      ]
+    )
+    #expect(ReviewLayout.graphPoints([0.5], moveCount: 0, in: size) == [CGPoint(x: 0, y: 50)])
+    #expect(ReviewLayout.graphX(ply: 4, moveCount: 4, width: 200) == 200)
+  }
+
+  @Test
+  func graphClicksPickTheNearestPly() {
+    #expect(ReviewLayout.graphPly(atX: 0, width: 200, moveCount: 4) == 0)
+    #expect(ReviewLayout.graphPly(atX: 70, width: 200, moveCount: 4) == 1)
+    #expect(ReviewLayout.graphPly(atX: 80, width: 200, moveCount: 4) == 2)
+    #expect(ReviewLayout.graphPly(atX: 250, width: 200, moveCount: 4) == 4)
+    #expect(ReviewLayout.graphPly(atX: -5, width: 200, moveCount: 4) == 0)
+    #expect(ReviewLayout.graphPly(atX: 50, width: 0, moveCount: 4) == 0)
   }
 
   @Test
